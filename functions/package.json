@@ -1,0 +1,12 @@
+{
+  "name": "functions",
+  "description": "Cloud Functions for RetroConnect ban governance",
+  "dependencies": {
+    "firebase-admin": "^11.8.0",
+    "firebase-functions": "^4.3.1"
+  },
+  "engines": {
+    "node": "18"
+  },
+  "private": true
+}

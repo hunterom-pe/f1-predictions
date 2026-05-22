@@ -1,0 +1,492 @@
+@import "98.css";
+
+/* Retro font loading and pixelated styling overrides */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: #008080; /* Classic Win98 Teal */
+  color: #000;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Classic Desktop layout */
+.desktop {
+  flex: 1;
+  width: 100%;
+  height: calc(100vh - 35px); /* Subtract taskbar height */
+  position: relative;
+  overflow: hidden;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+/* Grid of desktop icons (Network Neighborhood, Inbox, AIM) */
+.desktop-icons {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 80px;
+  height: 100%;
+}
+
+.desktop-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  width: 70px;
+}
+
+.desktop-icon-image {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 4px;
+  image-rendering: pixelated;
+}
+
+.desktop-icon-text {
+  font-size: 11px;
+  color: white;
+  text-shadow: 1px 1px #000;
+  padding: 2px 4px;
+  border: 1px transparent dashed;
+  word-wrap: break-word;
+  max-width: 70px;
+  line-height: 1.2;
+}
+
+.desktop-icon:active .desktop-icon-text {
+  background-color: #000080;
+  border-color: #ff0;
+  color: white;
+}
+
+/* Responsive Win98 window containers */
+.window-container {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Mobile-optimised full-screen styles for active windows */
+@media (max-width: 600px) {
+  .window-container.mobile-maximized {
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    transform: none !important;
+  }
+}
+
+.window {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.window-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  gap: 10px;
+  padding: 8px;
+}
+
+/* Custom Outlook Split Pane styling */
+.outlook-pane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 6px;
+}
+
+.outlook-list {
+  flex: 1;
+  overflow-y: auto;
+  background-color: white;
+  border: 2px inset #fff;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.outlook-item {
+  padding: 6px 8px;
+  border-bottom: 1px solid #dfdfdf;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.outlook-item:hover {
+  background-color: #f0f0f0;
+}
+
+.outlook-item.selected {
+  background-color: #000080;
+  color: white;
+}
+
+.outlook-preview {
+  height: 140px;
+  background-color: #fff;
+  border: 2px inset #fff;
+  padding: 8px;
+  font-size: 12px;
+  overflow-y: auto;
+  font-family: "Courier New", Courier, monospace;
+}
+
+/* Buddy list & chat UI for AIM simulation */
+.aim-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #fff;
+  border: 2px inset #fff;
+}
+
+.aim-header {
+  background-color: #e0e0e0;
+  padding: 4px;
+  border-bottom: 2px solid #808080;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.aim-chat-log {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  font-size: 12px;
+  font-family: Arial, sans-serif;
+  background-color: #fff;
+}
+
+.aim-message {
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+
+.aim-msg-sender {
+  font-weight: bold;
+  font-size: 11px;
+}
+
+.aim-msg-self {
+  color: #0000ff;
+}
+
+.aim-msg-buddy {
+  color: #ff0000;
+}
+
+.aim-msg-system {
+  color: #808080;
+  font-style: italic;
+}
+
+.aim-input-area {
+  height: 60px;
+  border-top: 2px solid #808080;
+  background-color: #f0f0f0;
+  padding: 4px;
+  display: flex;
+  gap: 6px;
+}
+
+.aim-input-area textarea {
+  flex: 1;
+  resize: none;
+  font-size: 12px;
+  font-family: Arial, sans-serif;
+  border: 2px inset #fff;
+  padding: 4px;
+}
+
+.aim-input-actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* Classic Taskbar */
+.taskbar {
+  height: 35px;
+  background-color: #c0c0c0;
+  border-top: 2px solid #fff;
+  display: flex;
+  align-items: center;
+  padding: 2px 4px;
+  justify-content: space-between;
+  box-sizing: border-box;
+  z-index: 99999;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.taskbar-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.start-button {
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  font-size: 12px;
+  height: 28px;
+}
+
+.start-button img {
+  width: 16px;
+  height: 16px;
+  image-rendering: pixelated;
+}
+
+.taskbar-divider {
+  width: 2px;
+  height: 20px;
+  background-color: #808080;
+  border-right: 1px solid #fff;
+  margin: 0 4px;
+}
+
+.taskbar-app-button {
+  max-width: 120px;
+  font-size: 11px;
+  height: 28px;
+  padding: 2px 8px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.taskbar-app-button.active {
+  background: #e6e6e6;
+  box-shadow: inset 1px 1px 0 #000, inset -1px -1px 0 #fff;
+  font-weight: bold;
+}
+
+.system-tray {
+  border: 2px inset #fff;
+  padding: 2px 6px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #c0c0c0;
+  height: 22px;
+}
+
+.system-tray-icons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.system-tray-icon {
+  width: 14px;
+  height: 14px;
+  image-rendering: pixelated;
+}
+
+/* Start Menu Overlay */
+.start-menu {
+  position: absolute;
+  bottom: 35px;
+  left: 4px;
+  width: 180px;
+  background-color: #c0c0c0;
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  display: flex;
+  z-index: 100000;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.start-menu-sidebar {
+  width: 25px;
+  background: linear-gradient(180deg, #000080 0%, #1084d0 100%);
+  color: white;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  padding: 10px 2px;
+  font-weight: bold;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  font-family: Arial, sans-serif;
+  letter-spacing: 1px;
+}
+
+.start-menu-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 2px 0;
+  margin: 0;
+  list-style: none;
+}
+
+.start-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.start-menu-item:hover {
+  background-color: #000080;
+  color: white;
+}
+
+.start-menu-item img {
+  width: 16px;
+  height: 16px;
+  image-rendering: pixelated;
+}
+
+.start-menu-separator {
+  height: 1px;
+  background-color: #808080;
+  border-bottom: 1px solid #fff;
+  margin: 4px 0;
+}
+
+/* Blue Screen of Death (BSOD) */
+.bsod-screen {
+  background-color: #0000aa;
+  color: #ffffff;
+  font-family: "Courier New", Courier, monospace;
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999999;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  box-sizing: border-box;
+  font-size: 16px;
+  line-height: 1.5;
+  text-align: left;
+  user-select: none;
+  overflow: hidden;
+}
+
+.bsod-content {
+  max-width: 650px;
+  width: 100%;
+}
+
+.bsod-title {
+  background-color: #aaaaaa;
+  color: #0000aa;
+  padding: 2px 8px;
+  font-weight: bold;
+  text-align: center;
+  display: inline-block;
+  margin-bottom: 20px;
+}
+
+/* Beveled grouping layouts (like network setup) */
+.beveled-box {
+  border: 2px inset #fff;
+  background-color: white;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Custom directory folder tree icons list */
+.tree-view ul {
+  padding-left: 16px;
+}
+
+.tree-view li {
+  margin-top: 2px;
+}
+
+.tree-node-label {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 1px 4px;
+}
+
+.tree-node-label:hover {
+  text-decoration: underline;
+}
+
+.tree-node-label.active {
+  background-color: #000080;
+  color: white;
+}
+
+.tree-icon {
+  width: 16px;
+  height: 16px;
+  image-rendering: pixelated;
+  display: inline-block;
+}
+
+/* CSS scrollbar styling for old school feel */
+::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+}
+
+::-webkit-scrollbar-track {
+  background: #dfdfdf;
+  box-shadow: inset 1px 1px 0 #808080, inset -1px -1px 0 #fff;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+}
+
+::-webkit-scrollbar-button {
+  background: #c0c0c0;
+  width: 16px;
+  height: 16px;
+  display: block;
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+}
