@@ -1366,3 +1366,84 @@ legend {
   border-bottom: none;
 }
 
+/* ==========================================
+   CITY PORTAL CARDS
+   ========================================== */
+.city-portal-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background-color: #ffffff;
+  border: 1px solid #dddddd;
+  border-left: 5px solid #003399;
+  border-radius: 4px;
+  padding: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.05);
+}
+
+.city-portal-card:hover {
+  border-color: #ff007f;
+  border-left-color: #ff007f;
+  background-color: #fff2f9;
+  transform: translateY(-2px);
+  box-shadow: 1px 3px 8px rgba(255, 0, 127, 0.15);
+}
+
+.city-portal-icon {
+  font-size: 32px;
+  width: 50px;
+  height: 50px;
+  background-color: #f0f0f0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e0e0e0;
+}
+
+.city-portal-card:hover .city-portal-icon {
+  background-color: #ffccd8;
+  border-color: #ff99bb;
+}
+
+.city-portal-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #003399;
+  text-decoration: underline;
+  margin-bottom: 3px;
+  font-family: "Tahoma", "Segoe UI", Arial, sans-serif;
+}
+
+.city-portal-card:hover .city-portal-title {
+  color: #ff007f;
+}
+
+.city-portal-desc {
+  font-size: 12px;
+  color: #555;
+  margin-bottom: 4px;
+  font-family: "Tahoma", "Segoe UI", Arial, sans-serif;
+}
+
+.city-portal-status {
+  font-size: 10px;
+  font-weight: bold;
+  color: green;
+  font-family: monospace;
+}
+
+.city-portal-arrow {
+  font-size: 20px;
+  color: #888;
+  transition: transform 0.2s;
+}
+
+.city-portal-card:hover .city-portal-arrow {
+  color: #ff007f;
+  transform: translateX(4px);
+}
+
+

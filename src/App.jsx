@@ -835,31 +835,52 @@ export default function App() {
 
         {/* CITY SELECTION SCREEN */}
         {navigationScreen === "city" && (
-          <div className="beveled-box" style={{ padding: "15px" }}>
-            <h2 style={{ color: "#003399", margin: "0 0 5px 0" }}>Select City</h2>
-            <p style={{ margin: "0 0 15px 0", fontSize: "12px", color: "#666" }}>Choose your neighborhood database hub.</p>
-            <div className="city-grid" style={{ padding: 0 }}>
-              <button 
-                className="city-button"
-                onClick={() => {
-                  setSelectedCity("Phoenix");
-                  setNavigationScreen("bar");
-                }}
-              >
-                <span className="city-button-icon">🌵</span>
-                <span className="city-button-text">Phoenix Area</span>
-              </button>
+          <div style={{ maxWidth: "500px", margin: "0 auto", width: "100%" }}>
+            <div className="myspace-orange-box" style={{ backgroundColor: "#f5f5f5", border: "1px solid #ff99cc", borderRadius: "4px", padding: 0 }}>
+              <div className="section-header-orange" style={{ margin: 0, backgroundColor: "#003399", color: "#fff", borderLeft: "4px solid #ff007f", fontWeight: "bold" }}>
+                Select Regional Database Portal
+              </div>
+              <div style={{ padding: "20px" }}>
+                <p style={{ margin: "0 0 20px 0", fontSize: "13px", color: "#555", lineHeight: "1.4" }}>
+                  Choose your metropolitan neighborhood database hub to scan local venue walls for missed connection reports.
+                </p>
+                
+                <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+                  {/* Phoenix Area Option */}
+                  <div 
+                    className="city-portal-card"
+                    onClick={() => {
+                      setSelectedCity("Phoenix");
+                      setNavigationScreen("bar");
+                    }}
+                  >
+                    <div className="city-portal-icon">🌵</div>
+                    <div style={{ flex: 1 }}>
+                      <div className="city-portal-title">Phoenix Area Node</div>
+                      <div className="city-portal-desc">Desert Valley Hub — Active venue boards & chats</div>
+                      <div className="city-portal-status">📡 Network Status: ONLINE (100%)</div>
+                    </div>
+                    <div className="city-portal-arrow">➡️</div>
+                  </div>
 
-              <button 
-                className="city-button"
-                onClick={() => {
-                  setSelectedCity("New York");
-                  setNavigationScreen("bar");
-                }}
-              >
-                <span className="city-button-icon">🏙️</span>
-                <span className="city-button-text">New York Area</span>
-              </button>
+                  {/* New York Area Option */}
+                  <div 
+                    className="city-portal-card"
+                    onClick={() => {
+                      setSelectedCity("New York");
+                      setNavigationScreen("bar");
+                    }}
+                  >
+                    <div className="city-portal-icon">🗽</div>
+                    <div style={{ flex: 1 }}>
+                      <div className="city-portal-title">New York Area Node</div>
+                      <div className="city-portal-desc">East Coast Hub — Metropolitan area venues</div>
+                      <div className="city-portal-status" style={{ color: "#d0a000" }}>📡 Network Status: ONLINE (BETA)</div>
+                    </div>
+                    <div className="city-portal-arrow">➡️</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
