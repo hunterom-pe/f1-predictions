@@ -681,7 +681,7 @@ export default function App() {
           </span>
           <span 
             className={`myspace-nav-link ${selectedProfileUser?.userId === currentUser?.uid ? "active" : ""}`} 
-            onClick={handleOpenMyProfile}
+            onClick={() => runWithAuthenticationCheck(handleOpenMyProfile)}
           >
             Profile
           </span>
