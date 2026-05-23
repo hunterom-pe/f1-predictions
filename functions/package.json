@@ -1,6 +1,6 @@
 {
   "name": "functions",
-  "description": "Cloud Functions for RetroConnect ban governance",
+  "description": "Cloud Functions for asl ban governance",
   "dependencies": {
     "firebase-admin": "^11.8.0",
     "firebase-functions": "^4.3.1"

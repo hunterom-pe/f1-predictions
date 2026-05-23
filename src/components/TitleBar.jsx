@@ -11,7 +11,7 @@
  */
 export default function TitleBar({ title, onClose, onMinimize, onMaximize, active = true }) {
   return (
-    <div className="title-bar" style={{ backgroundColor: active ? "#000080" : "#808080" }}>
+    <div className="title-bar" style={{ backgroundColor: active ? "#003399" : "#808080", padding: "6px 8px" }}>
       <div className="title-bar-text" style={{ cursor: "default" }}>
         {title}
       </div>

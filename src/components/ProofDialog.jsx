@@ -46,65 +46,52 @@ export default function ProofDialog({ post, onClose, onSubmit }) {
   };
 
   return (
-    <div 
-      className="window-container mobile-maximized"
-      style={{
-        position: "fixed",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        width: "350px",
-        zIndex: 105000,
-        boxShadow: "2px 2px 20px rgba(0, 0, 0, 0.4)"
-      }}
-    >
-      <div className="window">
-        <TitleBar title="Verify Connection - Blind Proof" onClose={onClose} />
-        
-        <form onSubmit={handleSubmit}>
-          <div className="window-body" style={{ gap: "10px" }}>
-            <fieldset>
-              <legend>Connection Proof Details</legend>
-              <p style={{ margin: "0 0 10px 0", fontSize: "11px", lineHeight: "1.3", color: "#303030" }}>
-                Prove to the poster of <strong>{post.venueName}</strong> that you are the person they saw. 
-                Type a blind details verification message (e.g. what you were wearing, what you ordered, or a secret word).
-              </p>
+    <div className="window" style={{ width: "100%", display: "flex", flexDirection: "column" }}>
+      <TitleBar title="Verify Connection - Blind Proof" onClose={onClose} />
+      
+      <form onSubmit={handleSubmit}>
+        <div className="window-body" style={{ gap: "10px" }}>
+          <fieldset>
+            <legend>Connection Proof Details</legend>
+            <p style={{ margin: "0 0 10px 0", fontSize: "11px", lineHeight: "1.3", color: "#303030" }}>
+              Prove to the poster of <strong>{post.venueName}</strong> that you are the person they saw. 
+              Type a blind details verification message (e.g. what you were wearing, what you ordered, or a secret word).
+            </p>
 
-              <div className="field-row-stacked">
-                <label htmlFor="proof-input">Enter Proof Description:</label>
-                <textarea 
-                  id="proof-input"
-                  rows="5"
-                  value={proofText}
-                  onChange={(e) => setProofText(e.target.value)}
-                  placeholder="e.g. I was wearing the green corduroy jacket and sitting at the corner of the bar next to the jukebox..."
-                  style={{ width: "100%", fontSize: "11px", fontFamily: "Tahoma, sans-serif" }}
-                />
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10px", marginTop: "2px", color: "#505050" }}>
-                <span>Strict text-only rules apply.</span>
-                <span>{proofText.length} / 500 characters</span>
-              </div>
-            </fieldset>
-
-            {errorMsg && (
-              <div style={{ color: "red", fontSize: "11px", fontWeight: "bold", padding: "4px", backgroundColor: "#fff", border: "1px solid red" }}>
-                {errorMsg}
-              </div>
-            )}
-
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "6px", marginTop: "4px" }}>
-              <button type="submit" className="default" style={{ width: "100px" }}>
-                Submit Proof
-              </button>
-              <button type="button" onClick={onClose} style={{ width: "80px" }}>
-                Cancel
-              </button>
+            <div className="field-row-stacked">
+              <label htmlFor="proof-input">Enter Proof Description:</label>
+              <textarea 
+                id="proof-input"
+                rows="5"
+                value={proofText}
+                onChange={(e) => setProofText(e.target.value)}
+                placeholder="e.g. I was wearing the green corduroy jacket and sitting at the corner of the bar next to the jukebox..."
+                style={{ width: "100%", fontSize: "14px", fontFamily: "Arial, sans-serif", minHeight: "80px" }}
+              />
             </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", marginTop: "4px", color: "#505050" }}>
+              <span>Strict text-only rules apply.</span>
+              <span>{proofText.length} / 500 characters</span>
+            </div>
+          </fieldset>
+
+          {errorMsg && (
+            <div style={{ color: "red", fontSize: "12px", fontWeight: "bold", padding: "6px", backgroundColor: "#fff", border: "1px solid red", borderRadius: "4px" }}>
+              {errorMsg}
+            </div>
+          )}
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "4px" }}>
+            <button type="submit" className="default" style={{ minWidth: "100px", minHeight: "44px", cursor: "pointer" }}>
+              Submit Proof
+            </button>
+            <button type="button" onClick={onClose} style={{ minWidth: "80px", minHeight: "44px", cursor: "pointer" }}>
+              Cancel
+            </button>
           </div>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
   );
 }

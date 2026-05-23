@@ -22,12 +22,12 @@ export const MOCK_VENUES = [
     formatted_address: "130 N Central Ave, Phoenix, AZ 85004"
   },
   {
-    fsq_id: "venue_lost",
-    name: "The Lost Leaf",
-    address: "914 N 5th St",
+    fsq_id: "venue_gracies",
+    name: "Gracies Tax Bar",
+    address: "711 N 7th Ave",
     city: "Phoenix",
     zone: "Downtown",
-    formatted_address: "914 N 5th St, Phoenix, AZ 85004"
+    formatted_address: "711 N 7th Ave, Phoenix, AZ 85007"
   },
   {
     fsq_id: "venue_linger",

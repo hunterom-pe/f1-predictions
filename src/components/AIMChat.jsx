@@ -119,17 +119,57 @@ export default function AIMChat({ chatId, connection, currentUser, onClose }) {
     if (!confirmFlag) return;
 
     try {
-      // 1. Fetch other user document
-      const otherUserSnap = await dbGetDoc("users", otherUserId);
-      let currentFlags = 0;
-      if (otherUserSnap.exists()) {
-        currentFlags = otherUserSnap.data().flag_count || 0;
+      // Spite-Ban Shield Check
+      let passShield = true;
+      const reporterSnap = await dbGetDoc("users", currentUser.uid);
+
+      if (!reporterSnap.exists()) {
+        passShield = false;
+      } else {
+        const reporterData = reporterSnap.data();
+        
+        // Check A: Reporting profile must be authenticated permanent (!isAnonymous)
+        if (currentUser.isAnonymous || reporterData.isAnonymous) {
+          passShield = false;
+        }
+
+        // Check B: Reporting profile creation delta >= 48 hours
+        const ageMs = Date.now() - (reporterData.createdAt || 0);
+        if (ageMs < 48 * 60 * 60 * 1000) {
+          passShield = false;
+        }
       }
 
-      // 2. Increment flag count
-      await dbUpdateDoc("users", otherUserId, {
-        flag_count: currentFlags + 1
-      });
+      // Check C: chat participants / proof document existence check
+      if (passShield && connection && connection.id) {
+        const connSnap = await dbGetDoc("connections", connection.id);
+        if (!connSnap.exists()) {
+          passShield = false;
+        } else {
+          const connData = connSnap.data();
+          const isParticipant = 
+            (connData.senderId === currentUser.uid && connData.receiverId === otherUserId) || 
+            (connData.receiverId === currentUser.uid && connData.senderId === otherUserId);
+          if (!isParticipant) {
+            passShield = false;
+          }
+        }
+      } else {
+        passShield = false;
+      }
+
+      // 2. Increment flag count only if shield checks pass
+      if (passShield) {
+        const otherUserSnap = await dbGetDoc("users", otherUserId);
+        let currentFlags = 0;
+        if (otherUserSnap.exists()) {
+          currentFlags = otherUserSnap.data().flag_count || 0;
+        }
+
+        await dbUpdateDoc("users", otherUserId, {
+          flag_count: currentFlags + 1
+        });
+      }
 
       alert("User flagged. Safety team has been notified. This conversation has been closed.");
       onClose();
@@ -140,161 +180,123 @@ export default function AIMChat({ chatId, connection, currentUser, onClose }) {
 
   return (
     <>
-      <div 
-        className="window-container mobile-maximized"
-        style={{
-          position: "absolute",
-          top: "20px",
-          left: "20px",
-          right: "20px",
-          height: "calc(100% - 40px)",
-          maxWidth: "450px",
-          margin: "0 auto",
-          zIndex: 10100,
-          boxShadow: "3px 3px 25px rgba(0, 0, 0, 0.4)"
-        }}
-      >
-        <div className="window" style={{ height: "100%", backgroundColor: "#f0f0f0" }}>
-          <TitleBar title={`Anonymous Buddy - Instant Message`} onClose={onClose} />
-          
-          {/* AIM Header Details */}
-          <div className="aim-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span>⚡ Venue Channel: {connection.venueName}</span>
-            <span style={{ fontSize: "9px", color: "green" }}>🔒 Encryption Active</span>
-          </div>
+      <div className="window" style={{ height: "500px", display: "flex", flexDirection: "column", backgroundColor: "#f0f0f0" }}>
+        <TitleBar title={`💬 AIM - Instant Message with Buddy`} onClose={onClose} />
+        
+        {/* AIM Header Details */}
+        <div className="aim-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 8px" }}>
+          <span>⚡ Location: {connection.venueName}</span>
+          <span style={{ fontSize: "11px", color: "green", fontWeight: "bold" }}>🔒 Encrypted</span>
+        </div>
 
-          <div style={{ display: "flex", flex: 1, overflow: "hidden", padding: "4px", gap: "4px" }}>
-            {/* Left Chat Area */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-              {/* AIM Chat Log Box */}
-              <div className="aim-layout" style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-                <div className="aim-chat-log">
-                  <div className="aim-message">
-                    <span className="aim-msg-system">
-                      System: Conversing anonymously on RetroConnect. Screenshots are strictly blocked.
-                    </span>
-                  </div>
-                  
-                  {messages.map((m) => {
-                    const isSelf = m.senderId === currentUser.uid;
-                    const senderLabel = isSelf ? "You" : "Buddy";
-                    const senderClass = isSelf ? "aim-msg-self" : "aim-msg-buddy";
-                    
-                    return (
-                      <div key={m.id} className="aim-message">
-                        <span className={`aim-msg-sender ${senderClass}`}>
-                          {senderLabel}:
-                        </span>{" "}
-                        <span style={{ fontFamily: "Arial, sans-serif", fontSize: "12px" }}>
-                          {m.text}
-                        </span>
-                      </div>
-                    );
-                  })}
-                  <div ref={chatLogEndRef} />
-                </div>
-
-                {/* Text Formatting Toolbar (Visual/Retro only) */}
-                <div 
-                  style={{ 
-                    height: "22px", 
-                    backgroundColor: "#c0c0c0", 
-                    borderTop: "1px solid #808080", 
-                    borderBottom: "1px solid #808080",
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "0 4px",
-                    gap: "6px",
-                    fontSize: "11px"
-                  }}
-                >
-                  <span style={{ fontWeight: "bold", cursor: "pointer", padding: "0 2px" }}>A</span>
-                  <span style={{ fontStyle: "italic", cursor: "pointer", padding: "0 2px" }}>A</span>
-                  <span style={{ textDecoration: "underline", cursor: "pointer", padding: "0 2px" }}>A</span>
-                  <span style={{ borderLeft: "1px solid #808080", height: "12px", margin: "0 2px" }} />
-                  <span style={{ color: "red", cursor: "pointer" }}>🎨</span>
-                  <span style={{ fontSize: "9px" }}>Tahoma</span>
-                </div>
-
-                {/* Send Input Area */}
-                <form onSubmit={handleSendMessage} className="aim-input-area">
-                  <textarea 
-                    value={inputText}
-                    onChange={(e) => setInputText(e.target.value)}
-                    placeholder="Type message here..."
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage(e);
-                      }
-                    }}
-                  />
-                  <div className="aim-input-actions">
-                    <button type="submit" style={{ flex: 1, padding: "2px 8px", fontSize: "11px" }}>
-                      Send
-                    </button>
-                  </div>
-                </form>
-              </div>
+        {/* AIM Subheader / Actions Bar */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "#c0c0c0", padding: "6px 8px", borderBottom: "1px solid #808080", gap: "10px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ fontSize: "20px" }}>🤖</span>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <span style={{ fontSize: "12px", fontWeight: "bold" }}>Buddy</span>
+              <span style={{ fontSize: "10px", color: "green" }}>Online</span>
             </div>
-
-            {/* Right Buddy Sidebar Panel */}
-            <div 
+          </div>
+          <div style={{ display: "flex", gap: "6px" }}>
+            <button 
+              onClick={handleWarnUser}
               style={{ 
-                width: "90px", 
-                backgroundColor: "#c0c0c0", 
-                border: "2px solid", 
-                borderColor: "#fff #808080 #808080 #fff",
-                display: "flex", 
-                flexDirection: "column", 
-                alignItems: "center",
-                padding: "6px 2px",
-                gap: "8px",
-                boxSizing: "border-box"
+                minHeight: "34px", 
+                padding: "2px 8px", 
+                fontSize: "12px", 
+                color: "#b22222", 
+                fontWeight: "bold",
+                backgroundColor: "#ffcccc",
+                border: "1px solid #b22222",
+                cursor: "pointer"
               }}
             >
-              {/* Retro Buddy Icon Placeholder */}
-              <div 
-                style={{ 
-                  width: "50px", 
-                  height: "50px", 
-                  border: "2px inset #fff", 
-                  backgroundColor: "#fff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "24px"
-                }}
-              >
-                🤖
+              ⚠️ Flag
+            </button>
+            <button 
+              onClick={onClose}
+              style={{ minHeight: "34px", padding: "2px 8px", fontSize: "12px", cursor: "pointer" }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flex: 1, overflow: "hidden", flexDirection: "column", padding: "4px" }}>
+          {/* AIM Chat Log Box */}
+          <div className="aim-layout" style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+            <div className="aim-chat-log" style={{ flex: 1, overflowY: "auto", padding: "8px" }}>
+              <div className="aim-message" style={{ marginBottom: "8px" }}>
+                <span className="aim-msg-system">
+                  System: Conversing anonymously on asl. Screenshots are strictly blocked.
+                </span>
               </div>
-              <span style={{ fontSize: "9px", textAlign: "center", fontWeight: "bold" }}>
-                Buddy Profile
-              </span>
-
-              <button 
-                onClick={handleWarnUser}
-                className="default"
-                style={{ 
-                  width: "95%", 
-                  fontSize: "10px", 
-                  color: "#b22222", 
-                  fontWeight: "bold",
-                  padding: "4px 2px"
-                }}
-              >
-                ⚠️ Flag User
-              </button>
-
-              <button onClick={onClose} style={{ width: "95%", fontSize: "10px", marginTop: "auto" }}>
-                Close Chat
-              </button>
+              
+              {messages.map((m) => {
+                const isSelf = m.senderId === currentUser.uid;
+                const senderLabel = isSelf ? "You" : "Buddy";
+                const senderClass = isSelf ? "aim-msg-self" : "aim-msg-buddy";
+                
+                return (
+                  <div key={m.id} className="aim-message" style={{ marginBottom: "6px" }}>
+                    <span className={`aim-msg-sender ${senderClass}`} style={{ fontWeight: "bold" }}>
+                      {senderLabel}:
+                    </span>{" "}
+                    <span style={{ fontFamily: "Arial, sans-serif", fontSize: "14px" }}>
+                      {m.text}
+                    </span>
+                  </div>
+                );
+              })}
+              <div ref={chatLogEndRef} />
             </div>
+
+            {/* Text Formatting Toolbar (Visual/Retro only) */}
+            <div 
+              style={{ 
+                height: "24px", 
+                backgroundColor: "#c0c0c0", 
+                borderTop: "1px solid #808080", 
+                borderBottom: "1px solid #808080",
+                display: "flex",
+                alignItems: "center",
+                padding: "0 6px",
+                gap: "8px",
+                fontSize: "12px"
+              }}
+            >
+              <span style={{ fontWeight: "bold", cursor: "pointer", padding: "0 2px" }}>A</span>
+              <span style={{ fontStyle: "italic", cursor: "pointer", padding: "0 2px" }}>A</span>
+              <span style={{ textDecoration: "underline", cursor: "pointer", padding: "0 2px" }}>A</span>
+              <span style={{ borderLeft: "1px solid #808080", height: "12px", margin: "0 2px" }} />
+              <span style={{ color: "red", cursor: "pointer" }}>🎨</span>
+              <span style={{ fontSize: "11px" }}>Tahoma</span>
+            </div>
+
+            {/* Send Input Area */}
+            <form onSubmit={handleSendMessage} className="aim-input-area" style={{ display: "flex", padding: "4px", gap: "6px", backgroundColor: "#f0f0f0", borderTop: "1px solid #808080", minHeight: "54px" }}>
+              <textarea 
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder="Type message here..."
+                style={{ flex: 1, resize: "none", fontSize: "14px", fontFamily: "Arial, sans-serif", padding: "6px", minHeight: "44px" }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage(e);
+                  }
+                }}
+              />
+              <button type="submit" style={{ padding: "2px 12px", fontSize: "14px", fontWeight: "bold", minHeight: "44px", cursor: "pointer" }}>
+                Send
+              </button>
+            </form>
           </div>
         </div>
       </div>
 
-      {/* Stylized Windows System Error Alert (Screenshot Protection Popup) */}
+      {/* Stylized System Security Alert (Screenshot Protection Popup) */}
       {showSecurityAlert && (
         <div 
           className="window-container" 
@@ -303,28 +305,28 @@ export default function AIMChat({ chatId, connection, currentUser, onClose }) {
             top: "40%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: "300px",
+            width: "320px",
             zIndex: 150000,
             boxShadow: "2px 2px 30px rgba(0,0,0,0.6)"
           }}
         >
           <div className="window">
             <TitleBar title="Windows System Security" onClose={() => setShowSecurityAlert(false)} />
-            <div className="window-body" style={{ gap: "12px" }}>
+            <div className="window-body" style={{ gap: "12px", padding: "10px" }}>
               <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
                 <span style={{ fontSize: "36px" }}>🛑</span>
                 <div>
-                  <h4 style={{ margin: "0 0 4px 0", fontSize: "12px", color: "red" }}>Security Violation</h4>
-                  <p style={{ margin: 0, fontSize: "11px", lineHeight: "1.3" }}>
+                  <h4 style={{ margin: "0 0 4px 0", fontSize: "13px", color: "red" }}>Security Violation</h4>
+                  <p style={{ margin: 0, fontSize: "12px", lineHeight: "1.4" }}>
                     A screen capture attempt was detected ({alertReason === "key_shortcut" ? "keystroke shortcut" : "window focus changed"}). 
-                    RetroConnect security policy strictly prohibits screenshots inside private chats. This incident has been logged.
+                    asl security policy strictly prohibits screenshots inside private chats. This incident has been logged.
                   </p>
                 </div>
               </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "8px" }}>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "10px" }}>
                 <button 
                   onClick={() => setShowSecurityAlert(false)} 
-                  style={{ width: "60px", fontWeight: "bold" }}
+                  style={{ width: "80px", fontWeight: "bold", minHeight: "36px" }}
                 >
                   OK
                 </button>

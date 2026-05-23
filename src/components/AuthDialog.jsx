@@ -81,111 +81,98 @@ export default function AuthDialog({ onClose, onSuccess }) {
 
   return (
     <>
-      <div 
-        className="window-container mobile-maximized"
-        style={{
-          position: "fixed",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "350px",
-          zIndex: 110000,
-          boxShadow: "2px 2px 20px rgba(0, 0, 0, 0.4)"
-        }}
-      >
-        <div className="window">
-          <TitleBar title="Enter Network Password" onClose={onClose} />
-          
-          <menu role="tablist" style={{ padding: "6px 6px 0 6px", margin: 0 }}>
-            <li role="tab" aria-selected={activeTab === "register"}>
-              <a href="#register" onClick={(e) => { e.preventDefault(); setActiveTab("register"); }}>
-                New Registration
-              </a>
-            </li>
-            <li role="tab" aria-selected={activeTab === "login"}>
-              <a href="#login" onClick={(e) => { e.preventDefault(); setActiveTab("login"); }}>
-                Existing Account Log In
-              </a>
-            </li>
-          </menu>
+      <div className="window" style={{ width: "100%", display: "flex", flexDirection: "column" }}>
+        <TitleBar title="Enter Network Password" onClose={onClose} />
+        
+        <menu role="tablist" style={{ padding: "6px 6px 0 6px", margin: 0 }}>
+          <li role="tab" aria-selected={activeTab === "register"}>
+            <a href="#register" onClick={(e) => { e.preventDefault(); setActiveTab("register"); }}>
+              New Registration
+            </a>
+          </li>
+          <li role="tab" aria-selected={activeTab === "login"}>
+            <a href="#login" onClick={(e) => { e.preventDefault(); setActiveTab("login"); }}>
+              Existing Account Log In
+            </a>
+          </li>
+        </menu>
 
-          <div className="window" role="tabpanel" style={{ borderTop: "none" }}>
-            <form onSubmit={handleSubmit}>
-              <div className="window-body" style={{ gap: "12px" }}>
-                <fieldset>
-                  <legend>
-                    {activeTab === "register" 
-                      ? "Upgrade Anonymous Account" 
-                      : "Type a user name and password to log in"}
-                  </legend>
-                  
-                  <p style={{ margin: "0 0 10px 0", fontSize: "11px", lineHeight: "1.3" }}>
-                    {activeTab === "register"
-                      ? "By registering, you upgrade your temporary guest account to a permanent profile. Your history and connection drafts will be preserved."
-                      : "Connecting to RetroConnect network neighborhood database."}
-                  </p>
+        <div className="window" role="tabpanel" style={{ borderTop: "none" }}>
+          <form onSubmit={handleSubmit}>
+            <div className="window-body" style={{ gap: "12px" }}>
+              <fieldset>
+                <legend>
+                  {activeTab === "register" 
+                    ? "Upgrade Anonymous Account" 
+                    : "Type a user name and password to log in"}
+                </legend>
+                
+                <p style={{ margin: "0 0 10px 0", fontSize: "11px", lineHeight: "1.3" }}>
+                  {activeTab === "register"
+                    ? "By registering, you upgrade your temporary guest account to a permanent profile. Your history and connection drafts will be preserved."
+                    : "Connecting to asl network neighborhood database."}
+                </p>
 
-                  <div className="field-row-stacked" style={{ marginBottom: "8px" }}>
-                    <label htmlFor="auth-email">Email Address:</label>
-                    <input 
-                      id="auth-email" 
-                      type="email" 
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      disabled={loading}
-                      placeholder="username@domain.com"
-                      style={{ width: "100%", boxSizing: "border-box" }}
-                    />
-                  </div>
-
-                  <div className="field-row-stacked" style={{ marginBottom: "8px" }}>
-                    <label htmlFor="auth-pass">Password:</label>
-                    <input 
-                      id="auth-pass" 
-                      type="password" 
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      disabled={loading}
-                      style={{ width: "100%", boxSizing: "border-box" }}
-                    />
-                  </div>
-
-                  {activeTab === "register" && (
-                    <div className="field-row-stacked">
-                      <label htmlFor="auth-confirm">Confirm Password:</label>
-                      <input 
-                        id="auth-confirm" 
-                        type="password" 
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        disabled={loading}
-                        style={{ width: "100%", boxSizing: "border-box" }}
-                      />
-                    </div>
-                  )}
-                </fieldset>
-
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: "6px", marginTop: "4px" }}>
-                  <button 
-                    type="submit" 
-                    className="default" 
+                <div className="field-row-stacked" style={{ marginBottom: "8px" }}>
+                  <label htmlFor="auth-email">Email Address:</label>
+                  <input 
+                    id="auth-email" 
+                    type="email" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     disabled={loading}
-                    style={{ width: "80px" }}
-                  >
-                    {loading ? "Waiting..." : activeTab === "register" ? "Register" : "OK"}
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={onClose} 
-                    disabled={loading}
-                    style={{ width: "80px" }}
-                  >
-                    Cancel
-                  </button>
+                    placeholder="username@domain.com"
+                    style={{ width: "100%", boxSizing: "border-box" }}
+                  />
                 </div>
+
+                <div className="field-row-stacked" style={{ marginBottom: "8px" }}>
+                  <label htmlFor="auth-pass">Password:</label>
+                  <input 
+                    id="auth-pass" 
+                    type="password" 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={loading}
+                    style={{ width: "100%", boxSizing: "border-box" }}
+                  />
+                </div>
+
+                {activeTab === "register" && (
+                  <div className="field-row-stacked">
+                    <label htmlFor="auth-confirm">Confirm Password:</label>
+                    <input 
+                      id="auth-confirm" 
+                      type="password" 
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      disabled={loading}
+                      style={{ width: "100%", boxSizing: "border-box" }}
+                    />
+                  </div>
+                )}
+              </fieldset>
+
+              <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "4px" }}>
+                <button 
+                  type="submit" 
+                  className="default" 
+                  disabled={loading}
+                  style={{ minWidth: "100px", minHeight: "44px" }}
+                >
+                  {loading ? "Waiting..." : activeTab === "register" ? "Register" : "OK"}
+                </button>
+                <button 
+                  type="button" 
+                  onClick={onClose} 
+                  disabled={loading}
+                  style={{ minWidth: "80px", minHeight: "44px" }}
+                >
+                  Cancel
+                </button>
               </div>
-            </form>
-          </div>
+            </div>
+          </form>
         </div>
       </div>
 

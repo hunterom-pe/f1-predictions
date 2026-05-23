@@ -14,12 +14,11 @@ export async function getDeviceUuid() {
       console.error("Error getting Capacitor device ID:", e);
     }
   }
-
   // Web fallback: persistent simulated UUID stored in localStorage
-  let uuid = localStorage.getItem("retroconnect_device_uuid");
+  let uuid = localStorage.getItem("asl_device_uuid");
   if (!uuid) {
     uuid = "web_uuid_" + Math.random().toString(36).slice(2, 15);
-    localStorage.setItem("retroconnect_device_uuid", uuid);
+    localStorage.setItem("asl_device_uuid", uuid);
   }
   return uuid;
 }

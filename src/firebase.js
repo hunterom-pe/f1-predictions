@@ -65,9 +65,28 @@ class SimulatedStore {
   }
 
   initMocks() {
-    if (!localStorage.getItem("retroconnect_db")) {
+    if (!localStorage.getItem("asl_db")) {
       const initialDb = {
-        users: {},
+        users: {
+          "tom": {
+            uid: "tom",
+            username: "Tom",
+            mood: "Friendly 🙂",
+            bio: "Co-founder of asl. Let me know if you have any questions!",
+            profileTheme: "classic",
+            emoji_avatar: "👥🥃💖",
+            createdAt: Date.now() - 10 * 24 * 60 * 60 * 1000 // 10 days ago
+          },
+          "sysop_admin": {
+            uid: "sysop_admin",
+            username: "SysOp",
+            mood: "Monitoring 🖥️",
+            bio: "System Operator admin console.",
+            profileTheme: "cyberpunk",
+            emoji_avatar: "💾📟⚡",
+            createdAt: Date.now() - 10 * 24 * 60 * 60 * 1000
+          }
+        },
         posts: [
           {
             id: "post1",
@@ -112,22 +131,26 @@ class SimulatedStore {
         connections: {},
         chats: {},
         messages: {},
-        blacklisted_devices: {}
+        blacklisted_devices: {},
+        appeals: {}
       };
-      localStorage.setItem("retroconnect_db", JSON.stringify(initialDb));
+      localStorage.setItem("asl_db", JSON.stringify(initialDb));
     }
     
-    if (!localStorage.getItem("retroconnect_auth_users")) {
-      localStorage.setItem("retroconnect_auth_users", JSON.stringify({}));
+    if (!localStorage.getItem("asl_auth_users")) {
+      const initialAuthPool = {
+        "sysop@asl.com": { uid: "sysop_admin", password: "adminpassword" }
+      };
+      localStorage.setItem("asl_auth_users", JSON.stringify(initialAuthPool));
     }
   }
 
   getDb() {
-    return JSON.parse(localStorage.getItem("retroconnect_db") || "{}");
+    return JSON.parse(localStorage.getItem("asl_db") || "{}");
   }
 
   saveDb(dbData) {
-    localStorage.setItem("retroconnect_db", JSON.stringify(dbData));
+    localStorage.setItem("asl_db", JSON.stringify(dbData));
     // Trigger all live subscription listeners
     this.listeners.forEach(l => l());
   }
@@ -151,7 +174,7 @@ class MockAuth {
   }
 
   loadSession() {
-    const session = localStorage.getItem("retroconnect_auth_session");
+    const session = localStorage.getItem("asl_auth_session");
     if (session) {
       this.currentUser = JSON.parse(session);
       // Verify ban status immediately on boot
@@ -160,15 +183,16 @@ class MockAuth {
         const fullUser = db.users[this.currentUser.uid];
         this.currentUser.banned = fullUser.banned;
         this.currentUser.flag_count = fullUser.flag_count;
+        this.currentUser.handshake_cooldown = fullUser.handshake_cooldown;
       }
     }
   }
 
   saveSession() {
     if (this.currentUser) {
-      localStorage.setItem("retroconnect_auth_session", JSON.stringify(this.currentUser));
+      localStorage.setItem("asl_auth_session", JSON.stringify(this.currentUser));
     } else {
-      localStorage.removeItem("retroconnect_auth_session");
+      localStorage.removeItem("asl_auth_session");
     }
     this.triggerAuthStateChange();
   }
@@ -195,7 +219,7 @@ class MockAuth {
       email: null,
       flag_count: 0,
       banned: false,
-      uuid: localStorage.getItem("retroconnect_device_uuid") || ""
+      uuid: localStorage.getItem("asl_device_uuid") || ""
     };
     
     // Save to Firestore-like simulated DB
@@ -219,14 +243,14 @@ class MockAuth {
     const { email, password } = passwordCredential;
 
     // Check if user already exists in auth pool
-    const authPool = JSON.parse(localStorage.getItem("retroconnect_auth_users") || "{}");
+    const authPool = JSON.parse(localStorage.getItem("asl_auth_users") || "{}");
     if (authPool[email]) {
       throw new Error("auth/email-already-in-use: The email address is already in use by another account.");
     }
 
     // Upgrade anonymous user
     authPool[email] = { uid: this.currentUser.uid, password };
-    localStorage.setItem("retroconnect_auth_users", JSON.stringify(authPool));
+    localStorage.setItem("asl_auth_users", JSON.stringify(authPool));
 
     this.currentUser.isAnonymous = false;
     this.currentUser.email = email;
@@ -243,7 +267,7 @@ class MockAuth {
   }
 
   async signInWithEmailAndPassword(email, password) {
-    const authPool = JSON.parse(localStorage.getItem("retroconnect_auth_users") || "{}");
+    const authPool = JSON.parse(localStorage.getItem("asl_auth_users") || "{}");
     const account = authPool[email];
     if (!account || account.password !== password) {
       throw new Error("auth/wrong-password-or-user: Invalid credentials.");
@@ -363,13 +387,37 @@ export const dbSetDoc = async (collectionName, docId, data, merge = true) => {
 
 export const dbAddDoc = async (collectionName, data) => {
   if (isSimulated) {
+    if (collectionName === "posts") {
+      const text = data.text || "";
+      const hasPhone = /\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b|\b\d{7}\b|\b\d{10}\b/.test(text);
+      const hasEmail = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/.test(text);
+      const hasHandle = /@\w+/.test(text) || /\b(instagram|twitter|facebook|tiktok|snapchat)\.com\b/i.test(text);
+      const hasUrl = /\b(https?:\/\/|www\.)\S+\b/i.test(text);
+
+      if (hasPhone || hasEmail || hasHandle || hasUrl) {
+        const ROASTS = [
+          "You sure you want to post that, fam?",
+          "This ain't it, chief. The server admin caught you lacking.",
+          "Bestie, the validation check failed. Let’s try that again.",
+          "Cooked by the system daemon. Post discarded.",
+          "Who hurt you? Keep the bad vibes off the local node.",
+          "Bro tried to sneak a social handle in. We don’t do that here.",
+          "Unc, no phone numbers or real names allowed. Keep it anonymous.",
+          "Gatekeeping is a feature, not a bug. Remove the external links.",
+          "Not the @ link... Secure portal validation failed."
+        ];
+        const randomRoast = ROASTS[Math.floor(Math.random() * ROASTS.length)];
+        throw new Error(randomRoast);
+      }
+    }
+
     const store = simulatedStore.getDb();
     if (!store[collectionName]) store[collectionName] = [];
     
     // Some collections are object maps, some are arrays in simulation. 
     // Let's standardise on arrays for posts, messages, and chats to support lists easily
     const newId = collectionName + "_" + Math.random().toString(36).slice(2, 11);
-    const item = { ...data, id: newId, timestamp: Date.now() };
+    const item = { ...data, id: newId, timestamp: Date.now(), status: "active" };
     
     if (Array.isArray(store[collectionName])) {
       store[collectionName].push(item);
@@ -380,6 +428,18 @@ export const dbAddDoc = async (collectionName, data) => {
     simulatedStore.saveDb(store);
     return { id: newId };
   }
+  if (collectionName === "posts") {
+    try {
+      const { getFunctions, httpsCallable } = await import("firebase/functions");
+      const functions = getFunctions();
+      const createPostSecure = httpsCallable(functions, "createPostSecure");
+      const result = await createPostSecure(data);
+      return { id: result.data.id };
+    } catch (err) {
+      throw err;
+    }
+  }
+
   const colRef = collection(realDb, collectionName);
   return await addDoc(colRef, { ...data, timestamp: serverTimestamp() });
 };
