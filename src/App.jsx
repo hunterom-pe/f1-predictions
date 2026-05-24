@@ -950,7 +950,7 @@ export default function App() {
             <div className="myspace-welcome-box">
               <div className="myspace-welcome-title">Welcome to asl!</div>
               <div className="myspace-welcome-text" style={{ marginBottom: "15px", lineHeight: "1.4" }}>
-                asl is a place for missed connections. Find someone you bumped into at local spots.
+                asl is for missed connections with that friend you made in the bathroom line, or that 10/10 you met sharing a lighter outside the venue. This isn't a generic dating app—it's a digital bulletin board to reconnect with the people who crossed your path last night.
               </div>
               <button 
                 className="default" 
