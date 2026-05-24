@@ -23,8 +23,23 @@ import {
   queryWhere
 } from "./firebase";
 import { searchVenues } from "./services/foursquare";
-import { getDeviceUuid } from "./services/security";
+import { getDeviceUuid, moderateTextWithGemini } from "./services/security";
 import { parseBBCode } from "./services/bbcode";
+
+const SPAM_ROASTS = [
+  "You sure you want to post that, fam?",
+  "This ain't it, chief. The server admin caught you lacking.",
+  "Bestie, the validation check failed. Let’s try that again.",
+  "Cooked by the system daemon. Post discarded.",
+  "Who hurt you? Keep the bad vibes off the local node."
+];
+
+const DOXXING_ROASTS = [
+  "Bro tried to sneak a social handle in. We don’t do that here.",
+  "Unc, no phone numbers or real names allowed. Keep it anonymous.",
+  "Gatekeeping is a feature, not a bug. Remove the external links.",
+  "Not the @ link... Secure portal validation failed."
+];
 
 export default function App() {
   // Device & Auth State
@@ -45,12 +60,8 @@ export default function App() {
   const [navigationScreen, setNavigationScreen] = useState("home");
   const [selectedCity, setSelectedCity] = useState("");
 
-  // Window Visibility States
-  const [showInbox, setShowInbox] = useState(false);
-  const [showWizard, setShowWizard] = useState(false);
-  const [showAuth, setShowAuth] = useState(false);
+  // Active Data States
   const [showProofDialog, setShowProofDialog] = useState(null); // stores the post object being claimed
-  const [showAbout, setShowAbout] = useState(false);
   const [selectedProfileUser, setSelectedProfileUser] = useState(null);
 
   // Interceptor State
@@ -60,6 +71,7 @@ export default function App() {
   // Connection throttle & lockout states
   const [pendingClaims, setPendingClaims] = useState([]);
   const [showCertaintyModal, setShowCertaintyModal] = useState(null);
+  const [acceptedConnections, setAcceptedConnections] = useState([]);
 
   // Safety / strike warning states
   const [hasShownStrike2, setHasShownStrike2] = useState(false);
@@ -76,9 +88,7 @@ export default function App() {
   const [coolNewPeople, setCoolNewPeople] = useState([]);
   const [allPostsCount, setAllPostsCount] = useState(0);
   const [activeBuddiesCount, setActiveBuddiesCount] = useState(0);
-
-
-
+  const [favoriteFeedPosts, setFavoriteFeedPosts] = useState([]);
 
   // 1. App Startup: Load Device UUID, sign in anonymously, and fetch venues
   useEffect(() => {
@@ -177,6 +187,31 @@ export default function App() {
     return () => unsub();
   }, [currentUser]);
 
+  // Subscribe to accepted connections for the Friend Space
+  useEffect(() => {
+    if (!currentUser || currentUser.isAnonymous) {
+      setAcceptedConnections([]);
+      return;
+    }
+    const unsub = dbOnSnapshot("connections", [], (snapshot) => {
+      const accepted = [];
+      snapshot.docs.forEach(doc => {
+        const d = doc.data();
+        if (
+          d.status === "accepted" &&
+          (d.senderId === currentUser.uid || d.receiverId === currentUser.uid)
+        ) {
+          const friendId = d.senderId === currentUser.uid ? d.receiverId : d.senderId;
+          if (!accepted.find(a => a.userId === friendId)) {
+            accepted.push({ userId: friendId, connectionId: doc.id, ...d });
+          }
+        }
+      });
+      setAcceptedConnections(accepted);
+    });
+    return () => unsub();
+  }, [currentUser]);
+
   // Detect /sysop developer backdoor path
   useEffect(() => {
     if (window.location.pathname === "/sysop") {
@@ -250,6 +285,27 @@ export default function App() {
     };
   }, []);
 
+  // Favorites feed: subscribe to all posts and filter by the logged-in user's favorited bars
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setFavoriteFeedPosts([]);
+      return;
+    }
+    const favoritedIds = userDoc?.favorited_bars || [];
+    const unsub = dbOnSnapshot("posts", [], (snapshot) => {
+      const posts = [];
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        if (favoritedIds.includes(data.venueId) && data.status !== "suppressed") {
+          posts.push({ id: doc.id, ...data });
+        }
+      });
+      posts.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      setFavoriteFeedPosts(posts);
+    });
+    return () => unsub();
+  }, [isLoggedIn, userDoc?.favorited_bars]);
+
 
 
   // 3. Subscribe to Posts for the selected Venue
@@ -287,7 +343,7 @@ export default function App() {
     if (!currentUser || currentUser.isAnonymous) {
       // User is guest/anonymous, launch Auth Wall
       setAuthActionCallback(() => action);
-      setShowAuth(true);
+      setNavigationScreen("login");
     } else {
       // User is already logged in, run action directly
       action();
@@ -295,16 +351,24 @@ export default function App() {
   };
 
   const handleAuthSuccess = () => {
-    setShowAuth(false);
     if (authActionCallback) {
       authActionCallback(); // Resume action
       setAuthActionCallback(null);
+    } else {
+      setNavigationScreen("home");
     }
   };
 
   // Post wizard submit handler
   const handleWizardSubmit = async (postData) => {
     try {
+      const moderation = await moderateTextWithGemini(postData.text || "", "post");
+      if (!moderation.approved) {
+        const roasts = moderation.category === "doxxing" ? DOXXING_ROASTS : SPAM_ROASTS;
+        const randomRoast = roasts[Math.floor(Math.random() * roasts.length)];
+        throw new Error(randomRoast);
+      }
+
       await dbAddDoc("posts", {
         ...postData,
         userId: currentUser.uid
@@ -319,14 +383,14 @@ export default function App() {
         emoji_avatar: postData.emoji_avatar
       }, true);
 
-      setShowWizard(false);
-      
       // Auto-navigate to the venue's feed
       const matchedVenue = venues.find(v => v.fsq_id === postData.venueId);
       if (matchedVenue) {
         setSelectedVenue(matchedVenue);
         setSelectedCity(matchedVenue.city);
         setNavigationScreen("feed");
+      } else {
+        setNavigationScreen("home");
       }
     } catch (err) {
       console.error("Error creating post:", err);
@@ -402,6 +466,7 @@ export default function App() {
 
   const handleOpenMyProfile = async () => {
     if (!currentUser) return;
+    setNavigationScreen("profile");
     try {
       const userSnap = await dbGetDoc("users", currentUser.uid);
       if (userSnap.exists()) {
@@ -413,7 +478,9 @@ export default function App() {
           bio: userData.bio || "Welcome to my profile!",
           profileTheme: userData.profileTheme || "classic",
           emoji_avatar: userData.emoji_avatar || "👥🥃💖",
-          spotify_track_uri: userData.spotify_track_uri || "spotify:track:4PTG3Z6ehGkBF3zI7YSp6g"
+          spotify_track_uri: userData.spotify_track_uri || "spotify:track:4PTG3Z6ehGkBF3zI7YSp6g",
+          favorited_bars: userData.favorited_bars || [],
+          headline: userData.headline || "Everyone's favorite dial-up partner"
         });
       } else {
         setSelectedProfileUser({
@@ -423,15 +490,18 @@ export default function App() {
           bio: "Welcome to my profile!",
           profileTheme: "classic",
           emoji_avatar: "👥🥃💖",
-          spotify_track_uri: "spotify:track:4PTG3Z6ehGkBF3zI7YSp6g"
+          spotify_track_uri: "spotify:track:4PTG3Z6ehGkBF3zI7YSp6g",
+          favorited_bars: [],
+          headline: "Everyone's favorite dial-up partner"
         });
       }
     } catch (err) {
       console.error("Error opening my profile:", err);
     }
   };
-
+ 
   const handleOpenProfile = async (userId, fallbackData) => {
+    setNavigationScreen("profile");
     try {
       const userSnap = await dbGetDoc("users", userId);
       if (userSnap.exists()) {
@@ -443,7 +513,9 @@ export default function App() {
           bio: userData.bio || fallbackData.bio || "Just browsing the local spots.",
           profileTheme: userData.profileTheme || fallbackData.profileTheme || "classic",
           emoji_avatar: userData.emoji_avatar || fallbackData.emoji_avatar || "👥🥃💖",
-          spotify_track_uri: userData.spotify_track_uri || fallbackData.spotify_track_uri || "spotify:track:4PTG3Z6ehGkBF3zI7YSp6g"
+          spotify_track_uri: userData.spotify_track_uri || fallbackData.spotify_track_uri || "spotify:track:4PTG3Z6ehGkBF3zI7YSp6g",
+          favorited_bars: userData.favorited_bars || [],
+          headline: userData.headline || fallbackData.headline || "Everyone's favorite dial-up partner"
         });
       } else {
         setSelectedProfileUser({
@@ -453,7 +525,9 @@ export default function App() {
           bio: fallbackData.bio || "Just browsing the local spots.",
           profileTheme: fallbackData.profileTheme || fallbackData.profileTheme || "classic",
           emoji_avatar: fallbackData.emoji_avatar || "👥🥃💖",
-          spotify_track_uri: fallbackData.spotify_track_uri || "spotify:track:4PTG3Z6ehGkBF3zI7YSp6g"
+          spotify_track_uri: fallbackData.spotify_track_uri || "spotify:track:4PTG3Z6ehGkBF3zI7YSp6g",
+          favorited_bars: [],
+          headline: fallbackData.headline || "Everyone's favorite dial-up partner"
         });
       }
     } catch (err) {
@@ -465,7 +539,9 @@ export default function App() {
         bio: fallbackData.bio || "Just browsing the local spots.",
         profileTheme: fallbackData.profileTheme || fallbackData.profileTheme || "classic",
         emoji_avatar: fallbackData.emoji_avatar || "👥🥃💖",
-        spotify_track_uri: fallbackData.spotify_track_uri || "spotify:track:4PTG3Z6ehGkBF3zI7YSp6g"
+        spotify_track_uri: fallbackData.spotify_track_uri || "spotify:track:4PTG3Z6ehGkBF3zI7YSp6g",
+        favorited_bars: [],
+        headline: fallbackData.headline || "Everyone's favorite dial-up partner"
       });
     }
   };
@@ -490,9 +566,39 @@ export default function App() {
     }
   };
 
+  const handleToggleFavorite = async (venue) => {
+    if (!currentUser || currentUser.isAnonymous) {
+      alert("Please log in to add venues to favorites.");
+      return;
+    }
+    try {
+      const currentFavorites = userDoc?.favorited_bars || [];
+      let updatedFavorites;
+      if (currentFavorites.includes(venue.fsq_id)) {
+        updatedFavorites = currentFavorites.filter(id => id !== venue.fsq_id);
+      } else {
+        updatedFavorites = [...currentFavorites, venue.fsq_id];
+      }
+      await dbSetDoc("users", currentUser.uid, {
+        favorited_bars: updatedFavorites
+      }, true);
+      alert(currentFavorites.includes(venue.fsq_id) ? "Removed from favorites." : "Added to favorites!");
+    } catch (err) {
+      console.error("Error toggling favorite:", err);
+      alert("Failed to update favorites.");
+    }
+  };
+
   // Claim post ("That was me!") proof submit handler
   const handleProofSubmit = async (proofText) => {
     try {
+      const moderation = await moderateTextWithGemini(proofText, "proof");
+      if (!moderation.approved) {
+        const roasts = moderation.category === "doxxing" ? DOXXING_ROASTS : SPAM_ROASTS;
+        const randomRoast = roasts[Math.floor(Math.random() * roasts.length)];
+        throw new Error(randomRoast);
+      }
+
       await dbAddDoc("connections", {
         postId: showProofDialog.id,
         postText: showProofDialog.text,
@@ -503,9 +609,11 @@ export default function App() {
         status: "pending"
       });
       setShowProofDialog(null);
+      setNavigationScreen(selectedVenue ? "feed" : "home");
       alert("Verification sent. Poster will review details.");
     } catch (err) {
       console.error("Error submitting proof:", err);
+      setModerationError(err.message || String(err));
     }
   };
 
@@ -717,30 +825,60 @@ export default function App() {
         <div className="myspace-nav-links-row">
           <span 
             className={`myspace-nav-link ${navigationScreen === "home" ? "active" : ""}`} 
-            onClick={() => setNavigationScreen("home")}
+            onClick={() => {
+              setNavigationScreen("home");
+              setSelectedProfileUser(null);
+            }}
           >
             Home
           </span>
           <span 
             className={`myspace-nav-link ${["city", "bar", "feed"].includes(navigationScreen) ? "active" : ""}`} 
-            onClick={() => setNavigationScreen("city")}
+            onClick={() => {
+              setNavigationScreen("city");
+              setSelectedProfileUser(null);
+            }}
           >
-            Browse Locations
+            Find
           </span>
           {isLoggedIn ? (
             <>
               <span 
-                className={`myspace-nav-link ${selectedProfileUser?.userId === currentUser?.uid ? "active" : ""}`} 
+                className={`myspace-nav-link ${navigationScreen === "profile" && selectedProfileUser?.userId === currentUser?.uid ? "active" : ""}`} 
                 onClick={handleOpenMyProfile}
               >
                 Profile
               </span>
-              <span className="myspace-nav-link" onClick={() => setShowInbox(true)}>Mail</span>
-              <span className="myspace-nav-link" onClick={() => setShowWizard(true)}>Post</span>
+              <span 
+                className={`myspace-nav-link ${["mail", "chat"].includes(navigationScreen) ? "active" : ""}`} 
+                onClick={() => {
+                  setNavigationScreen("mail");
+                  setSelectedProfileUser(null);
+                }}
+              >
+                Mail
+              </span>
+              <span 
+                className={`myspace-nav-link ${navigationScreen === "post" ? "active" : ""}`} 
+                onClick={() => runWithAuthenticationCheck(() => {
+                  setNavigationScreen("post");
+                  setSelectedProfileUser(null);
+                })}
+              >
+                Post
+              </span>
               <span className="myspace-nav-link" onClick={handleLogout}>Logout</span>
             </>
           ) : (
-            <span className="myspace-nav-link" onClick={() => setShowAuth(true)}>Login</span>
+            <span 
+              className={`myspace-nav-link ${navigationScreen === "login" ? "active" : ""}`} 
+              onClick={() => {
+                setNavigationScreen("login");
+                setSelectedProfileUser(null);
+              }}
+            >
+              Login
+            </span>
           )}
         </div>
       </header>
@@ -750,7 +888,7 @@ export default function App() {
         
         {/* HOMEPAGE SCREEN */}
         {navigationScreen === "home" && (
-          <div style={{ maxWidth: "450px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "20px", width: "100%" }}>
+          <div style={{ maxWidth: "450px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "16px", width: "100%" }}>
             <div className="myspace-welcome-box">
               <div className="myspace-welcome-title">Welcome to asl!</div>
               <div className="myspace-welcome-text" style={{ marginBottom: "15px", lineHeight: "1.4" }}>
@@ -765,70 +903,137 @@ export default function App() {
               </button>
             </div>
 
-            <div className="myspace-orange-box">
-              <div className="section-header-orange" style={{ margin: 0 }}>Cool New People</div>
-              <div style={{ display: "flex", justifyContent: "space-around", padding: "15px", gap: "10px" }}>
-                {coolNewPeople.length === 0 ? (
-                  <div 
-                    style={{ textAlign: "center", fontSize: "14px", cursor: "pointer", width: "100%" }}
-                    onClick={() => handleOpenProfile("tom", {
-                      username: "Tom",
-                      mood: "Friendly 🙂",
-                      bio: "Co-founder of asl. Let me know if you have any questions!",
-                      profileTheme: "classic",
-                      emoji_avatar: "👥🥃💖"
-                    })}
-                  >
-                    <div style={{ fontSize: "36px", marginBottom: "8px" }}>👥🥃💖</div>
-                    <div style={{ fontWeight: "bold", textDecoration: "underline", color: "#003399" }}>Tom</div>
-                    <div style={{ color: "#666", fontStyle: "italic" }}>"Your first friend."</div>
-                  </div>
-                ) : (
-                  coolNewPeople.map(person => (
-                    <div 
-                      key={person.uid}
-                      style={{ textAlign: "center", fontSize: "13px", cursor: "pointer", flex: 1, maxWidth: "120px" }}
-                      onClick={() => handleOpenProfile(person.uid, person)}
-                    >
-                      <div style={{ fontSize: "36px", marginBottom: "5px", display: "flex", justifyContent: "center" }}>
-                        {person.emoji_avatar || "👥"}
-                      </div>
-                      <div style={{ fontWeight: "bold", textDecoration: "underline", color: "#003399", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {person.username}
-                      </div>
-                      <div style={{ color: "#666", fontSize: "11px", fontStyle: "italic", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        "{person.mood || "Chillin'"}"
-                      </div>
+            {isLoggedIn ? (
+              /* LOGGED-IN: Favorites Feed */
+              <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
+                <div className="section-header-orange" style={{ margin: 0, backgroundColor: "#003399", color: "#fff", borderLeft: "4px solid #ff007f", padding: "6px 10px", fontWeight: "bold", fontSize: "13px" }}>
+                  📡 Bar Radar
+                </div>
+                <div style={{ border: "1px solid #6699cc", borderTop: "none", backgroundColor: "#fff" }}>
+                  {(userDoc?.favorited_bars || []).length === 0 ? (
+                    <div style={{ padding: "20px", textAlign: "center", fontSize: "13px", color: "#666", fontStyle: "italic", lineHeight: "1.5" }}>
+                      <div style={{ fontSize: "28px", marginBottom: "8px" }}>📡</div>
+                      No favorited bars yet. Browse locations and ⭐ favorite a bar to see its posts here.
                     </div>
-                  ))
-                )}
+                  ) : favoriteFeedPosts.length === 0 ? (
+                    <div style={{ padding: "20px", textAlign: "center", fontSize: "13px", color: "#666", fontStyle: "italic", lineHeight: "1.5" }}>
+                      <div style={{ fontSize: "28px", marginBottom: "8px" }}>📭</div>
+                      No posts yet from your favorited bars. Check back soon.
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column" }}>
+                      {favoriteFeedPosts.map((post, idx) => {
+                        const timeAgo = (() => {
+                          const diff = Date.now() - (post.timestamp || 0);
+                          const mins = Math.floor(diff / 60000);
+                          const hrs = Math.floor(diff / 3600000);
+                          const days = Math.floor(diff / 86400000);
+                          if (mins < 2) return "just now";
+                          if (mins < 60) return `${mins}m ago`;
+                          if (hrs < 24) return `${hrs}h ago`;
+                          return `${days}d ago`;
+                        })();
+                        return (
+                          <div 
+                            key={post.id}
+                            style={{
+                              borderBottom: idx < favoriteFeedPosts.length - 1 ? "1px solid #e0e8f5" : "none",
+                              padding: "10px 12px",
+                              cursor: "pointer"
+                            }}
+                            onClick={() => {
+                              const venue = venues.find(v => v.fsq_id === post.venueId);
+                              if (venue) handleSelectVenue(venue);
+                            }}
+                          >
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px", gap: "8px" }}>
+                              <span style={{ fontWeight: "bold", fontSize: "11px", color: "#003399", textDecoration: "underline", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                📍 {post.venueName}
+                              </span>
+                              <span style={{ fontSize: "10px", color: "#999", whiteSpace: "nowrap", flexShrink: 0 }}>{timeAgo}</span>
+                            </div>
+                            <div style={{ fontSize: "12px", color: "#333", lineHeight: "1.4", marginBottom: "4px" }}>
+                              {post.text}
+                            </div>
+                            <div style={{ fontSize: "10px", color: "#888" }}>
+                              🕐 {post.date} · {post.timeRange}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            ) : (
+              /* GUEST: Cool New People + asl Status */
+              <>
+                <div className="myspace-orange-box">
+                  <div className="section-header-orange" style={{ margin: 0 }}>Cool New People</div>
+                  <div style={{ display: "flex", justifyContent: "space-around", padding: "15px", gap: "10px" }}>
+                    {coolNewPeople.length === 0 ? (
+                      <div 
+                        style={{ textAlign: "center", fontSize: "14px", cursor: "pointer", width: "100%" }}
+                        onClick={() => handleOpenProfile("tom", {
+                          username: "Tom",
+                          mood: "Friendly 🙂",
+                          bio: "Co-founder of asl. Let me know if you have any questions!",
+                          profileTheme: "classic",
+                          emoji_avatar: "👥🥃💖"
+                        })}
+                      >
+                        <div style={{ fontSize: "24px", marginBottom: "8px" }}>👥🥃💖</div>
+                        <div style={{ fontWeight: "bold", textDecoration: "underline", color: "#003399" }}>Tom</div>
+                        <div style={{ color: "#666", fontStyle: "italic" }}>"Your first friend."</div>
+                      </div>
+                    ) : (
+                      coolNewPeople.map(person => (
+                        <div 
+                          key={person.uid}
+                          style={{ textAlign: "center", fontSize: "13px", cursor: "pointer", flex: 1, maxWidth: "120px" }}
+                          onClick={() => handleOpenProfile(person.uid, person)}
+                        >
+                          <div style={{ fontSize: "24px", marginBottom: "5px", display: "flex", justifyContent: "center" }}>
+                            {person.emoji_avatar || "👥"}
+                          </div>
+                          <div style={{ fontWeight: "bold", textDecoration: "underline", color: "#003399", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {person.username}
+                          </div>
+                          <div style={{ color: "#666", fontSize: "11px", fontStyle: "italic", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            "{person.mood || "Chillin'"}"
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
 
-            {/* asl Status Dashboard */}
-            <div className="myspace-orange-box" style={{ backgroundColor: "#f2f6ff", border: "1px solid #6699ff", borderRadius: "4px", padding: 0 }}>
-              <div className="section-header-orange" style={{ margin: 0, backgroundColor: "#6699ff", color: "#fff", borderLeft: "4px solid #003399" }}>
-                asl Status
-              </div>
-              <div style={{ padding: "15px", fontSize: "14px", lineHeight: "1.5" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                  <span>📬 Missed Connections:</span>
-                  <strong>{allPostsCount} encounters</strong>
+                {/* asl Status Dashboard */}
+                <div className="myspace-orange-box" style={{ backgroundColor: "#f2f6ff", border: "1px solid #6699ff", borderRadius: "4px", padding: 0 }}>
+                  <div className="section-header-orange" style={{ margin: 0, backgroundColor: "#6699ff", color: "#fff", borderLeft: "4px solid #003399" }}>
+                    asl Status
+                  </div>
+                  <div style={{ padding: "15px", fontSize: "14px", lineHeight: "1.5" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                      <span>📬 Missed Connections:</span>
+                      <strong>{allPostsCount} encounters</strong>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                      <span>📡 Active Buddies Online:</span>
+                      <strong>{activeBuddiesCount} users</strong>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                      <span>🔒 Safe-Area Guard:</span>
+                      <span style={{ color: "green", fontWeight: "bold" }}>● Enabled</span>
+                    </div>
+                    <hr style={{ border: "none", borderTop: "1px solid #ccc", margin: "12px 0" }} />
+                    <div style={{ fontSize: "12px", color: "#666", textAlign: "center", fontStyle: "italic" }}>
+                      "Connecting souls across the Phoenix area via secure, image-free dial-up portals."
+                    </div>
+                  </div>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                  <span>📡 Active Buddies Online:</span>
-                  <strong>{activeBuddiesCount} users</strong>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                  <span>🔒 Safe-Area Guard:</span>
-                  <span style={{ color: "green", fontWeight: "bold" }}>● Enabled</span>
-                </div>
-                <hr style={{ border: "none", borderTop: "1px solid #ccc", margin: "12px 0" }} />
-                <div style={{ fontSize: "12px", color: "#666", textAlign: "center", fontStyle: "italic" }}>
-                  "Connecting souls across the Phoenix area via secure, image-free dial-up portals."
-                </div>
-              </div>
-            </div>
+              </>
+            )}
 
           </div>
         )}
@@ -887,79 +1092,94 @@ export default function App() {
 
         {/* BAR SELECTION SCREEN */}
         {navigationScreen === "bar" && (
-          <div className="beveled-box" style={{ padding: "15px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #6699ff", paddingBottom: "8px", marginBottom: "15px" }}>
-              <h2 style={{ color: "#003399", margin: 0 }}>📍 {selectedCity} Metropage Directory</h2>
-              <button onClick={() => setNavigationScreen("city")}>Change City</button>
-            </div>
-            
-            <div style={{ backgroundColor: "#fff", border: "1px solid #ccc", minHeight: "300px", marginTop: "10px" }}>
-              {(() => {
-                const filteredVenues = venues.filter(v => 
-                  (v.city || "").toLowerCase() === selectedCity.toLowerCase()
-                );
-
-                if (filteredVenues.length === 0) {
-                  return (
-                    <div style={{ padding: "40px 10px", textAlign: "center", color: "#808080", fontStyle: "italic", fontSize: "13px" }}>
-                      No matching venues found.
-                    </div>
+          <div style={{ maxWidth: "500px", margin: "0 auto", width: "100%" }}>
+            <div className="myspace-orange-box" style={{ backgroundColor: "#f5f5f5", border: "1px solid #ff99cc", borderRadius: "4px", padding: 0 }}>
+              <div className="section-header-orange" style={{ margin: 0, backgroundColor: "#003399", color: "#fff", borderLeft: "4px solid #ff007f", fontWeight: "bold", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span>📍 {selectedCity} Metropage Directory</span>
+                <button 
+                  onClick={() => setNavigationScreen("city")}
+                  className="auth-btn-primary"
+                  style={{ fontSize: "10px", padding: "4px 8px", minHeight: "24px", minWidth: "80px", cursor: "pointer", marginLeft: "10px" }}
+                >
+                  Change City
+                </button>
+              </div>
+              
+              <div style={{ padding: "12px" }}>
+                {(() => {
+                  const filteredVenues = venues.filter(v => 
+                    (v.city || "").toLowerCase() === selectedCity.toLowerCase()
                   );
-                }
 
-                const zones = {};
-                filteredVenues.forEach(v => {
-                  const zone = v.zone || "Downtown";
-                  if (!zones[zone]) zones[zone] = [];
-                  zones[zone].push(v);
-                });
+                  if (filteredVenues.length === 0) {
+                    return (
+                      <div style={{ padding: "40px 10px", textAlign: "center", color: "#808080", fontStyle: "italic", fontSize: "13px" }}>
+                        No matching venues found.
+                      </div>
+                    );
+                  }
 
-                return Object.keys(zones).map(zone => (
-                  <div key={zone} style={{ marginBottom: "12px" }}>
-                    <div style={{ fontWeight: "bold", backgroundColor: "#f2f2f2", padding: "6px 8px", fontSize: "14px", borderBottom: "1px solid #ddd", color: "#003399" }}>
-                      📁 {zone} ({zones[zone].length})
+                  const zones = {};
+                  filteredVenues.forEach(v => {
+                    const zone = v.zone || "Downtown";
+                    if (!zones[zone]) zones[zone] = [];
+                    zones[zone].push(v);
+                  });
+
+                  return Object.keys(zones).map(zone => (
+                    <div key={zone} style={{ marginBottom: "15px" }}>
+                      <div style={{ fontWeight: "bold", backgroundColor: "#ffccd8", padding: "6px 10px", fontSize: "13px", borderBottom: "1px solid #ff99bb", color: "#99004d", display: "flex", alignItems: "center", gap: "6px", borderRadius: "2px" }}>
+                        <span>📁</span>
+                        <span>{zone} ({zones[zone].length})</span>
+                      </div>
+                      <ul style={{ listStyle: "none", padding: 0, margin: "6px 0 0 0", display: "flex", flexDirection: "column", gap: "6px" }}>
+                        {zones[zone].map(venue => (
+                          <li 
+                            key={venue.fsq_id}
+                            onClick={() => handleSelectVenue(venue)}
+                            className="city-portal-card"
+                            style={{
+                              padding: "10px 12px",
+                              cursor: "pointer",
+                              display: "flex",
+                              flexDirection: "row",
+                              alignItems: "center",
+                              gap: "12px",
+                              backgroundColor: "#ffffff",
+                              border: "1px solid #ffe6f2"
+                            }}
+                          >
+                            <div className="city-portal-icon" style={{ fontSize: "18px", width: "32px", height: "32px" }}>📍</div>
+                            <div style={{ flex: 1 }}>
+                              <div className="city-portal-title" style={{ fontSize: "14px" }}>
+                                {venue.name}
+                              </div>
+                              <div className="city-portal-desc" style={{ fontSize: "11px", margin: 0 }}>
+                                {venue.formatted_address}
+                              </div>
+                            </div>
+                            <div className="city-portal-arrow">➡️</div>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                    <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                      {zones[zone].map(venue => (
-                        <li 
-                          key={venue.fsq_id}
-                          onClick={() => handleSelectVenue(venue)}
-                          style={{
-                            padding: "10px 12px",
-                            borderBottom: "1px solid #dfdfdf",
-                            cursor: "pointer",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "2px"
-                          }}
-                        >
-                          <div style={{ fontSize: "15px", color: "#003399", fontWeight: "bold", textDecoration: "underline" }}>
-                            📍 {venue.name}
-                          </div>
-                          <div style={{ fontSize: "11px", color: "#666" }}>
-                            {venue.formatted_address}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ));
-              })()}
+                  ));
+                })()}
+              </div>
             </div>
           </div>
         )}
+
 
         {/* FEED / VENUE PROFILE PAGE */}
         {navigationScreen === "feed" && selectedVenue && (
           <div className="myspace-columns">
             {/* Left Profile Column */}
             <div className="myspace-left-col">
-              <h2 style={{ margin: "0 0 5px 0", color: "#000" }}>{selectedVenue.name}</h2>
-              
-              <div className="profile-photo-box">
-                {/* Pixel tavern/party icon style */}
-                <span className="profile-avatar-emoji">🍹</span>
-              </div>
+              <h2 style={{ margin: "0 0 12px 0", color: "#000", fontSize: "28px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                <span>{selectedVenue.name}</span>
+                <span style={{ fontSize: "26px" }}>🍹</span>
+              </h2>
 
               <div className="profile-details-table">
                 <p><strong>Region:</strong> {selectedCity}</p>
@@ -970,22 +1190,23 @@ export default function App() {
 
               {/* Music Player */}
               <MySpaceMusicPlayer spotifyTrackUri={selectedVenue.spotify_track_uri || "spotify:track:4PTG3Z6ehGkBF3zI7YSp6g"} />
-
               {/* Contact Links Box */}
               <div className="contact-box">
                 <div className="contact-box-header">Contacting {selectedVenue.name}</div>
-                <div className="contact-box-grid">
-                  <div className="contact-action" onClick={() => runWithAuthenticationCheck(() => setShowWizard(true))}>
-                    📝 Leave Comment
+                <div style={{ display: "flex", gap: "6px", padding: "6px" }}>
+                  <div 
+                    className="contact-action" 
+                    style={{ flex: 1, minHeight: "36px", display: "flex", alignItems: "center", justifyContent: "center" }}
+                    onClick={() => runWithAuthenticationCheck(() => setNavigationScreen("post"))}
+                  >
+                    📝 Post
                   </div>
-                  <div className="contact-action" onClick={() => runWithAuthenticationCheck(() => { setShowInbox(true); })}>
-                    📬 Check Inbox
-                  </div>
-                  <div className="contact-action" onClick={() => alert("Added to Favorites!")}>
-                    ⭐ Add to Favorites
-                  </div>
-                  <div className="contact-action" onClick={() => setNavigationScreen("bar")}>
-                    🔍 Change Location
+                  <div 
+                    className="contact-action" 
+                    style={{ flex: 1, minHeight: "36px", display: "flex", alignItems: "center", justifyContent: "center" }}
+                    onClick={() => runWithAuthenticationCheck(() => handleToggleFavorite(selectedVenue))}
+                  >
+                    ⭐ {userDoc?.favorited_bars?.includes(selectedVenue.fsq_id) ? "Favorited" : "Add to Favorites"}
                   </div>
                 </div>
               </div>
@@ -1145,93 +1366,97 @@ export default function App() {
           </div>
         )}
 
+        {/* PROFILE SCREEN */}
+        {navigationScreen === "profile" && selectedProfileUser && (
+          <MySpaceProfileDialog
+            key={selectedProfileUser.userId}
+            userId={selectedProfileUser.userId}
+            username={selectedProfileUser.username}
+            mood={selectedProfileUser.mood}
+            bio={selectedProfileUser.bio}
+            profileTheme={selectedProfileUser.profileTheme}
+            emoji_avatar={selectedProfileUser.emoji_avatar}
+            headline={selectedProfileUser.headline}
+            onClose={() => {
+              setSelectedProfileUser(null);
+              setNavigationScreen("home");
+            }}
+            onOpenChat={handleOpenChat}
+            currentUserId={currentUser?.uid}
+            onSaveProfile={handleSaveProfile}
+            favorited_bars={
+              selectedProfileUser.userId === currentUser?.uid 
+                ? (userDoc?.favorited_bars || []) 
+                : (selectedProfileUser.favorited_bars || [])
+            }
+            venues={venues}
+            acceptedConnections={acceptedConnections}
+            onOpenProfile={handleOpenProfile}
+            onSelectVenue={(venueId) => {
+              const matchedVenue = venues.find(v => v.fsq_id === venueId);
+              if (matchedVenue) {
+                setSelectedVenue(matchedVenue);
+                setSelectedCity(matchedVenue.city);
+                setNavigationScreen("feed");
+                setSelectedProfileUser(null);
+              }
+            }}
+          />
+        )}
+
+        {/* MAIL SCREEN */}
+        {navigationScreen === "mail" && (
+          <OutlookInbox 
+            currentUser={currentUser}
+            onClose={() => setNavigationScreen("home")}
+            onOpenChat={handleOpenChat}
+          />
+        )}
+
+        {/* POST SCREEN */}
+        {navigationScreen === "post" && (
+          <Wizard 
+            onClose={() => setNavigationScreen(selectedVenue ? "feed" : "home")}
+            onSubmit={handleWizardSubmit}
+            preselectedVenue={selectedVenue}
+          />
+        )}
+
+        {/* LOGIN SCREEN */}
+        {navigationScreen === "login" && (
+          <AuthDialog 
+            onClose={() => setNavigationScreen("home")} 
+            onSuccess={handleAuthSuccess}
+          />
+        )}
+
+        {/* CLAIM PROOF SCREEN */}
+        {navigationScreen === "proof" && showProofDialog && (
+          <ProofDialog 
+            post={showProofDialog}
+            onClose={() => {
+              setShowProofDialog(null);
+              setNavigationScreen(selectedVenue ? "feed" : "home");
+            }}
+            onSubmit={handleProofSubmit}
+          />
+        )}
+
+        {/* AIM CHAT SCREEN */}
+        {navigationScreen === "chat" && activeChatId && (
+          <AIMChat 
+            chatId={activeChatId}
+            connection={activeChatConnection}
+            currentUser={currentUser}
+            onClose={() => {
+              setActiveChatId(null);
+              setActiveChatConnection(null);
+              setNavigationScreen("mail");
+            }}
+          />
+        )}
+
       </div>
-
-      {/* Auth Dialog Overlay */}
-      {showAuth && (
-        <div className="modal-overlay">
-          <div className="modal-container">
-            <AuthDialog 
-              onClose={() => setShowAuth(false)} 
-              onSuccess={handleAuthSuccess}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Post wizard Dialog Overlay */}
-      {showWizard && (
-        <div className="modal-overlay">
-          <div className="modal-container">
-            <Wizard 
-              onClose={() => setShowWizard(false)}
-              onSubmit={handleWizardSubmit}
-              preselectedVenue={navigationScreen === "feed" ? selectedVenue : null}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Blind proof verify Dialog Overlay */}
-      {showProofDialog && (
-        <div className="modal-overlay">
-          <div className="modal-container">
-            <ProofDialog 
-              post={showProofDialog}
-              onClose={() => setShowProofDialog(null)}
-              onSubmit={handleProofSubmit}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Outlook Inbox Window */}
-      {showInbox && (
-        <div className="modal-overlay">
-          <div className="modal-container" style={{ maxWidth: "800px" }}>
-            <OutlookInbox 
-              currentUser={currentUser}
-              onClose={() => setShowInbox(false)}
-              onOpenChat={handleOpenChat}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* AIM Chat Room Window */}
-      {activeChatId && (
-        <div className="modal-overlay">
-          <div className="modal-container" style={{ maxWidth: "450px" }}>
-            <AIMChat 
-              chatId={activeChatId}
-              connection={activeChatConnection}
-              currentUser={currentUser}
-              onClose={() => { setActiveChatId(null); setActiveChatConnection(null); }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* asl Profile Dialog Overlay */}
-      {selectedProfileUser && (
-        <div className="modal-overlay">
-          <div className="modal-container" style={{ maxWidth: "860px", height: "640px", maxHeight: "95vh" }}>
-            <MySpaceProfileDialog
-              key={selectedProfileUser.userId}
-              userId={selectedProfileUser.userId}
-              username={selectedProfileUser.username}
-              mood={selectedProfileUser.mood}
-              bio={selectedProfileUser.bio}
-              profileTheme={selectedProfileUser.profileTheme}
-              emoji_avatar={selectedProfileUser.emoji_avatar}
-              onClose={() => setSelectedProfileUser(null)}
-              onOpenChat={handleOpenChat}
-              currentUserId={currentUser?.uid}
-              onSaveProfile={handleSaveProfile}
-            />
-          </div>
-        </div>
-      )}
 
       {/* Absolute Certainty Checkpoint Modal */}
       {showCertaintyModal && (
@@ -1335,7 +1560,7 @@ export default function App() {
 
       <footer style={{
         textAlign: "center",
-        padding: "15px 10px",
+        padding: "12px 10px",
         fontSize: "11px",
         fontFamily: "Arial, sans-serif",
         color: "#888888",

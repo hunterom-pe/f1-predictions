@@ -75,6 +75,7 @@ class SimulatedStore {
             bio: "Co-founder of asl. Let me know if you have any questions!",
             profileTheme: "classic",
             emoji_avatar: "👥🥃💖",
+            favorited_bars: ["venue_cobra", "venue_gracies"],
             createdAt: Date.now() - 10 * 24 * 60 * 60 * 1000 // 10 days ago
           },
           "sysop_admin": {
@@ -84,6 +85,7 @@ class SimulatedStore {
             bio: "System Operator admin console.",
             profileTheme: "cyberpunk",
             emoji_avatar: "💾📟⚡",
+            favorited_bars: [],
             createdAt: Date.now() - 10 * 24 * 60 * 60 * 1000
           },
           "user_greenday": {
@@ -93,6 +95,7 @@ class SimulatedStore {
             bio: "Waiting for September to end.",
             profileTheme: "sunset",
             emoji_avatar: "🎸🥁🎤",
+            favorited_bars: ["venue_cobra", "venue_valley", "venue_yucca"],
             createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000
           },
           "user_emo": {
@@ -102,6 +105,7 @@ class SimulatedStore {
             bio: "She was a skater girl, she said see ya later girl.",
             profileTheme: "classic",
             emoji_avatar: "🛹💔💀",
+            favorited_bars: ["venue_caseys", "venue_yucca"],
             createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000
           },
           "user_hiphop": {
@@ -111,6 +115,7 @@ class SimulatedStore {
             bio: "99 problems but asl ain't one.",
             profileTheme: "sunset",
             emoji_avatar: "🎤🕶️💵",
+            favorited_bars: ["venue_gracies", "venue_bottled"],
             createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000
           },
           "user_coder": {
@@ -120,6 +125,7 @@ class SimulatedStore {
             bio: "Brutalist designs are the future.",
             profileTheme: "cyberpunk",
             emoji_avatar: "💻💾⌨️",
+            favorited_bars: ["venue_valley", "venue_linger"],
             createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000
           },
           "user_rave": {
@@ -129,6 +135,7 @@ class SimulatedStore {
             bio: "Catch me at the warehouse party tonight.",
             profileTheme: "cyberpunk",
             emoji_avatar: "🎧🎛️⚡",
+            favorited_bars: ["venue_sunbar", "venue_riot"],
             createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000
           },
           "user_retro": {
@@ -138,6 +145,7 @@ class SimulatedStore {
             bio: "Living in the wrong decade.",
             profileTheme: "classic",
             emoji_avatar: "✨🍭🛸",
+            favorited_bars: ["venue_cobra", "venue_linger", "venue_gracies"],
             createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000
           },
           "user_indie": {
@@ -147,6 +155,7 @@ class SimulatedStore {
             bio: "Vinyl records sound better. Period.",
             profileTheme: "sunset",
             emoji_avatar: "📻🍂☕",
+            favorited_bars: ["venue_valley", "venue_caseys"],
             createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000
           },
           "user_metal": {
@@ -156,6 +165,7 @@ class SimulatedStore {
             bio: "Metal head for life. Slayer rules.",
             profileTheme: "classic",
             emoji_avatar: "🤘🎸🔥",
+            favorited_bars: ["venue_yucca", "venue_cobra"],
             createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000
           },
           "user_gamer": {
@@ -165,6 +175,7 @@ class SimulatedStore {
             bio: "Galaga high score champion.",
             profileTheme: "cyberpunk",
             emoji_avatar: "🎮👾🏆",
+            favorited_bars: ["venue_cobra", "venue_sunbar"],
             createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000
           },
           "user_coffee": {
@@ -174,6 +185,7 @@ class SimulatedStore {
             bio: "Too much espresso, not enough time.",
             profileTheme: "classic",
             emoji_avatar: "☕🍩⏳",
+            favorited_bars: ["venue_linger", "venue_caseys"],
             createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000
           },
           "user_punk": {
@@ -183,6 +195,7 @@ class SimulatedStore {
             bio: "Support local zines and bands.",
             profileTheme: "sunset",
             emoji_avatar: "✊🎸🖤",
+            favorited_bars: ["venue_gracies", "venue_valley", "venue_yucca"],
             createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000
           },
           "user_star": {
@@ -192,6 +205,7 @@ class SimulatedStore {
             bio: "Staring at the stars from my rooftop.",
             profileTheme: "cyberpunk",
             emoji_avatar: "🌌🌠🚀",
+            favorited_bars: ["venue_riot", "venue_bottled"],
             createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000
           }
         },
@@ -207,7 +221,8 @@ class SimulatedStore {
             userId: "user_greenday",
             date: "May 20, 2026",
             timeRange: "10:00 PM - 11:30 PM",
-            timestamp: Date.now() - 172800000 // 2 days ago
+            timestamp: Date.now() - 172800000,
+            status: "active"
           },
           {
             id: "post2",
@@ -220,7 +235,8 @@ class SimulatedStore {
             userId: "user_emo",
             date: "May 21, 2026",
             timeRange: "9:00 PM - 10:30 PM",
-            timestamp: Date.now() - 86400000 // 1 day ago
+            timestamp: Date.now() - 86400000,
+            status: "active"
           },
           {
             id: "post3",
@@ -233,7 +249,134 @@ class SimulatedStore {
             userId: "user_coder",
             date: "May 22, 2026",
             timeRange: "11:30 PM - 1:00 AM",
-            timestamp: Date.now() - 3600000 // 1 hour ago
+            timestamp: Date.now() - 3600000,
+            status: "active"
+          },
+          {
+            id: "post4",
+            venueId: "venue_gracies",
+            venueName: "Gracies Tax Bar",
+            venueAddress: "711 N 7th Ave, Phoenix, AZ 85007",
+            venueCity: "Phoenix",
+            venueZone: "Downtown",
+            text: "You were at the bar alone, reading a paperback novel in the dim light. Red flannel shirt, round glasses. I bought you a drink but chickened out saying hi. I'm an idiot. Was that you?",
+            userId: "user_hiphop",
+            date: "May 22, 2026",
+            timeRange: "8:00 PM - 9:30 PM",
+            timestamp: Date.now() - 7200000,
+            status: "active"
+          },
+          {
+            id: "post5",
+            venueId: "venue_linger",
+            venueName: "Linger Longer Lounge",
+            venueAddress: "6522 N 16th St, Phoenix, AZ 85016",
+            venueCity: "Phoenix",
+            venueZone: "Downtown",
+            text: "You spilled your drink on my laptop bag and apologized like five times — it was adorable. You had short dark hair and a vintage NASA patch jacket. I should've asked your name.",
+            userId: "user_retro",
+            date: "May 22, 2026",
+            timeRange: "10:30 PM - midnight",
+            timestamp: Date.now() - 5400000,
+            status: "active"
+          },
+          {
+            id: "post6",
+            venueId: "venue_yucca",
+            venueName: "Yucca Tap Room",
+            venueAddress: "29 W Southern Ave, Tempe, AZ 85282",
+            venueCity: "Phoenix",
+            venueZone: "Tempe",
+            text: "You were in the back booth with a group of friends, laughing so loud the whole bar noticed. You caught me staring and just smiled. Plaid skirt, white cowboy boots. I left before I could say anything.",
+            userId: "user_metal",
+            date: "May 21, 2026",
+            timeRange: "11:00 PM - 1:00 AM",
+            timestamp: Date.now() - 108000000,
+            status: "active"
+          },
+          {
+            id: "post7",
+            venueId: "venue_sunbar",
+            venueName: "Sunbar Tempe",
+            venueAddress: "24 W 5th St, Tempe, AZ 85281",
+            venueCity: "Phoenix",
+            venueZone: "Tempe",
+            text: "You were DJing the early set and you played 808s & Heartbreak back to back. Tall, blue streak in your hair. After your set I wanted to ask you out but you disappeared. Please be on here.",
+            userId: "user_rave",
+            date: "May 20, 2026",
+            timeRange: "9:00 PM - 11:00 PM",
+            timestamp: Date.now() - 144000000,
+            status: "active"
+          },
+          {
+            id: "post8",
+            venueId: "venue_cobra",
+            venueName: "Cobra Arcade Bar",
+            venueAddress: "801 N 2nd St, Phoenix, AZ 85004",
+            venueCity: "Phoenix",
+            venueZone: "Downtown",
+            text: "You beat me twice at Street Fighter and just walked away like it was nothing. Grey hoodie, headphones around your neck. I have never felt so personally defeated. Rematch?",
+            userId: "user_gamer",
+            date: "May 23, 2026",
+            timeRange: "8:30 PM - 10:00 PM",
+            timestamp: Date.now() - 1800000,
+            status: "active"
+          },
+          {
+            id: "post9",
+            venueId: "venue_caseys",
+            venueName: "Casey Moore's Oyster House",
+            venueAddress: "850 S Ash Ave, Tempe, AZ 85281",
+            venueCity: "Phoenix",
+            venueZone: "Tempe",
+            text: "You were the one recommending oyster pairings to the couple next to me like a sommelier. Curly hair, yellow sundress. Every time our eyes met you looked away. So did I. Why are we like this.",
+            userId: "user_coffee",
+            date: "May 22, 2026",
+            timeRange: "7:00 PM - 9:00 PM",
+            timestamp: Date.now() - 43200000,
+            status: "active"
+          },
+          {
+            id: "post10",
+            venueId: "venue_valley",
+            venueName: "Valley Bar",
+            venueAddress: "130 N Central Ave, Phoenix, AZ 85004",
+            venueCity: "Phoenix",
+            venueZone: "Downtown",
+            text: "You were selling handmade zines at the merch table for a band I've never heard of. Shaved head, overalls, patch-covered tote bag. You gave me a free one and winked. I've re-read it four times.",
+            userId: "user_punk",
+            date: "May 22, 2026",
+            timeRange: "9:00 PM - 11:30 PM",
+            timestamp: Date.now() - 21600000,
+            status: "active"
+          },
+          {
+            id: "post11",
+            venueId: "venue_riot",
+            venueName: "Riot House",
+            venueAddress: "4425 N Saddlebag Trail, Scottsdale, AZ 85251",
+            venueCity: "Phoenix",
+            venueZone: "Old Town",
+            text: "You were on the rooftop deck staring at the sky and not talking to anyone. I sat next to you and we just watched the moon together for like 20 minutes without saying a word. It was kind of perfect. Who are you?",
+            userId: "user_star",
+            date: "May 21, 2026",
+            timeRange: "11:30 PM - 1:00 AM",
+            timestamp: Date.now() - 90000000,
+            status: "active"
+          },
+          {
+            id: "post12",
+            venueId: "venue_gracies",
+            venueName: "Gracies Tax Bar",
+            venueAddress: "711 N 7th Ave, Phoenix, AZ 85007",
+            venueCity: "Phoenix",
+            venueZone: "Downtown",
+            text: "You sat next to me at the bar and asked if you could borrow a pen. I don't carry pens. You laughed and said no one does anymore. We talked for an hour about nothing important. I never got your name. Tan jacket, silver rings.",
+            userId: "user_indie",
+            date: "May 23, 2026",
+            timeRange: "6:00 PM - 8:00 PM",
+            timestamp: Date.now() - 3000000,
+            status: "active"
           }
         ],
         connections: {},
@@ -243,25 +386,71 @@ class SimulatedStore {
         appeals: {}
       };
       localStorage.setItem("asl_db", JSON.stringify(initialDb));
+    } else {
+      // Merge missing mock user profiles in case the DB was already initialized
+      try {
+        const dbData = JSON.parse(localStorage.getItem("asl_db") || "{}");
+        if (!dbData.users) dbData.users = {};
+        
+        const mockUsersList = {
+          "sysop_admin": { uid: "sysop_admin", username: "SysOp", mood: "Monitoring 🖥️", bio: "System Operator.", profileTheme: "cyberpunk", emoji_avatar: "🖥️💾⚡", favorited_bars: [], createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000 },
+          "user_greenday": { uid: "user_greenday", username: "BillieJoe", mood: "Rockin' 🎸", bio: "Boulevard of broken dreams.", profileTheme: "classic", emoji_avatar: "🎸🥁😎", favorited_bars: ["venue_cobra", "venue_valley", "venue_yucca"], createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000 },
+          "user_emo": { uid: "user_emo", username: "Sk8rBoi", mood: "Melancholy 🌧️", bio: "Can I make it any more obvious?", profileTheme: "sunset", emoji_avatar: "🛹🛹🌧️", favorited_bars: ["venue_caseys", "venue_yucca"], createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000 },
+          "user_hiphop": { uid: "user_hiphop", username: "JayZFan", mood: "Chillin' 😎", bio: "99 problems.", profileTheme: "classic", emoji_avatar: "🎧🎤🔥", favorited_bars: ["venue_gracies", "venue_bottled"], createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000 },
+          "user_coder": { uid: "user_coder", username: "AdaLovelace", mood: "Excited ⚡", bio: "Coding since 1999.", profileTheme: "cyberpunk", emoji_avatar: "💻📠⚡", favorited_bars: ["venue_valley", "venue_linger"], createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000 },
+          "user_rave": { uid: "user_rave", username: "SpinMaster", mood: "Ready to Party 🍹", bio: "Warehouse rave.", profileTheme: "glitter", emoji_avatar: "🍹🎧✨", favorited_bars: ["venue_sunbar", "venue_riot"], createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000 },
+          "user_retro": { uid: "user_retro", username: "NeonVibes", mood: "Chillin' 😎", bio: "Synthwave loop.", profileTheme: "sunset", emoji_avatar: "💡🌴🌅", favorited_bars: ["venue_cobra", "venue_linger", "venue_gracies"], createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000 },
+          "user_indie": { uid: "user_indie", username: "VinylLover", mood: "Mellow 🎧", bio: "Vinyl collector.", profileTheme: "classic", emoji_avatar: "🎵📻🎧", favorited_bars: ["venue_valley", "venue_caseys"], createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000 },
+          "user_metal": { uid: "user_metal", username: "IronMaiden", mood: "Goth Emo 🖤", bio: "Heavy metal.", profileTheme: "sunset", emoji_avatar: "⚡🎸🖤", favorited_bars: ["venue_yucca", "venue_cobra"], createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000 },
+          "user_gamer": { uid: "user_gamer", username: "PixelKnight", mood: "Gaming 🎮", bio: "Galaga champ.", profileTheme: "cyberpunk", emoji_avatar: "🎮👾🏆", favorited_bars: ["venue_cobra", "venue_sunbar"], createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000 },
+          "user_coffee": { uid: "user_coffee", username: "BeanQueen", mood: "Caffeinated ☕", bio: "Espresso lifer.", profileTheme: "classic", emoji_avatar: "☕🍩⏳", favorited_bars: ["venue_linger", "venue_caseys"], createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000 },
+          "user_punk": { uid: "user_punk", username: "RiotGrrrl", mood: "Rebellious ✊", bio: "Support local zines.", profileTheme: "sunset", emoji_avatar: "✊🎸🖤", favorited_bars: ["venue_gracies", "venue_valley", "venue_yucca"], createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000 },
+          "user_star": { uid: "user_star", username: "AstroBoy", mood: "Dreamy 🌌", bio: "Rooftop stargazing.", profileTheme: "cyberpunk", emoji_avatar: "🌌🌠🚀", favorited_bars: ["venue_riot", "venue_bottled"], createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000 }
+        };
+
+        let dbUpdated = false;
+        // Add missing users and patch favorited_bars onto existing ones
+        Object.keys(mockUsersList).forEach(uid => {
+          if (!dbData.users[uid]) {
+            dbData.users[uid] = mockUsersList[uid];
+            dbUpdated = true;
+          }
+        });
+        if (dbUpdated) {
+          localStorage.setItem("asl_db", JSON.stringify(dbData));
+        }
+      } catch (err) {
+        console.error("Error upgrading database mock users:", err);
+      }
     }
     
-    if (!localStorage.getItem("asl_auth_users")) {
-      const initialAuthPool = {
-        "sysop@asl.com": { uid: "sysop_admin", password: "adminpassword" },
-        "billie@asl.com": { uid: "user_greenday", password: "password123" },
-        "sk8r@asl.com": { uid: "user_emo", password: "password123" },
-        "jay@asl.com": { uid: "user_hiphop", password: "password123" },
-        "ada@asl.com": { uid: "user_coder", password: "password123" },
-        "spin@asl.com": { uid: "user_rave", password: "password123" },
-        "neon@asl.com": { uid: "user_retro", password: "password123" },
-        "vinyl@asl.com": { uid: "user_indie", password: "password123" },
-        "iron@asl.com": { uid: "user_metal", password: "password123" },
-        "pixel@asl.com": { uid: "user_gamer", password: "password123" },
-        "bean@asl.com": { uid: "user_coffee", password: "password123" },
-        "riot@asl.com": { uid: "user_punk", password: "password123" },
-        "astro@asl.com": { uid: "user_star", password: "password123" }
-      };
-      localStorage.setItem("asl_auth_users", JSON.stringify(initialAuthPool));
+    // Merge missing mock accounts into auth pool in case it was already initialized
+    const authPool = JSON.parse(localStorage.getItem("asl_auth_users") || "{}");
+    const mockAccounts = {
+      "sysop@asl.com": { uid: "sysop_admin", password: "adminpassword" },
+      "billie@asl.com": { uid: "user_greenday", password: "password123" },
+      "sk8r@asl.com": { uid: "user_emo", password: "password123" },
+      "jay@asl.com": { uid: "user_hiphop", password: "password123" },
+      "ada@asl.com": { uid: "user_coder", password: "password123" },
+      "spin@asl.com": { uid: "user_rave", password: "password123" },
+      "neon@asl.com": { uid: "user_retro", password: "password123" },
+      "vinyl@asl.com": { uid: "user_indie", password: "password123" },
+      "iron@asl.com": { uid: "user_metal", password: "password123" },
+      "pixel@asl.com": { uid: "user_gamer", password: "password123" },
+      "bean@asl.com": { uid: "user_coffee", password: "password123" },
+      "riot@asl.com": { uid: "user_punk", password: "password123" },
+      "astro@asl.com": { uid: "user_star", password: "password123" }
+    };
+    
+    let authUpdated = false;
+    Object.keys(mockAccounts).forEach(email => {
+      if (!authPool[email]) {
+        authPool[email] = mockAccounts[email];
+        authUpdated = true;
+      }
+    });
+    if (authUpdated || !localStorage.getItem("asl_auth_users")) {
+      localStorage.setItem("asl_auth_users", JSON.stringify(authPool));
     }
   }
 
@@ -627,7 +816,18 @@ export const dbOnSnapshot = (collectionName, queryConstraints = [], callback) =>
     const runQuery = () => {
       const store = simulatedStore.getDb();
       let source = store[collectionName] || [];
-      let list = Array.isArray(source) ? [...source] : Object.values(source);
+      let list = [];
+      if (Array.isArray(source)) {
+        list = source.map(item => ({
+          ...item,
+          id: item.id || item.uid
+        }));
+      } else {
+        list = Object.entries(source).map(([key, item]) => ({
+          ...item,
+          id: item.id || item.uid || key
+        }));
+      }
 
       // Apply basic constraints
       queryConstraints.forEach(c => {

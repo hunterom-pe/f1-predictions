@@ -183,7 +183,7 @@ export default function Wizard({ onClose, onSubmit, preselectedVenue = null }) {
   };
 
   return (
-    <div className="window" style={{ width: "100%", height: "580px", display: "flex", flexDirection: "column" }}>
+    <div className="window" style={{ width: "100%", flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
       <TitleBar title="Add Missed Connection Wizard" onClose={onClose} />
       
       {/* Wizard Header Banner */}
@@ -192,10 +192,10 @@ export default function Wizard({ onClose, onSubmit, preselectedVenue = null }) {
         <p>Step {step} of 5 - Post your encounter online</p>
       </div>
 
-      <div className="window-body" style={{ flex: 1, backgroundColor: "#fff", padding: "16px", display: "flex", flexDirection: "column", justifyContent: "space-between", overflowY: "auto", margin: 0 }}>
+      <div className="window-body" style={{ flex: 1, backgroundColor: "#fff", padding: "16px", display: "flex", flexDirection: "column", margin: 0, minHeight: 0 }}>
         
         {/* Step Content */}
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, overflowY: "auto", minHeight: 0, paddingRight: "4px" }}>
           
           {step === 1 && (
             <div>

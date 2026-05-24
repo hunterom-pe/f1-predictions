@@ -1,20 +1,37 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import TitleBar from "./TitleBar";
 import { parseBBCode } from "../services/bbcode";
 import MySpaceMusicPlayer from "./MySpaceMusicPlayer";
+import { dbGetDoc } from "../firebase";
 
-const TOP_8_FRIENDS = [
-  { name: "Tom", avatar: "👥🥃💖", role: "Co-Founder", tagline: "Your first friend." },
-  { name: "Gracie", avatar: "🍹🤠✨", role: "Bar Owner", tagline: "Pouring the tax bar." },
-  { name: "aim_admin", avatar: "🏃‍♂️📟💾", role: "AIM Staff", tagline: "Dial-up runner." },
-  { name: "dialup_hero", avatar: "📠🔌⚡", role: "Sysop", tagline: "56k bps lifer." },
-  { name: "disco_queen", avatar: "💃🌟🔥", role: "Regular", tagline: "Always dancing." },
-  { name: "neon_light", avatar: "💡👾🎮", role: "Regular", tagline: "Glowing vibes." },
-  { name: "tax_collector", avatar: "💰🏦🎱", role: "Regular", tagline: "Gracies regular." },
-  { name: "mystery_stranger", avatar: "🕵️🥃🖤", role: "Mystery", tagline: "Spot me?" }
+const EMOJI_PRESETS = [
+  // Faces & People
+  "😀", "😎", "😍", "🤩", "😏", "😒", "😔", "😭", "😤", "😠",
+  "😡", "🤬", "😱", "😨", "🤯", "🥴", "😴", "🤪", "😑", "😐",
+  "🙄", "🥺", "😢", "😂", "🤣", "😆", "😋", "😛", "🤤", "😇",
+  "🤓", "🤡", "👻", "💀", "🤖", "👽", "🎃", "🦊", "🐱", "🐶",
+  "🐸", "🐼", "🦁", "🐯", "🐻", "🐺", "🦄", "🐉", "🦋", "🐝",
+  // Hearts & Love
+  "💖", "💗", "💘", "💝", "💓", "💞", "💕", "❤️", "🧡", "💛",
+  "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "❣️", "💟", "♥️",
+  // Objects & Activities
+  "🥃", "🍹", "🍻", "🥂", "🍺", "🍷", "🍸", "🧃", "☕", "🧋",
+  "🍕", "🍔", "🌮", "🍜", "🍣", "🍩", "🍦", "🎂", "🍫", "🍬",
+  "🎸", "🎤", "🎧", "🎵", "🎶", "🎹", "🥁", "🎷", "🎺", "🎻",
+  "🎮", "👾", "🕹️", "🎯", "🎱", "🃏", "🎲", "♟️", "🧩", "🎰",
+  "📟", "💾", "💿", "📼", "📺", "📻", "☎️", "📡", "🖥️", "⌨️",
+  "📱", "📷", "🎥", "📽️", "🎞️", "🔍", "🔭", "🧪", "🔬", "💊",
+  // Nature & Weather
+  "🌧️", "⛈️", "🌈", "☀️", "🌙", "⭐", "🌟", "✨", "❄️", "🔥",
+  "💧", "🌊", "🌵", "🌴", "🌸", "🌺", "🌻", "🍀", "🍁", "🌾",
+  // Symbols & Misc
+  "⚡", "💥", "🎉", "🎈", "🎀", "🏆", "🥇", "🎖️", "🏅", "🚀",
+  "✊", "👊", "✌️", "🤘", "🤞", "👌", "👍", "🖤", "🎨", "📖",
+  "💎", "👑", "🗡️", "🛹", "🏍️", "🌆", "🌃", "🌉", "🌌", "🌠",
+  // Classic retro / nostalgic
+  "👥", "🕵️", "📠", "🏃‍♂️", "💰", "💡", "📟", "💾", "📼", "🔌",
+  "🧲", "💣", "🔫", "🃏", "🚬", "🎠", "🎡", "🎢", "🎪", "🎭"
 ];
-
-const EMOJI_PRESETS = ["👥", "🥃", "💖", "😎", "⚡", "😍", "🎧", "🌧️", "🖤", "🍹", "🌵", "🥂", "🍕", "🎱", "👾", "💾", "📟", "🛹", "🎸", "🎤", "🍻", "🔥", "✨", "🌟", "🎈", "🎉"];
 
 export default function MySpaceProfileDialog({ 
   username, 
@@ -23,11 +40,17 @@ export default function MySpaceProfileDialog({
   profileTheme = "classic", 
   emoji_avatar = "👥🥃💖",
   spotify_track_uri = "spotify:track:4PTG3Z6ehGkBF3zI7YSp6g",
+  headline = "Everyone's favorite dial-up partner",
   onClose,
   onOpenChat,
   userId,
   currentUserId,
-  onSaveProfile
+  onSaveProfile,
+  favorited_bars = [],
+  venues = [],
+  onSelectVenue,
+  acceptedConnections = [],
+  onOpenProfile
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editUsername, setEditUsername] = useState(username);
@@ -36,7 +59,30 @@ export default function MySpaceProfileDialog({
   const [editProfileTheme, setEditProfileTheme] = useState(profileTheme);
   const [editEmojiAvatar, setEditEmojiAvatar] = useState(emoji_avatar);
   const [editSpotifyTrackUri, setEditSpotifyTrackUri] = useState(spotify_track_uri);
+  const [editHeadline, setEditHeadline] = useState(headline);
   const [showHelp, setShowHelp] = useState(false);
+  const [friendProfiles, setFriendProfiles] = useState({});
+
+  const favoritedVenueList = (favorited_bars || []).map(id => {
+    return (venues || []).find(v => v.fsq_id === id);
+  }).filter(Boolean);
+
+  // Load display profiles for accepted connections
+  useEffect(() => {
+    if (!acceptedConnections || acceptedConnections.length === 0) return;
+    acceptedConnections.forEach(async (conn) => {
+      const friendId = conn.userId;
+      if (friendProfiles[friendId]) return;
+      try {
+        const snap = await dbGetDoc("users", friendId);
+        if (snap.exists()) {
+          setFriendProfiles(prev => ({ ...prev, [friendId]: snap.data() }));
+        }
+      } catch (e) {
+        // silently ignore
+      }
+    });
+  }, [acceptedConnections]);
 
   const handleSendMessage = () => {
     if (onOpenChat) {
@@ -75,6 +121,10 @@ export default function MySpaceProfileDialog({
       alert("Display name must be 25 characters or less.");
       return;
     }
+    if (editHeadline.length > 100) {
+      alert("Tagline must be 100 characters or less.");
+      return;
+    }
     if (editBio.length > 500) {
       alert("Biography must be 500 characters or less.");
       return;
@@ -91,7 +141,8 @@ export default function MySpaceProfileDialog({
         bio: editBio,
         profileTheme: editProfileTheme,
         emoji_avatar: editEmojiAvatar,
-        spotify_track_uri: editSpotifyTrackUri
+        spotify_track_uri: editSpotifyTrackUri,
+        headline: editHeadline
       });
       setIsEditing(false);
     }
@@ -115,19 +166,34 @@ export default function MySpaceProfileDialog({
         {/* Top Header Card */}
         <div className="profile-top-section">
           {isEditing ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: "2px", width: "100%" }}>
-              <label style={{ fontSize: "11px", fontWeight: "bold" }}>Display Name:</label>
-              <input 
-                type="text" 
-                value={editUsername} 
-                onChange={(e) => setEditUsername(e.target.value)} 
-                style={{ width: "100%", fontSize: "16px", padding: "4px" }}
-              />
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "2px", width: "100%" }}>
+                <label style={{ fontSize: "11px", fontWeight: "bold" }}>Display Name:</label>
+                <input 
+                  type="text" 
+                  value={editUsername} 
+                  onChange={(e) => setEditUsername(e.target.value)} 
+                  style={{ width: "100%", fontSize: "16px", padding: "4px" }}
+                />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "2px", width: "100%" }}>
+                <label style={{ fontSize: "11px", fontWeight: "bold" }}>Tagline (Headline):</label>
+                <input 
+                  type="text" 
+                  value={editHeadline} 
+                  onChange={(e) => setEditHeadline(e.target.value)} 
+                  style={{ width: "100%", fontSize: "14px", padding: "4px" }}
+                  placeholder="e.g. Everyone's favorite dial-up partner"
+                />
+              </div>
             </div>
           ) : (
             <>
-              <h2 className="profile-name-header" style={{ margin: "0 0 4px 0" }}>{username}</h2>
-              <p className="profile-headline">"Everyone's favorite dial-up partner"</p>
+              <h2 className="profile-name-header" style={{ margin: "0 0 4px 0", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", fontSize: "26px", fontWeight: "bold" }}>
+                <span>{username}</span>
+                <span style={{ fontSize: "26px" }}>{emoji_avatar || "👥🥃💖"}</span>
+              </h2>
+              <p className="profile-headline">"{headline || "Everyone's favorite dial-up partner"}"</p>
             </>
           )}
         </div>
@@ -135,43 +201,69 @@ export default function MySpaceProfileDialog({
         <div className="profile-main-grid">
           {/* Left Column: Avatar & Bio */}
           <div className="profile-left-col">
-            <div className="profile-photo-box beveled-box" style={{ flexDirection: "column", padding: "8px", minHeight: "150px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {isEditing ? (
-                <>
-                  <div style={{ display: "flex", gap: "6px", marginBottom: "4px" }}>
-                    {Array.from(editEmojiAvatar).map((em, idx) => (
-                      <span 
-                        key={idx} 
-                        onClick={() => handleRemoveEmojiAtIndex(idx)}
-                        style={{ fontSize: "36px", cursor: "pointer", border: "1px inset #fff", padding: "4px", backgroundColor: "#fff" }}
-                        title="Click to remove"
-                      >
-                        {em}
-                      </span>
-                    ))}
-                    {Array.from(editEmojiAvatar).length === 0 && (
-                      <span style={{ fontSize: "12px", color: "#666" }}>Select 3 emojis:</span>
-                    )}
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "2px", width: "100%", maxHeight: "80px", overflowY: "auto", border: "1px solid #ccc", padding: "2px", backgroundColor: "#fff" }}>
-                    {EMOJI_PRESETS.map((em) => (
-                      <span 
-                        key={em} 
-                        onClick={() => handleAddEmoji(em)}
-                        style={{ fontSize: "16px", cursor: "pointer", textAlign: "center" }}
-                      >
-                        {em}
-                      </span>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <span className="profile-avatar-emoji" style={{ fontSize: "52px" }}>
-                  {emoji_avatar || "👥🥃💖"}
-                </span>
-              )}
-            </div>
-            
+
+            {/* Emoji Avatar Customizer — edit mode only */}
+            {isEditing && (
+              <div style={{ border: "1px solid #ccc", backgroundColor: "#fff", padding: "8px", marginBottom: "8px" }}>
+                <div style={{ fontSize: "11px", fontWeight: "bold", marginBottom: "6px" }}>Customize Avatar (pick exactly 3):</div>
+                
+                {/* Currently selected emojis */}
+                <div style={{ display: "flex", gap: "6px", marginBottom: "8px", minHeight: "48px", alignItems: "center" }}>
+                  {Array.from(editEmojiAvatar).map((em, idx) => (
+                    <span 
+                      key={idx} 
+                      onClick={() => handleRemoveEmojiAtIndex(idx)}
+                      style={{ fontSize: "36px", cursor: "pointer", border: "1px inset #999", padding: "4px", backgroundColor: "#f0f0f0", borderRadius: "2px" }}
+                      title="Click to remove"
+                    >
+                      {em}
+                    </span>
+                  ))}
+                  {Array.from(editEmojiAvatar).length === 0 && (
+                    <span style={{ fontSize: "12px", color: "#888", fontStyle: "italic" }}>Click emojis below to select up to 3</span>
+                  )}
+                  {Array.from(editEmojiAvatar).length > 0 && Array.from(editEmojiAvatar).length < 3 && (
+                    <span style={{ fontSize: "12px", color: "#666" }}>({3 - Array.from(editEmojiAvatar).length} more needed)</span>
+                  )}
+                </div>
+
+                {/* Large emoji presets grid */}
+                <div style={{ 
+                  display: "grid", 
+                  gridTemplateColumns: "repeat(8, 1fr)", 
+                  gap: "3px", 
+                  width: "100%", 
+                  height: "220px", 
+                  overflowY: "scroll", 
+                  border: "1px inset #ccc", 
+                  padding: "4px", 
+                  backgroundColor: "#fafafa",
+                  boxSizing: "border-box"
+                }}>
+                  {EMOJI_PRESETS.map((em, i) => (
+                    <span 
+                      key={`${em}-${i}`}
+                      onClick={() => handleAddEmoji(em)}
+                      style={{ 
+                        fontSize: "22px", 
+                        cursor: "pointer", 
+                        textAlign: "center", 
+                        padding: "3px", 
+                        borderRadius: "2px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        userSelect: "none"
+                      }}
+                      title={em}
+                    >
+                      {em}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="profile-details-table">
               {isEditing ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px", margin: "4px 0" }}>
@@ -188,6 +280,16 @@ export default function MySpaceProfileDialog({
                     <option>Melancholy 🌧️</option>
                     <option>Goth Emo 🖤</option>
                     <option>Ready to Party 🍹</option>
+                    <option>Hyper 🤪</option>
+                    <option>Sassy 💅</option>
+                    <option>Pissed 😡</option>
+                    <option>Bored 😑</option>
+                    <option>Creative 🎨</option>
+                    <option>Spacey 🚀</option>
+                    <option>Tired 😴</option>
+                    <option>Reflective 📖</option>
+                    <option>Rebellious ✊</option>
+                    <option>Nostalgic 📼</option>
                   </select>
                 </div>
               ) : (
@@ -211,7 +313,7 @@ export default function MySpaceProfileDialog({
                     onChange={(e) => setEditProfileTheme(e.target.value)}
                     style={{ width: "100%", padding: "2px" }}
                   >
-                    <option value="classic">Classic (Blue/Orange)</option>
+                    <option value="classic">Classic (Blue/Pink)</option>
                     <option value="glitter">Glitter 💖</option>
                     <option value="cyberpunk">Cyberpunk 🟢</option>
                     <option value="sunset">Sunset 🌅</option>
@@ -230,38 +332,8 @@ export default function MySpaceProfileDialog({
               </>
             )}
 
-            {/* Contact / Operations Table */}
-            {userId === currentUserId ? (
-              <div className="contact-box" style={{ width: "100%", marginTop: "4px" }}>
-                <div className="contact-box-header">Profile Operations</div>
-                <div style={{ padding: "8px", display: "flex", flexDirection: "column", gap: "6px" }}>
-                  {isEditing ? (
-                    <div style={{ display: "flex", gap: "6px" }}>
-                      <button 
-                        className="default" 
-                        onClick={handleSave} 
-                        style={{ flex: 1, minHeight: "38px" }}
-                      >
-                        💾 Save
-                      </button>
-                      <button 
-                        onClick={() => setIsEditing(false)} 
-                        style={{ flex: 1, minHeight: "38px" }}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <button 
-                      onClick={() => setIsEditing(true)} 
-                      style={{ width: "100%", minHeight: "38px" }}
-                    >
-                      ⚙️ Edit My Profile
-                    </button>
-                  )}
-                </div>
-              </div>
-            ) : (
+            {/* Contact Box — shown when viewing another user's profile */}
+            {userId !== currentUserId && (
               <div className="contact-box">
                 <div className="contact-box-header">Contacting {username}</div>
                 <div className="contact-box-grid">
@@ -299,27 +371,154 @@ export default function MySpaceProfileDialog({
             </div>
           </div>
 
-          {/* Right Column: Top 8 Friends */}
+          {/* Right Column: Friend Space + Favorited Bars */}
           <div className="profile-right-col">
             <div className="top8-container beveled-box">
-              <div className="section-header-orange">{username}'s Friend Space (Top 8)</div>
-              <div className="top8-grid">
-                {TOP_8_FRIENDS.map((f) => (
-                  <div 
-                    key={f.name} 
+              <div className="section-header-orange">{username}'s Friend Space</div>
+
+              {acceptedConnections.length === 0 ? (
+                /* No real connections yet — show just Tom */
+                <div style={{ padding: "10px 6px" }}>
+                  <div
                     className="top8-friend"
-                    onClick={() => alert(`This is ${f.name} (${f.role}) - ${f.tagline}`)}
+                    onClick={() => onOpenProfile && onOpenProfile("tom", {
+                      username: "Tom",
+                      mood: "Friendly 🙂",
+                      bio: "Co-founder of asl. Let me know if you have any questions!",
+                      profileTheme: "classic",
+                      emoji_avatar: "👥🥃💖"
+                    })}
+                    style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", width: "60px" }}
                   >
-                    <div className="friend-avatar-wrapper">
-                      <span className="friend-avatar">{f.avatar}</span>
-                    </div>
-                    <span className="friend-name">{f.name}</span>
+                    <span style={{ fontSize: "28px", lineHeight: 1 }}>👥🥃💖</span>
+                    <span className="friend-name" style={{ maxWidth: "60px" }}>Tom</span>
                   </div>
-                ))}
+                  <p style={{ fontSize: "10px", color: "#888", fontStyle: "italic", marginTop: "8px", lineHeight: "1.4" }}>
+                    Your friend space fills up when someone matches your "That Was Me!" — or you match theirs.
+                  </p>
+                </div>
+              ) : (
+                <div className="top8-grid">
+                  {/* Tom is always first */}
+                  <div
+                    className="top8-friend"
+                    onClick={() => onOpenProfile && onOpenProfile("tom", {
+                      username: "Tom",
+                      mood: "Friendly 🙂",
+                      bio: "Co-founder of asl.",
+                      profileTheme: "classic",
+                      emoji_avatar: "👥🥃💖"
+                    })}
+                  >
+                    <span style={{ fontSize: "28px", lineHeight: 1 }}>👥🥃💖</span>
+                    <span className="friend-name">Tom</span>
+                  </div>
+
+                  {/* Real accepted connections */}
+                  {acceptedConnections.slice(0, 7).map(conn => {
+                    const profile = friendProfiles[conn.userId];
+                    const displayName = profile?.username || conn.username || "Connection";
+                    const displayEmoji = profile?.emoji_avatar || "👥🥃💖";
+                    return (
+                      <div
+                        key={conn.userId}
+                        className="top8-friend"
+                        onClick={() => onOpenProfile && onOpenProfile(conn.userId, {
+                          username: displayName,
+                          mood: profile?.mood || "Chillin' 😎",
+                          bio: profile?.bio || "",
+                          profileTheme: profile?.profileTheme || "classic",
+                          emoji_avatar: displayEmoji
+                        })}
+                      >
+                        <span style={{ fontSize: "28px", lineHeight: 1 }}>{displayEmoji}</span>
+                        <span className="friend-name">{displayName}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Favorited Bars Section */}
+            <div className="beveled-box" style={{ marginTop: "12px", padding: "6px", backgroundColor: "#ffffff", border: "1px solid #ff99cc" }}>
+              <div className="section-header-orange" style={{ margin: "0 0 8px 0" }}>{username}'s Favorited Bars</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                {favoritedVenueList.length === 0 ? (
+                  <div style={{ padding: "10px", textAlign: "center", color: "#888", fontSize: "11px", fontStyle: "italic" }}>
+                    No favorited bars yet.
+                  </div>
+                ) : (
+                  favoritedVenueList.map(venue => (
+                    <div 
+                      key={venue.fsq_id}
+                      onClick={() => onSelectVenue && onSelectVenue(venue.fsq_id)}
+                      style={{
+                        padding: "6px 8px",
+                        border: "1px solid #ffe6f2",
+                        backgroundColor: "#fff0f5",
+                        cursor: "pointer",
+                        fontSize: "12px",
+                        fontWeight: "bold",
+                        color: "#003399",
+                        textDecoration: "underline",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center"
+                      }}
+                      title="Click to view bar details"
+                    >
+                      <span>🍹 {venue.name}</span>
+                      <span style={{ fontSize: "10px", color: "#666", textDecoration: "none" }}>{venue.zone} ➡️</span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
         </div>
+
+        {/* Profile Operations — at the very bottom, only visible to profile owner */}
+        {userId === currentUserId && (
+          <div className="contact-box" style={{ marginTop: "16px" }}>
+            <div className="contact-box-header">Profile Operations</div>
+            <div style={{ padding: "10px", display: "flex", flexDirection: "column", gap: "6px" }}>
+              {isEditing ? (
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button 
+                    className="default" 
+                    onClick={handleSave} 
+                    style={{ flex: 1, minHeight: "42px", fontSize: "14px" }}
+                  >
+                    💾 Save
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setIsEditing(false);
+                      setEditUsername(username);
+                      setEditMood(mood);
+                      setEditBio(bio);
+                      setEditProfileTheme(profileTheme);
+                      setEditEmojiAvatar(emoji_avatar);
+                      setEditSpotifyTrackUri(spotify_track_uri);
+                      setEditHeadline(headline);
+                    }} 
+                    style={{ flex: 1, minHeight: "42px", fontSize: "14px" }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => setIsEditing(true)} 
+                  style={{ width: "100%", minHeight: "42px", fontSize: "14px" }}
+                >
+                  ⚙️ Edit My Profile
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

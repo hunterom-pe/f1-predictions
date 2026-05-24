@@ -1,12 +1,11 @@
 import { useState } from "react";
-import TitleBar from "./TitleBar";
 import { 
   firebaseSignInWithEmailAndPassword, 
   firebaseLinkWithCredential 
 } from "../firebase";
 
 /**
- * Windows 98-styled Login / Registration Dialog Box.
+ * MySpace-styled Login / Registration Dialog Box.
  * @param {object} props
  * @param {Function} props.onClose Close handler
  * @param {Function} props.onSuccess Callback on successful authentication/link
@@ -81,40 +80,54 @@ export default function AuthDialog({ onClose, onSuccess }) {
 
   return (
     <>
-      <div className="window" style={{ width: "100%", display: "flex", flexDirection: "column" }}>
-        <TitleBar title="Enter Network Password" onClose={onClose} />
+      <div className="auth-window" style={{ width: "100%", display: "flex", flexDirection: "column" }}>
+        <div className="auth-title-bar">
+          <div className="auth-title-bar-text">Enter Network Password</div>
+          <button 
+            type="button" 
+            className="auth-close-button" 
+            onClick={onClose}
+            aria-label="Close"
+          >
+            X
+          </button>
+        </div>
         
-        <menu role="tablist" style={{ padding: "6px 6px 0 6px", margin: 0 }}>
-          <li role="tab" aria-selected={activeTab === "register"}>
-            <a href="#register" onClick={(e) => { e.preventDefault(); setActiveTab("register"); }}>
-              New Registration
-            </a>
-          </li>
-          <li role="tab" aria-selected={activeTab === "login"}>
-            <a href="#login" onClick={(e) => { e.preventDefault(); setActiveTab("login"); }}>
-              Existing Account Log In
-            </a>
-          </li>
-        </menu>
+        <div className="auth-tabs">
+          <button 
+            type="button"
+            className={`auth-tab ${activeTab === "register" ? "active" : ""}`}
+            onClick={() => setActiveTab("register")}
+          >
+            New Registration
+          </button>
+          <button 
+            type="button"
+            className={`auth-tab ${activeTab === "login" ? "active" : ""}`}
+            onClick={() => setActiveTab("login")}
+          >
+            Existing Account Log In
+          </button>
+        </div>
 
-        <div className="window" role="tabpanel" style={{ borderTop: "none" }}>
+        <div style={{ borderTop: "none", backgroundColor: "#f2f2f2" }}>
           <form onSubmit={handleSubmit}>
-            <div className="window-body" style={{ gap: "12px" }}>
-              <fieldset>
-                <legend>
+            <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: "12px" }}>
+              <fieldset className="auth-fieldset">
+                <legend className="auth-legend">
                   {activeTab === "register" 
                     ? "Upgrade Anonymous Account" 
                     : "Type a user name and password to log in"}
                 </legend>
                 
-                <p style={{ margin: "0 0 10px 0", fontSize: "11px", lineHeight: "1.3" }}>
+                <p style={{ margin: "0 0 10px 0", fontSize: "11px", lineHeight: "1.3", color: "#333333" }}>
                   {activeTab === "register"
                     ? "By registering, you upgrade your temporary guest account to a permanent profile. Your history and connection drafts will be preserved."
                     : "Connecting to asl network neighborhood database."}
                 </p>
 
-                <div className="field-row-stacked" style={{ marginBottom: "8px" }}>
-                  <label htmlFor="auth-email">Email Address:</label>
+                <div className="field-row-stacked" style={{ marginBottom: "8px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <label htmlFor="auth-email" style={{ fontSize: "11px", fontWeight: "bold" }}>Email Address:</label>
                   <input 
                     id="auth-email" 
                     type="email" 
@@ -122,32 +135,35 @@ export default function AuthDialog({ onClose, onSuccess }) {
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={loading}
                     placeholder="username@domain.com"
-                    style={{ width: "100%", boxSizing: "border-box" }}
+                    className="auth-input"
+                    style={{ width: "100%" }}
                   />
                 </div>
 
-                <div className="field-row-stacked" style={{ marginBottom: "8px" }}>
-                  <label htmlFor="auth-pass">Password:</label>
+                <div className="field-row-stacked" style={{ marginBottom: "8px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <label htmlFor="auth-pass" style={{ fontSize: "11px", fontWeight: "bold" }}>Password:</label>
                   <input 
                     id="auth-pass" 
                     type="password" 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={loading}
-                    style={{ width: "100%", boxSizing: "border-box" }}
+                    className="auth-input"
+                    style={{ width: "100%" }}
                   />
                 </div>
 
                 {activeTab === "register" && (
-                  <div className="field-row-stacked">
-                    <label htmlFor="auth-confirm">Confirm Password:</label>
+                  <div className="field-row-stacked" style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <label htmlFor="auth-confirm" style={{ fontSize: "11px", fontWeight: "bold" }}>Confirm Password:</label>
                     <input 
                       id="auth-confirm" 
                       type="password" 
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       disabled={loading}
-                      style={{ width: "100%", boxSizing: "border-box" }}
+                      className="auth-input"
+                      style={{ width: "100%" }}
                     />
                   </div>
                 )}
@@ -156,7 +172,7 @@ export default function AuthDialog({ onClose, onSuccess }) {
               <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "4px" }}>
                 <button 
                   type="submit" 
-                  className="default" 
+                  className="auth-btn-primary" 
                   disabled={loading}
                   style={{ minWidth: "100px", minHeight: "44px" }}
                 >
@@ -164,6 +180,7 @@ export default function AuthDialog({ onClose, onSuccess }) {
                 </button>
                 <button 
                   type="button" 
+                  className="auth-btn-secondary"
                   onClick={onClose} 
                   disabled={loading}
                   style={{ minWidth: "80px", minHeight: "44px" }}
@@ -187,22 +204,34 @@ export default function AuthDialog({ onClose, onSuccess }) {
             transform: "translate(-50%, -50%)",
             width: "280px",
             zIndex: 120000,
-            boxShadow: "1px 1px 15px rgba(0, 0, 0, 0.5)"
+            boxShadow: "5px 5px 0px rgba(0, 0, 0, 0.3)"
           }}
         >
-          <div className="window">
-            <TitleBar title="Network Error" onClose={() => setShowErrorDialog(false)} />
-            <div className="window-body" style={{ gap: "10px" }}>
+          <div className="auth-window">
+            <div className="auth-title-bar" style={{ backgroundColor: "#ff007f" }}>
+              <div className="auth-title-bar-text">Network Error</div>
+              <button 
+                type="button" 
+                className="auth-close-button" 
+                onClick={() => setShowErrorDialog(false)}
+                aria-label="Close"
+              >
+                X
+              </button>
+            </div>
+            <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
               <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
                 <span style={{ fontSize: "28px" }}>⚠️</span>
-                <p style={{ margin: 0, fontSize: "11px", lineHeight: "1.3" }}>
+                <p style={{ margin: 0, fontSize: "11px", lineHeight: "1.3", color: "#000000" }}>
                   {errorMsg}
                 </p>
               </div>
               <div style={{ display: "flex", justifyContent: "center", marginTop: "6px" }}>
                 <button 
+                  type="button"
+                  className="auth-btn-secondary"
                   onClick={() => setShowErrorDialog(false)} 
-                  style={{ width: "60px" }}
+                  style={{ width: "60px", minHeight: "30px" }}
                 >
                   OK
                 </button>
@@ -214,3 +243,4 @@ export default function AuthDialog({ onClose, onSuccess }) {
     </>
   );
 }
+
