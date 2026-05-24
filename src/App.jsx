@@ -41,6 +41,21 @@ const DOXXING_ROASTS = [
   "Not the @ link... Secure portal validation failed."
 ];
 
+const RETRO_TAGLINES = [
+  "because dating apps suck",
+  "find your bathroom line bestie",
+  "who did you share a lighter with?",
+  "reconnect with that 10/10 you met last night",
+  "not a dating app, a digital bulletin board",
+  "making local nightlife personal again",
+  "reconnect with the bathroom line hero",
+  "find the one who vanished into the smoke",
+  "neon connections, dial-up speeds",
+  "that Galaga high score wasn't a dream",
+  "find your bathroom line soulmate",
+  "keep the bad vibes off the local node"
+];
+
 export default function App() {
   // Device & Auth State
   const [deviceUuid, setDeviceUuid] = useState("");
@@ -96,6 +111,7 @@ export default function App() {
   const [barSearchQuery, setBarSearchQuery] = useState("");
   const [barSearchResults, setBarSearchResults] = useState(null);
   const [isBarSearching, setIsBarSearching] = useState(false);
+  const [activeTagline] = useState(() => RETRO_TAGLINES[Math.floor(Math.random() * RETRO_TAGLINES.length)]);
 
   // 1. App Startup: Load Device UUID, sign in anonymously, and fetch venues
   useEffect(() => {
@@ -871,7 +887,7 @@ export default function App() {
             <span>asl.com</span>
           </div>
           <div style={{ fontStyle: "italic", fontSize: "14px", color: "#ff66cc" }}>
-            because dating apps suck
+            {activeTagline}
           </div>
         </div>
         <div className="myspace-nav-links-row">
