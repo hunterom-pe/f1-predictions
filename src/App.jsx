@@ -934,7 +934,7 @@ export default function App() {
                     <div 
                       onClick={handleOpenMyProfile}
                       style={{ 
-                        fontSize: "36px", 
+                        fontSize: "24px", 
                         cursor: "pointer", 
                         padding: "6px", 
                         border: "2px outset #ff007f", 
@@ -943,9 +943,10 @@ export default function App() {
                         justifyContent: "center",
                         alignItems: "center",
                         borderRadius: "8px",
-                        width: "50px",
+                        width: "90px",
                         height: "50px",
-                        flexShrink: 0
+                        flexShrink: 0,
+                        whiteSpace: "nowrap"
                       }}
                       title="View my profile"
                     >
