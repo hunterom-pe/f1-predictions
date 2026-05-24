@@ -105,9 +105,25 @@ export default function Wizard({ onClose, onSubmit, preselectedVenue = null, cur
   };
 
   const handleNext = async () => {
-    if (step === 1 && !selectedVenue) {
-      setErrorMsg("Please select a nightlife venue to continue.");
-      return;
+    if (step === 1) {
+      if (!selectedVenue) {
+        setErrorMsg("Please select a nightlife venue to continue.");
+        return;
+      }
+      const userHomeCity = currentUserProfile?.homeCity || currentUserProfile?.selectedCity || city;
+      if (selectedVenue.city.toLowerCase() !== userHomeCity.toLowerCase()) {
+        const funnyMessages = [
+          `Wrong city, bro. Stick to your own turf in ${userHomeCity}!`,
+          `Nice try, traveler. The server admin caught you trying to post in ${selectedVenue.city} from your home node in ${userHomeCity}.`,
+          `Error: Metropolitan mismatch. You are registered in ${userHomeCity}. No cross-posting allowed!`,
+          `You sure you're there, fam? The database daemon says you're posting in ${selectedVenue.city} but your account is based in ${userHomeCity}.`,
+          `Bzzzt! Portal mismatch. You cannot post to ${selectedVenue.city} while logged into the ${userHomeCity} node.`,
+          `Geographic lock engaged. Go back to your own ${userHomeCity} node, bestie.`
+        ];
+        const randomMsg = funnyMessages[Math.floor(Math.random() * funnyMessages.length)];
+        setErrorMsg(randomMsg);
+        return;
+      }
     }
     if (step === 2) {
       if (!datetimeVal) {

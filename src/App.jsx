@@ -387,16 +387,16 @@ export default function App() {
   // Post wizard submit handler
   const handleWizardSubmit = async (postData) => {
     try {
-      const userCity = userDoc?.selectedCity || selectedCity || "Phoenix";
+      const userHomeCity = userDoc?.homeCity || userDoc?.selectedCity || selectedCity || "Phoenix";
       const postCity = postData.venueCity || "Phoenix";
-      if (postCity.toLowerCase() !== userCity.toLowerCase()) {
+      if (postCity.toLowerCase() !== userHomeCity.toLowerCase()) {
         const funnyMessages = [
-          `Wrong city, bro. Stick to your own turf in ${userCity}!`,
-          `Nice try, traveler. The server admin caught you trying to post in ${postCity} from your home node in ${userCity}.`,
-          `Error: Metropolitan mismatch. You are registered in ${userCity}. No cross-posting allowed!`,
-          `You sure you're there, fam? The database daemon says you're posting in ${postCity} but your account is based in ${userCity}.`,
-          `Bzzzt! Portal mismatch. You cannot post to ${postCity} while logged into the ${userCity} node.`,
-          `Geographic lock engaged. Go back to your own ${userCity} node, bestie.`
+          `Wrong city, bro. Stick to your own turf in ${userHomeCity}!`,
+          `Nice try, traveler. The server admin caught you trying to post in ${postCity} from your home node in ${userHomeCity}.`,
+          `Error: Metropolitan mismatch. You are registered in ${userHomeCity}. No cross-posting allowed!`,
+          `You sure you're there, fam? The database daemon says you're posting in ${postCity} but your account is based in ${userHomeCity}.`,
+          `Bzzzt! Portal mismatch. You cannot post to ${postCity} while logged into the ${userHomeCity} node.`,
+          `Geographic lock engaged. Go back to your own ${userHomeCity} node, bestie.`
         ];
         const randomMsg = funnyMessages[Math.floor(Math.random() * funnyMessages.length)];
         throw new Error(randomMsg);
@@ -1364,8 +1364,12 @@ export default function App() {
                     onClick={() => {
                       setSelectedCity("Phoenix");
                       setNavigationScreen("bar");
-                      if (isLoggedIn) {
-                        dbSetDoc("users", currentUser.uid, { selectedCity: "Phoenix" }, true);
+                      if (currentUser) {
+                        const updates = { selectedCity: "Phoenix" };
+                        if (!userDoc?.homeCity) {
+                          updates.homeCity = "Phoenix";
+                        }
+                        dbSetDoc("users", currentUser.uid, updates, true);
                       }
                     }}
                   >
@@ -1384,8 +1388,12 @@ export default function App() {
                     onClick={() => {
                       setSelectedCity("New York");
                       setNavigationScreen("bar");
-                      if (isLoggedIn) {
-                        dbSetDoc("users", currentUser.uid, { selectedCity: "New York" }, true);
+                      if (currentUser) {
+                        const updates = { selectedCity: "New York" };
+                        if (!userDoc?.homeCity) {
+                          updates.homeCity = "New York";
+                        }
+                        dbSetDoc("users", currentUser.uid, updates, true);
                       }
                     }}
                   >
@@ -1542,16 +1550,16 @@ export default function App() {
                     className="contact-action" 
                     style={{ flex: 1, minHeight: "36px", display: "flex", alignItems: "center", justifyContent: "center" }}
                     onClick={() => {
-                      const userCity = userDoc?.selectedCity || selectedCity || "Phoenix";
+                      const userHomeCity = userDoc?.homeCity || userDoc?.selectedCity || selectedCity || "Phoenix";
                       const venueCity = selectedVenue.city || "Phoenix";
-                      if (venueCity.toLowerCase() !== userCity.toLowerCase()) {
+                      if (venueCity.toLowerCase() !== userHomeCity.toLowerCase()) {
                         const funnyMessages = [
-                          `Wrong city, bro. Stick to your own turf in ${userCity}!`,
-                          `Nice try, traveler. The server admin caught you trying to post in ${venueCity} from your home node in ${userCity}.`,
-                          `Error: Metropolitan mismatch. You are registered in ${userCity}. No cross-posting allowed!`,
-                          `You sure you're there, fam? The database daemon says you're posting in ${venueCity} but your account is based in ${userCity}.`,
-                          `Bzzzt! Portal mismatch. You cannot post to ${venueCity} while logged into the ${userCity} node.`,
-                          `Geographic lock engaged. Go back to your own ${userCity} node, bestie.`
+                          `Wrong city, bro. Stick to your own turf in ${userHomeCity}!`,
+                          `Nice try, traveler. The server admin caught you trying to post in ${venueCity} from your home node in ${userHomeCity}.`,
+                          `Error: Metropolitan mismatch. You are registered in ${userHomeCity}. No cross-posting allowed!`,
+                          `You sure you're there, fam? The database daemon says you're posting in ${venueCity} but your account is based in ${userHomeCity}.`,
+                          `Bzzzt! Portal mismatch. You cannot post to ${venueCity} while logged into the ${userHomeCity} node.`,
+                          `Geographic lock engaged. Go back to your own ${userHomeCity} node, bestie.`
                         ];
                         const randomMsg = funnyMessages[Math.floor(Math.random() * funnyMessages.length)];
                         setModerationError(randomMsg);

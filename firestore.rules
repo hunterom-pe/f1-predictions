@@ -30,7 +30,12 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       // Allow users to initialize/update their own document
       allow create: if isUserOwned(userId);
-      allow update: if isUserOwned(userId) 
+      allow update: if (isUserOwned(userId) 
+                    && (
+                      // Either homeCity is not changing, or it is being set for the first time
+                      !("homeCity" in resource.data) 
+                      || request.resource.data.homeCity == resource.data.homeCity
+                    ))
                     || (isAuthenticated() && request.resource.data.flag_count == resource.data.flag_count + 1); // Anyone logged in can increment flags
     }
 
@@ -53,7 +58,9 @@ service cloud.firestore {
                     && request.resource.data.venueCity is string
                     && request.resource.data.venueZone is string
                     && request.resource.data.date is string
-                    && request.resource.data.timeRange is string;
+                    && request.resource.data.timeRange is string
+                    // Enforce that post venueCity matches the user's permanent homeCity in Firestore
+                    && request.resource.data.venueCity == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.homeCity;
       allow update, delete: if false; // Missed connection posts are immutable
     }
 
