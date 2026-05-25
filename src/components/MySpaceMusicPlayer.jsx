@@ -43,9 +43,27 @@ export default function MySpaceMusicPlayer({ spotifyTrackUri = "spotify:track:4P
         const res = await fetch(`https://open.spotify.com/oembed?url=https://open.spotify.com/track/${trackId}`);
         if (res.ok) {
           const data = await res.json();
+          
+          const rawTitle = data.title || "Unknown Song";
+          let parsedTitle = rawTitle;
+          let parsedArtist = "Unknown Artist";
+          
+          // Match "Song Title - Song by Artist Name" (case-insensitive)
+          const match = rawTitle.match(/(.+?)\s+-\s+song\s+by\s+(.+)/i);
+          if (match) {
+            parsedTitle = match[1];
+            parsedArtist = match[2];
+          } else {
+            const parts = rawTitle.split(" - ");
+            if (parts.length > 1) {
+              parsedTitle = parts[0];
+              parsedArtist = parts[1];
+            }
+          }
+
           setTrackInfo({
-            title: data.title || "Unknown Song",
-            artist: data.author_name || "Unknown Artist",
+            title: parsedTitle,
+            artist: parsedArtist,
             duration: 240, // default placeholder
             durationStr: "04:00"
           });
