@@ -458,13 +458,13 @@ export default function MySpaceProfileDialog({
                       {isThemeUnlocked("jujutsu-kaisen") ? "Jujutsu Kaisen 💀" : "Jujutsu Kaisen 💀 (🔒 Weeb Pack - $1.99)"}
                     </option>
                     <option value="animal-crossing">
-                      {isThemeUnlocked("animal-crossing") ? "Animal Crossing 🍃" : "Animal Crossing 🍃 (🔒 Cozy Pack - $1.99)"}
+                      {isThemeUnlocked("animal-crossing") ? "Animal Crossing 🍃" : "Animal Crossing 🍃 (🔒 Cozy Girl Pack - $1.99)"}
                     </option>
                     <option value="spirited-away">
-                      {isThemeUnlocked("spirited-away") ? "Spirited Away 🏮" : "Spirited Away 🏮 (🔒 Cozy Pack - $1.99)"}
+                      {isThemeUnlocked("spirited-away") ? "Spirited Away 🏮" : "Spirited Away 🏮 (🔒 Cozy Girl Pack - $1.99)"}
                     </option>
                     <option value="matcha-tea">
-                      {isThemeUnlocked("matcha-tea") ? "Matcha Tea 🍵" : "Matcha Tea 🍵 (🔒 Cozy Pack - $1.99)"}
+                      {isThemeUnlocked("matcha-tea") ? "Matcha Tea 🍵" : "Matcha Tea 🍵 (🔒 Cozy Girl Pack - $1.99)"}
                     </option>
                     <option value="8-ball">
                       {isThemeUnlocked("8-ball") ? "8-Ball 🎱" : "8-Ball 🎱 (🔒 Bad Bitch Pack - $1.99)"}
