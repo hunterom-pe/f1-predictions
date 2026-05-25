@@ -4,7 +4,8 @@ import {
   dbOnSnapshot, 
   dbAddDoc, 
   dbUpdateDoc, 
-  dbGetDoc
+  dbGetDoc,
+  dbSetDoc
 } from "../firebase";
 import { 
   enableScreenshotBlocking, 
@@ -18,9 +19,10 @@ import {
  * @param {string} props.chatId The ID of the active chat document
  * @param {object} props.connection Associated connection details
  * @param {object} props.currentUser Current authenticated user
+ * @param {object} props.userDoc Profile document of current user
  * @param {Function} props.onClose Close handler
  */
-export default function AIMChat({ chatId, connection, currentUser, onClose }) {
+export default function AIMChat({ chatId, connection, currentUser, userDoc, onClose }) {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const [showSecurityAlert, setShowSecurityAlert] = useState(false);
@@ -220,6 +222,30 @@ export default function AIMChat({ chatId, connection, currentUser, onClose }) {
     }
   };
 
+  const handleBlockUser = async () => {
+    const confirmBlock = window.confirm(
+      "Block this user?\nYou will no longer receive messages from them, and their posts will be hidden from your feed."
+    );
+    if (!confirmBlock) return;
+
+    try {
+      const currentBlocked = Array.isArray(userDoc?.blockedUsers) 
+        ? userDoc.blockedUsers 
+        : [];
+      
+      if (!currentBlocked.includes(otherUserId)) {
+        await dbSetDoc("users", currentUser.uid, {
+          blockedUsers: [...currentBlocked, otherUserId]
+        }, true);
+      }
+      alert("User has been blocked. This conversation is now closed.");
+      onClose();
+    } catch (err) {
+      console.error("Error blocking user:", err);
+      alert("Failed to block user. Please try again.");
+    }
+  };
+
 
   return (
     <>
@@ -256,6 +282,21 @@ export default function AIMChat({ chatId, connection, currentUser, onClose }) {
               }}
             >
               ⚠️ Flag
+            </button>
+            <button 
+              onClick={handleBlockUser}
+              style={{ 
+                minHeight: "34px", 
+                padding: "2px 8px", 
+                fontSize: "12px", 
+                color: "#000000", 
+                fontWeight: "bold",
+                backgroundColor: "#dfdfdf",
+                border: "1px solid #808080",
+                cursor: "pointer"
+              }}
+            >
+              🚫 Block
             </button>
             <button 
               onClick={onClose}

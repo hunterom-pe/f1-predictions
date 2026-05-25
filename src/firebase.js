@@ -815,6 +815,89 @@ export const dbDeleteDoc = async (collectionName, docId) => {
   return docId;
 };
 
+export const dbGetDocs = async (collectionName, queryConstraints = []) => {
+  if (isSimulated) {
+    const store = simulatedStore.getDb();
+    let source = store[collectionName] || [];
+    let list = [];
+    if (Array.isArray(source)) {
+      list = source.map(item => ({
+        ...item,
+        id: item.id || item.uid
+      }));
+    } else {
+      list = Object.entries(source).map(([key, item]) => ({
+        ...item,
+        id: item.id || item.uid || key
+      }));
+    }
+
+    // Apply basic constraints
+    queryConstraints.forEach(c => {
+      if (c.type === "where") {
+        const { field, op, value } = c;
+        if (op === "==") {
+          list = list.filter(item => item[field] === value);
+        } else if (op === "array-contains") {
+          list = list.filter(item => Array.isArray(item[field]) && item[field].includes(value));
+        } else if (op === ">=") {
+          list = list.filter(item => item[field] >= value);
+        } else if (op === "<=") {
+          list = list.filter(item => item[field] <= value);
+        } else if (op === ">") {
+          list = list.filter(item => item[field] > value);
+        } else if (op === "<") {
+          list = list.filter(item => item[field] < value);
+        }
+      }
+    });
+
+    const hasOrder = queryConstraints.some(c => c.type === "orderBy");
+    if (hasOrder) {
+      const orderC = queryConstraints.find(c => c.type === "orderBy");
+      const dir = orderC.direction || "asc";
+      list.sort((a, b) => {
+        const tA = a.timestamp || 0;
+        const tB = b.timestamp || 0;
+        return dir === "desc" ? tB - tA : tA - tB;
+      });
+    }
+
+    const limitC = queryConstraints.find(c => c.type === "limit");
+    if (limitC) {
+      list = list.slice(0, limitC.value);
+    }
+
+    return {
+      docs: list.map(item => ({
+        id: item.id,
+        data: () => item
+      })),
+      size: list.length,
+      empty: list.length === 0
+    };
+  }
+
+  // Real Firebase mapping
+  let qRef = collection(realDb, collectionName);
+  const firestoreConstraints = [];
+  queryConstraints.forEach(c => {
+    if (c.type === "where") {
+      firestoreConstraints.push(where(c.field, c.op, c.value));
+    } else if (c.type === "orderBy") {
+      firestoreConstraints.push(orderBy(c.field, c.direction));
+    } else if (c.type === "limit") {
+      firestoreConstraints.push(limit(c.value));
+    }
+  });
+
+  if (firestoreConstraints.length > 0) {
+    qRef = query(qRef, ...firestoreConstraints);
+  }
+  const snap = await getDocs(qRef);
+  return snap;
+};
+
 export const dbOnSnapshot = (collectionName, queryConstraints = [], callback) => {
   if (isSimulated) {
     const runQuery = () => {
@@ -841,6 +924,14 @@ export const dbOnSnapshot = (collectionName, queryConstraints = [], callback) =>
             list = list.filter(item => item[field] === value);
           } else if (op === "array-contains") {
             list = list.filter(item => Array.isArray(item[field]) && item[field].includes(value));
+          } else if (op === ">=") {
+            list = list.filter(item => item[field] >= value);
+          } else if (op === "<=") {
+            list = list.filter(item => item[field] <= value);
+          } else if (op === ">") {
+            list = list.filter(item => item[field] > value);
+          } else if (op === "<") {
+            list = list.filter(item => item[field] < value);
           }
         }
       });

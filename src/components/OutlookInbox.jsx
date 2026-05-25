@@ -14,7 +14,7 @@ import {
  * @param {Function} props.onClose Close handler
  * @param {Function} props.onOpenChat Callback when connection is accepted and chat is opened
  */
-export default function OutlookInbox({ currentUser, onClose, onOpenChat }) {
+export default function OutlookInbox({ currentUser, userDoc, onClose, onOpenChat }) {
   const [activeFolder, setActiveFolder] = useState("inbox"); // inbox, sent, active
   const [connections, setConnections] = useState([]);
   const [selectedConn, setSelectedConn] = useState(null);
@@ -43,8 +43,12 @@ export default function OutlookInbox({ currentUser, onClose, onOpenChat }) {
     return () => unsub();
   }, [currentUser]);
 
-  // Filter connections by active folder
+  // Filter connections by active folder and block list
   const filteredConns = connections.filter(c => {
+    // Filter out connections with blocked users
+    const isBlocked = userDoc?.blockedUsers?.includes(c.senderId) || userDoc?.blockedUsers?.includes(c.receiverId);
+    if (isBlocked) return false;
+
     if (activeFolder === "inbox") {
       return c.receiverId === currentUser.uid && c.status === "pending";
     } else if (activeFolder === "sent") {

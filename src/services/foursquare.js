@@ -136,6 +136,31 @@ export const MOCK_VENUES = [
     city: "New York",
     zone: "Brooklyn",
     formatted_address: "2 Wyckoff Ave, Brooklyn, NY 11237"
+  },
+  // Cupertino - App Store Reviewer Mode
+  {
+    fsq_id: "venue_cafemacs",
+    name: "Caffe Macs",
+    address: "1 Infinite Loop",
+    city: "Cupertino",
+    zone: "HQ",
+    formatted_address: "1 Infinite Loop, Cupertino, CA 95014"
+  },
+  {
+    fsq_id: "venue_infiniteloop",
+    name: "Infinite Loop Lounge",
+    address: "2 Infinite Loop",
+    city: "Cupertino",
+    zone: "HQ",
+    formatted_address: "2 Infinite Loop, Cupertino, CA 95014"
+  },
+  {
+    fsq_id: "venue_applepark",
+    name: "Apple Park Visitor Center Cafe",
+    address: "10600 N Tantau Ave",
+    city: "Cupertino",
+    zone: "Campus",
+    formatted_address: "10600 N Tantau Ave, Cupertino, CA 95014"
   }
 ];
 

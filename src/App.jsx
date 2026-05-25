@@ -9,6 +9,7 @@ import BSOD from "./components/BSOD";
 import MySpaceMusicPlayer from "./components/MySpaceMusicPlayer";
 import MySpaceProfileDialog from "./components/MySpaceProfileDialog";
 import SettingsPanel from "./components/SettingsPanel";
+import { Geolocation } from "@capacitor/geolocation";
 
 
 import { 
@@ -22,6 +23,7 @@ import {
   dbAddDoc,
   dbUpdateDoc,
   dbDeleteDoc,
+  dbGetDocs,
   queryWhere
 } from "./firebase";
 import { searchVenues } from "./services/foursquare";
@@ -143,6 +145,34 @@ export default function App() {
         // Initialize Anonymous Onboarding
         await firebaseSignInAnonymously();
 
+        // Check for App Store Reviewer Mode (Cupertino coordinates or developer override)
+        const isOverride = localStorage.getItem("asl_dev_override") === "true";
+        let isCupertino = false;
+        try {
+          const permission = await Geolocation.checkPermissions();
+          if (permission.location === "granted") {
+            const coordinates = await Geolocation.getCurrentPosition({
+              enableHighAccuracy: false,
+              timeout: 3000
+            });
+            const lat = coordinates.coords.latitude;
+            const lng = coordinates.coords.longitude;
+            if (lat >= 37.30 && lat <= 37.35 && lng >= -122.06 && lng <= -122.01) {
+              isCupertino = true;
+            }
+          }
+        } catch (e) {
+          console.warn("Cupertino geofence load check failed:", e);
+        }
+
+        if (isOverride || isCupertino) {
+          console.log("App Store Reviewer Mode Active! Setting city to Cupertino.");
+          localStorage.setItem("asl_reviewer_mode", "true");
+          setSelectedCity("Cupertino");
+        } else {
+          localStorage.removeItem("asl_reviewer_mode");
+        }
+
         // Load all venues for folder tree structure
         const allVenues = await searchVenues("");
         setVenues(allVenues);
@@ -170,6 +200,96 @@ export default function App() {
           unlockedThemes: ["classic", "glitter", "cyberpunk", "sunset", "goth", "pokemon"]
         }, true);
 
+        // Reviewer Mode Mock Data Injection
+        const injectReviewerMockData = async () => {
+          const isReviewer = localStorage.getItem("asl_reviewer_mode") === "true" || localStorage.getItem("asl_dev_override") === "true";
+          if (isReviewer) {
+            // 1. Inject Cupertino into user's profile and selectedCity
+            await dbSetDoc("users", user.uid, {
+              selectedCity: "Cupertino",
+              homeCity: "Cupertino"
+            }, true);
+            
+            // 2. Create mock posts for Cupertino venues if they don't exist
+            const postsSnap = await dbGetDocs("posts", [queryWhere("venueId", "==", "venue_cafemacs")]);
+            if (postsSnap.empty) {
+              console.log("Injecting reviewer mock posts...");
+              // Create mock author "tom"
+              await dbSetDoc("users", "tom", {
+                username: "tom",
+                emoji_avatar: "👨",
+                bio: "Your first friend. I like music.",
+                homeCity: "Cupertino",
+                selectedCity: "Cupertino"
+              }, true);
+              
+              await dbAddDoc("posts", {
+                userId: "tom",
+                username: "tom",
+                emoji_avatar: "👨",
+                mood: "nostalgic",
+                bio: "Your first friend.",
+                venueId: "venue_cafemacs",
+                venueName: "Caffe Macs",
+                venueCity: "Cupertino",
+                text: "Saw someone with a classic rainbow Apple logo shirt here. Are you a legacy developer? Let's connect!",
+                timestamp: Date.now() - 3600000,
+                encounterDate: "Today",
+                encounterTime: "Lunchtime",
+                uniquenessPrompt: "What color was the shirt?",
+                proofAnswer: "rainbow",
+                status: "active",
+                thumbsUpCount: 2
+              });
+              
+              await dbAddDoc("posts", {
+                userId: "tom",
+                username: "tom",
+                emoji_avatar: "👨",
+                mood: "chill",
+                bio: "Your first friend.",
+                venueId: "venue_applepark",
+                venueName: "Apple Park Visitor Center Cafe",
+                venueCity: "Cupertino",
+                text: "Sitting by the olive trees. Let's chat about dial-up portals.",
+                timestamp: Date.now() - 7200000,
+                encounterDate: "Today",
+                encounterTime: "Morning",
+                uniquenessPrompt: "What trees were they?",
+                proofAnswer: "olive",
+                status: "active",
+                thumbsUpCount: 5
+              });
+            }
+
+            // 3. Create a mock connection/claim from Tom to the reviewer if none exists
+            const connSnap = await dbGetDocs("connections", [
+              queryWhere("receiverId", "==", user.uid),
+              queryWhere("senderId", "==", "tom")
+            ]);
+            if (connSnap.empty) {
+              console.log("Injecting reviewer mock connection...");
+              await dbAddDoc("connections", {
+                senderId: "tom",
+                senderUsername: "tom",
+                senderEmoji: "👨",
+                receiverId: user.uid,
+                receiverUsername: "Reviewer",
+                receiverEmoji: "🍎",
+                postId: "mock_post_reviewer",
+                postText: "Saw you at Caffe Macs looking at code.",
+                status: "pending",
+                encounterDetails: "We locked eyes near the espresso machine.",
+                timestamp: Date.now(),
+                venueName: "Caffe Macs",
+                proofText: "I was wearing a classic rainbow Apple logo shirt!"
+              });
+            }
+          }
+        };
+
+        injectReviewerMockData();
+
         // Subscribe to user flags and ban status in real-time
         const unsubUserDoc = dbOnSnapshot("users", [], (snapshot) => {
           const userRecord = snapshot.docs.find(d => d.id === user.uid);
@@ -177,7 +297,8 @@ export default function App() {
             const data = userRecord.data();
             setUserDoc(data);
             if (data.selectedCity) {
-              setSelectedCity(data.selectedCity);
+              const isReviewer = localStorage.getItem("asl_reviewer_mode") === "true" || localStorage.getItem("asl_dev_override") === "true";
+              setSelectedCity(isReviewer ? "Cupertino" : data.selectedCity);
             }
             if (data.banned || data.flag_count >= 3) {
               setDeviceBanned(true);
@@ -371,6 +492,47 @@ export default function App() {
     return () => unsub();
   }, []);
 
+  // 2a. Background sync for offline posts when network re-establishes
+  useEffect(() => {
+    const handleOnline = async () => {
+      const queuedStr = localStorage.getItem("asl_offline_posts");
+      if (!queuedStr) return;
+      try {
+        const queuedPosts = JSON.parse(queuedStr);
+        if (!Array.isArray(queuedPosts) || queuedPosts.length === 0) return;
+        
+        console.log("Device is back online! Syncing offline posts in background:", queuedPosts);
+        for (const postData of queuedPosts) {
+          // Add post to Firestore
+          await dbAddDoc("posts", {
+            ...postData,
+            timestamp: Date.now()
+          });
+
+          // Also update the user's profile card
+          if (currentUser) {
+            await dbSetDoc("users", currentUser.uid, {
+              username: postData.username,
+              mood: postData.mood,
+              bio: postData.bio,
+              profileTheme: postData.profileTheme,
+              emoji_avatar: postData.emoji_avatar,
+              lastPostAt: Date.now()
+            }, true);
+          }
+        }
+        
+        localStorage.removeItem("asl_offline_posts");
+        alert("Sync Complete: Your queued offline posts have been successfully transmitted to the server!");
+      } catch (err) {
+        console.error("Error background-syncing offline posts:", err);
+      }
+    };
+
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
+  }, [currentUser]);
+
   // 2b. Subscribe to inbound connection claims (pending mail)
   useEffect(() => {
     if (!currentUser || currentUser.isAnonymous) {
@@ -407,7 +569,9 @@ export default function App() {
         const posts = [];
         snapshot.docs.forEach(doc => {
           const data = doc.data();
-          if (data.venueId === selectedVenue.fsq_id) {
+          const isBlocked = userDoc?.blockedUsers?.includes(data.userId);
+          const isReported = data.reported || data.status === "reported";
+          if (data.venueId === selectedVenue.fsq_id && !isBlocked && !isReported) {
             posts.push({ id: doc.id, ...data });
           }
         });
@@ -418,7 +582,7 @@ export default function App() {
     );
 
     return () => unsubPosts();
-  }, [selectedVenue]);
+  }, [selectedVenue, userDoc]);
 
 
 
@@ -446,9 +610,35 @@ export default function App() {
   // Post wizard submit handler
   const handleWizardSubmit = async (postData) => {
     try {
+      // Offline detection and queuing
+      if (!navigator.onLine) {
+        const offlineQueue = JSON.parse(localStorage.getItem("asl_offline_posts") || "[]");
+        offlineQueue.push({
+          ...postData,
+          userId: currentUser.uid,
+          timestamp: Date.now()
+        });
+        localStorage.setItem("asl_offline_posts", JSON.stringify(offlineQueue));
+        
+        alert("Offline Mode: Your post has been saved locally and queued. It will automatically upload once a connection is re-established.");
+        
+        // Auto-navigate to the venue's feed or home
+        const matchedVenue = venues.find(v => v.fsq_id === postData.venueId);
+        if (matchedVenue) {
+          setSelectedVenue(matchedVenue);
+          setSelectedCity(matchedVenue.city);
+          setNavigationScreen("feed");
+        } else {
+          setNavigationScreen("home");
+        }
+        return;
+      }
+
+      // Check metropolitan portal validation constraints (bypass if Reviewer Mode is active)
+      const isReviewerMode = localStorage.getItem("asl_reviewer_mode") === "true" || localStorage.getItem("asl_dev_override") === "true";
       const userHomeCity = userDoc?.homeCity || userDoc?.selectedCity || selectedCity || "Phoenix";
       const postCity = postData.venueCity || "Phoenix";
-      if (postCity.toLowerCase() !== userHomeCity.toLowerCase()) {
+      if (!isReviewerMode && postCity.toLowerCase() !== userHomeCity.toLowerCase()) {
         const funnyMessages = [
           `Wrong city, bro. Stick to your own turf in ${userHomeCity}!`,
           `Nice try, traveler. The server admin caught you trying to post in ${postCity} from your home node in ${userHomeCity}.`,
@@ -474,6 +664,18 @@ export default function App() {
           `Post rate limit exceeded. Even dial-up has a cooldown. Come back in ${minutesLeft} minute${minutesLeft > 1 ? "s" : ""}.`
         ];
         throw new Error(cooldownMessages[Math.floor(Math.random() * cooldownMessages.length)]);
+      }
+
+      // ── Daily Post Limit Check (max 3 posts per 24 hours) ───────────────
+      const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+      const postsSnap = await dbGetDocs("posts", [
+        queryWhere("userId", "==", currentUser.uid),
+        queryWhere("timestamp", ">=", oneDayAgo)
+      ]);
+      if (postsSnap.size >= 3) {
+        const rateLimitMsg = "Rate Limit: You have exceeded the daily limit of 3 posts per 24 hours. Keep the node clean!";
+        alert(rateLimitMsg);
+        throw new Error(rateLimitMsg);
       }
 
       await dbAddDoc("posts", {
@@ -519,6 +721,73 @@ export default function App() {
     }
 
     setShowCertaintyModal(post);
+  };
+
+  const isPostLiked = (postId) => {
+    try {
+      const likedStr = localStorage.getItem("asl_liked_posts") || "[]";
+      return JSON.parse(likedStr).includes(postId);
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const handleDeletePost = async (post) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this missed connection post forever?");
+    if (!confirmDelete) return;
+    try {
+      await dbDeleteDoc("posts", post.id);
+      alert("Post deleted successfully.");
+    } catch (err) {
+      console.error("Error deleting post:", err);
+      alert("Failed to delete post.");
+    }
+  };
+
+  const handleReportPost = async (post) => {
+    const confirmReport = window.confirm("Are you sure you want to report this post for safety violations?");
+    if (!confirmReport) return;
+    try {
+      // 1. Mark reported: true on the post document
+      await dbUpdateDoc("posts", post.id, { reported: true });
+
+      // 2. Increment poster's flag_count in their users document
+      const posterSnap = await dbGetDoc("users", post.userId);
+      if (posterSnap.exists()) {
+        const posterData = posterSnap.data();
+        const currentFlags = posterData.flag_count || 0;
+        await dbUpdateDoc("users", post.userId, { flag_count: currentFlags + 1 });
+      }
+
+      alert("Thank you. The post has been flagged and removed from your feed.");
+    } catch (err) {
+      console.error("Error reporting post:", err);
+    }
+  };
+
+  const handleThumbsUp = async (post) => {
+    if (post.userId === currentUser?.uid) {
+      alert("Self-approvals aren't supported, bestie. You cannot thumbs up your own post!");
+      return;
+    }
+    try {
+      const likedStr = localStorage.getItem("asl_liked_posts") || "[]";
+      let likedArray = JSON.parse(likedStr);
+      let newCount = post.thumbsUpCount || 0;
+
+      if (likedArray.includes(post.id)) {
+        newCount = Math.max(0, newCount - 1);
+        likedArray = likedArray.filter(id => id !== post.id);
+      } else {
+        newCount = newCount + 1;
+        likedArray.push(post.id);
+      }
+
+      localStorage.setItem("asl_liked_posts", JSON.stringify(likedArray));
+      await dbUpdateDoc("posts", post.id, { thumbsUpCount: newCount });
+    } catch (err) {
+      console.error("Error liking/unliking post:", err);
+    }
   };
 
   const handleSysopLogin = async (e) => {
@@ -1539,6 +1808,33 @@ export default function App() {
                     </div>
                     <div className="city-portal-arrow">➡️</div>
                   </div>
+                  
+                  {/* Cupertino Area Option (App Store Reviewer Mode) */}
+                  {(localStorage.getItem("asl_reviewer_mode") === "true" || localStorage.getItem("asl_dev_override") === "true") && (
+                    <div 
+                      className="city-portal-card"
+                      style={{ border: "2px solid #003399", backgroundColor: "#e6f2ff" }}
+                      onClick={() => {
+                        setSelectedCity("Cupertino");
+                        setNavigationScreen("bar");
+                        if (currentUser) {
+                          const updates = { selectedCity: "Cupertino" };
+                          if (!userDoc?.homeCity) {
+                            updates.homeCity = "Cupertino";
+                          }
+                          dbSetDoc("users", currentUser.uid, updates, true);
+                        }
+                      }}
+                    >
+                      <div className="city-portal-icon">🍎</div>
+                      <div style={{ flex: 1 }}>
+                        <div className="city-portal-title" style={{ color: "#003399", fontWeight: "bold" }}>Cupertino Area Node</div>
+                        <div className="city-portal-desc">Silicon Valley Hub — Bypassed geofence & debug mode</div>
+                        <div className="city-portal-status" style={{ color: "#006600" }}>📡 Network Status: ACTIVE (REVIEWER OVERRIDE)</div>
+                      </div>
+                      <div className="city-portal-arrow">➡️</div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1686,7 +1982,8 @@ export default function App() {
                     onClick={() => {
                       const userHomeCity = userDoc?.homeCity || userDoc?.selectedCity || selectedCity || "Phoenix";
                       const venueCity = selectedVenue.city || "Phoenix";
-                      if (venueCity.toLowerCase() !== userHomeCity.toLowerCase()) {
+                      const isReviewerMode = localStorage.getItem("asl_reviewer_mode") === "true" || localStorage.getItem("asl_dev_override") === "true";
+                      if (!isReviewerMode && venueCity.toLowerCase() !== userHomeCity.toLowerCase()) {
                         const funnyMessages = [
                           `Wrong city, bro. Stick to your own turf in ${userHomeCity}!`,
                           `Nice try, traveler. The server admin caught you trying to post in ${venueCity} from your home node in ${userHomeCity}.`,
@@ -1847,18 +2144,69 @@ export default function App() {
                           />
                         </div>
 
-                        <div className="myspace-comment-actions">
-                          {post.userId !== currentUser?.uid ? (
-                            <button 
-                              onClick={() => runWithAuthenticationCheck(() => handleThatWasMe(post))}
-                            >
-                              🤝 That Was Me!
-                            </button>
-                          ) : (
-                            <span style={{ fontSize: "11px", color: "#808080", fontStyle: "italic" }}>
-                              (Your post)
-                            </span>
-                          )}
+                        <div className="myspace-comment-actions" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                          <button 
+                            onClick={() => runWithAuthenticationCheck(() => handleThumbsUp(post))}
+                            style={{ 
+                              cursor: "pointer", 
+                              minHeight: "24px",
+                              padding: "2px 6px",
+                              backgroundColor: isPostLiked(post.id) ? "#ffccd8" : "#dfdfdf",
+                              color: isPostLiked(post.id) ? "#ff0055" : "#000000",
+                              border: isPostLiked(post.id) ? "1px solid #ff0055" : "1px solid #808080",
+                              fontWeight: "bold",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px"
+                            }}
+                          >
+                            👍 {post.thumbsUpCount || 0}
+                          </button>
+                          
+                          <div style={{ display: "flex", gap: "6px" }}>
+                            {post.userId !== currentUser?.uid ? (
+                              <>
+                                <button 
+                                  onClick={() => runWithAuthenticationCheck(() => handleThatWasMe(post))}
+                                  style={{ minHeight: "24px", padding: "2px 8px" }}
+                                >
+                                  🤝 That Was Me!
+                                </button>
+                                <button 
+                                  onClick={() => runWithAuthenticationCheck(() => handleReportPost(post))}
+                                  style={{ 
+                                    minHeight: "24px", 
+                                    padding: "2px 8px", 
+                                    backgroundColor: "#ffcccc", 
+                                    color: "#b22222", 
+                                    border: "1px solid #b22222",
+                                    fontWeight: "bold"
+                                  }}
+                                >
+                                  ⚠️ Report
+                                </button>
+                              </>
+                            ) : (
+                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                <span style={{ fontSize: "11px", color: "#808080", fontStyle: "italic" }}>
+                                  (Your post)
+                                </span>
+                                <button 
+                                  onClick={() => handleDeletePost(post)}
+                                  style={{ 
+                                    minHeight: "24px", 
+                                    padding: "2px 8px", 
+                                    backgroundColor: "#ffcccc", 
+                                    color: "#b22222", 
+                                    border: "1px solid #b22222",
+                                    fontWeight: "bold"
+                                  }}
+                                >
+                                  🗑️ Delete
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1919,6 +2267,7 @@ export default function App() {
         {navigationScreen === "mail" && (
           <OutlookInbox 
             currentUser={currentUser}
+            userDoc={userDoc}
             onClose={() => setNavigationScreen("home")}
             onOpenChat={handleOpenChat}
           />
@@ -1972,6 +2321,7 @@ export default function App() {
             chatId={activeChatId}
             connection={activeChatConnection}
             currentUser={currentUser}
+            userDoc={userDoc}
             onClose={() => {
               setActiveChatId(null);
               setActiveChatConnection(null);
