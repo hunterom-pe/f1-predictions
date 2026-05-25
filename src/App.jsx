@@ -2016,6 +2016,7 @@ export default function App() {
                     onClick={() => {
                       setShowProofDialog(showCertaintyModal);
                       setShowCertaintyModal(null);
+                      setNavigationScreen("proof");
                     }} 
                     style={{ 
                       minWidth: "120px", 
