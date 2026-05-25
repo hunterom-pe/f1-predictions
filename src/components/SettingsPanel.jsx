@@ -25,7 +25,7 @@ export default function SettingsPanel({ currentUser, userDoc, onLogout, onNaviga
   const [notifStatus, setNotifStatus] = useState("");
 
   // Diagnostics State
-  const [geofenceStatus, setGeofenceStatus] = useState("Status: Node Idle");
+  const [geofenceStatus, setGeofenceStatus] = useState("Status: Offline / Standby");
 
   // Deletion Modal/Warning State
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -61,14 +61,14 @@ export default function SettingsPanel({ currentUser, userDoc, onLogout, onNaviga
       setEmailStatus("Error: Email cannot be empty.");
       return;
     }
-    setEmailStatus("Updating email...");
+    setEmailStatus("Saving new email...");
     try {
       await firebaseUpdateEmail(emailInput);
       // Update firestore document too
       await dbSetDoc("users", currentUser.uid, {
         email: emailInput
       }, true);
-      setEmailStatus("Success: Email updated.");
+      setEmailStatus("Sweet! Email updated.");
     } catch (err) {
       console.error(err);
       setEmailStatus(`Error: ${err.message || "Failed to update email."}`);
@@ -81,10 +81,10 @@ export default function SettingsPanel({ currentUser, userDoc, onLogout, onNaviga
       setPwResetStatus("Error: No email address available.");
       return;
     }
-    setPwResetStatus("Sending reset link...");
+    setPwResetStatus("Sending link...");
     try {
       await firebaseSendPasswordResetEmail(emailToUse);
-      setPwResetStatus("Success: Reset link dispatched.");
+      setPwResetStatus("Reset link sent to your inbox!");
     } catch (err) {
       console.error(err);
       setPwResetStatus(`Error: ${err.message || "Failed to send reset link."}`);
@@ -170,13 +170,13 @@ export default function SettingsPanel({ currentUser, userDoc, onLogout, onNaviga
 
   // D. Node Diagnostics
   const handlePingGeofence = async () => {
-    setGeofenceStatus("Pinging geofence network...");
+    setGeofenceStatus("Locating local nodes...");
     try {
       const permission = await Geolocation.checkPermissions();
       if (permission.location !== "granted") {
         const req = await Geolocation.requestPermissions();
         if (req.location !== "granted") {
-          setGeofenceStatus("Status: Geolocation access disabled.");
+          setGeofenceStatus("Status: Geolocation permission denied.");
           return;
         }
       }
@@ -184,10 +184,10 @@ export default function SettingsPanel({ currentUser, userDoc, onLogout, onNaviga
         enableHighAccuracy: true,
         timeout: 5000
       });
-      setGeofenceStatus(`Status: Signal Lock Obtained // Phoenix Node Active (${coordinates.coords.latitude.toFixed(4)}, ${coordinates.coords.longitude.toFixed(4)})`);
+      setGeofenceStatus(`Status: Connected // Phoenix Node Active (${coordinates.coords.latitude.toFixed(4)}, ${coordinates.coords.longitude.toFixed(4)})`);
     } catch (err) {
       console.error(err);
-      setGeofenceStatus("Status: Signal Lock Failed // Hardware Diagnostic Required");
+      setGeofenceStatus("Status: Connection Lost // Check your settings");
     }
   };
 
@@ -229,7 +229,7 @@ export default function SettingsPanel({ currentUser, userDoc, onLogout, onNaviga
       <div className="window" style={{ width: "100%", boxSizing: "border-box" }}>
         <div className="title-bar" style={{ backgroundColor: "#003399", padding: "6px 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div className="title-bar-text" style={{ fontWeight: "bold", color: "#ffffff" }}>
-            ⚙️ Control Panel Preferences
+            ⚡ My asl settings & preferences
           </div>
           <div className="title-bar-controls">
             <button aria-label="Close" onClick={onNavigateBack} style={{ cursor: "pointer" }} />
@@ -249,10 +249,10 @@ export default function SettingsPanel({ currentUser, userDoc, onLogout, onNaviga
 
           {/* A. Account Adjustments */}
           <fieldset style={{ border: "2px outset #ffffff", padding: "10px", margin: 0 }}>
-            <legend style={{ fontWeight: "bold", color: "#003399" }}>Account Adjustments</legend>
+            <legend style={{ fontWeight: "bold", color: "#003399" }}>my login & password</legend>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
-                <label style={{ fontWeight: "bold" }}>Authenticated Email:</label>
+                <label style={{ fontWeight: "bold" }}>My Email Address:</label>
                 <div style={{ display: "flex", gap: "6px" }}>
                   <input 
                     type="text" 
@@ -266,9 +266,9 @@ export default function SettingsPanel({ currentUser, userDoc, onLogout, onNaviga
               </div>
               <hr style={{ border: "1px inset #ffffff", margin: "4px 0" }} />
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <label style={{ fontWeight: "bold" }}>Security Settings:</label>
+                <label style={{ fontWeight: "bold" }}>Password Reset:</label>
                 <button onClick={handlePasswordReset} style={{ alignSelf: "flex-start", minHeight: "24px", cursor: "pointer" }}>
-                  🔑 Send Password Reset Email
+                  🔑 Email Me a Password Reset Link
                 </button>
                 {pwResetStatus && <div style={{ fontSize: "10px", color: pwResetStatus.startsWith("Error") ? "red" : "green", marginTop: "2px" }}>{pwResetStatus}</div>}
               </div>
@@ -277,9 +277,9 @@ export default function SettingsPanel({ currentUser, userDoc, onLogout, onNaviga
 
           {/* B. Desktop Themes (Alternate Icons) */}
           <fieldset style={{ border: "2px outset #ffffff", padding: "10px", margin: 0 }}>
-            <legend style={{ fontWeight: "bold", color: "#003399" }}>Desktop Themes (App Icon)</legend>
+            <legend style={{ fontWeight: "bold", color: "#003399" }}>change my app icon</legend>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <span style={{ fontStyle: "italic", marginBottom: "4px" }}>Select launcher icon (requires native iOS/Android bridge):</span>
+              <span style={{ fontStyle: "italic", marginBottom: "4px" }}>Pick an icon style for your phone home screen:</span>
               
               <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
                 <input 
@@ -289,7 +289,7 @@ export default function SettingsPanel({ currentUser, userDoc, onLogout, onNaviga
                   checked={selectedIcon === "default"}
                   onChange={() => changeAppIcon("default")}
                 />
-                Default Runner (⚡ Yellow Runner)
+                Default Runner (⚡ Yellow Guy)
               </label>
 
               <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
@@ -300,7 +300,7 @@ export default function SettingsPanel({ currentUser, userDoc, onLogout, onNaviga
                   checked={selectedIcon === "MidnightRadar"}
                   onChange={() => changeAppIcon("MidnightRadar")}
                 />
-                Midnight Radar (📡 Dish + Pink Waves)
+                Midnight Radar (📡 Pink Signals)
               </label>
 
               <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
@@ -311,7 +311,7 @@ export default function SettingsPanel({ currentUser, userDoc, onLogout, onNaviga
                   checked={selectedIcon === "PinkSilhouette"}
                   onChange={() => changeAppIcon("PinkSilhouette")}
                 />
-                Pink Silhouette (👤 Avatar + Hearts)
+                Pink Silhouette (👤 Hearts Border)
               </label>
 
               <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
@@ -322,14 +322,14 @@ export default function SettingsPanel({ currentUser, userDoc, onLogout, onNaviga
                   checked={selectedIcon === "NeonHeart"}
                   onChange={() => changeAppIcon("NeonHeart")}
                 />
-                Neon Heart (✉️ Pinned Mail Heart)
+                Neon Heart (💌 Guestbook Envelope)
               </label>
             </div>
           </fieldset>
 
           {/* C. Dial-Up Signals (System Pings) */}
           <fieldset style={{ border: "2px outset #ffffff", padding: "10px", margin: 0 }}>
-            <legend style={{ fontWeight: "bold", color: "#003399" }}>Dial-Up Signals (System Pings)</legend>
+            <legend style={{ fontWeight: "bold", color: "#003399" }}>handshake alerts & signals</legend>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
                 <input 
@@ -337,7 +337,7 @@ export default function SettingsPanel({ currentUser, userDoc, onLogout, onNaviga
                   checked={notifyHandshake}
                   onChange={(e) => handleToggleHandshake(e.target.checked)}
                 />
-                Notify on incoming Handshake Request
+                Warn me when someone claims a Handshake
               </label>
               
               <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
@@ -346,7 +346,7 @@ export default function SettingsPanel({ currentUser, userDoc, onLogout, onNaviga
                   checked={notifyRadar}
                   onChange={(e) => handleToggleRadar(e.target.checked)}
                 />
-                Notify on new Radar Bulletins
+                Alert me on new local Radar bulletins
               </label>
 
               {notifStatus && <div style={{ fontSize: "9px", color: "darkred", marginTop: "2px" }}>{notifStatus}</div>}
@@ -355,14 +355,14 @@ export default function SettingsPanel({ currentUser, userDoc, onLogout, onNaviga
 
           {/* D. Node Diagnostics */}
           <fieldset style={{ border: "2px outset #ffffff", padding: "10px", margin: 0 }}>
-            <legend style={{ fontWeight: "bold", color: "#003399" }}>Node Diagnostics</legend>
+            <legend style={{ fontWeight: "bold", color: "#003399" }}>connection diagnostic & test</legend>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                 <button 
                   onClick={handlePingGeofence} 
                   style={{ alignSelf: "flex-start", padding: "4px 8px", minHeight: "26px", cursor: "pointer" }}
                 >
-                  [ Ping Local Geofence ]
+                  [ ping local area network ]
                 </button>
                 <div style={{ 
                   backgroundColor: "#000000", 
@@ -383,10 +383,10 @@ export default function SettingsPanel({ currentUser, userDoc, onLogout, onNaviga
                   onClick={handleFlushCache} 
                   style={{ padding: "4px 8px", minHeight: "26px", cursor: "pointer", backgroundColor: "#dfdfdf", color: "#000000" }}
                 >
-                  [ Flush System Cache ]
+                  [ clear browser cache / hard reset ]
                 </button>
                 <div style={{ color: "#666666", fontSize: "10px", marginTop: "3px" }}>
-                  Clears local storage collections, resets application state, and forces a cold program reload.
+                  Clears out stored files, logs you out, and does a fresh cold reload.
                 </div>
               </div>
             </div>
@@ -394,13 +394,13 @@ export default function SettingsPanel({ currentUser, userDoc, onLogout, onNaviga
 
           {/* E. System Format (Wipe Account) */}
           <fieldset style={{ border: "2px outset #ff0000", padding: "10px", margin: 0 }}>
-            <legend style={{ fontWeight: "bold", color: "#ff0000" }}>System Format</legend>
+            <legend style={{ fontWeight: "bold", color: "#ff0000" }}>delete my profile forever</legend>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               <div style={{ color: "#8b0000", fontWeight: "bold" }}>
-                ⚠️ Account Termination Unit
+                ⚠️ Delete Account (App Store Compliance)
               </div>
               <div style={{ color: "#666666" }}>
-                Satisfies App Store compliance metrics. This action permanently deletes your account and document footprints.
+                Wipes out your profile page, posts, handshake history, and connections.
               </div>
               <button 
                 onClick={() => setShowDeleteConfirm(true)} 
@@ -415,7 +415,7 @@ export default function SettingsPanel({ currentUser, userDoc, onLogout, onNaviga
                   cursor: "pointer"
                 }}
               >
-                Destroy Account Profile
+                Delete My Account Forever
               </button>
             </div>
           </fieldset>
@@ -441,7 +441,7 @@ export default function SettingsPanel({ currentUser, userDoc, onLogout, onNaviga
           <div className="window" style={{ width: "320px" }}>
             <div className="title-bar" style={{ backgroundColor: "#ff0000", padding: "4px 8px" }}>
               <div className="title-bar-text" style={{ fontWeight: "bold", color: "#ffffff" }}>
-                ⚠️ WIPE COMMAND WARNING
+                ⚠️ DELETE PROFILE FOREVER
               </div>
             </div>
             <div className="window-body" style={{ padding: "12px", display: "flex", flexDirection: "column", gap: "12px", backgroundColor: "#f0f0f0", fontFamily: "'MS Sans Serif', Geneva, sans-serif", fontSize: "11px", margin: 0 }}>
@@ -468,14 +468,14 @@ export default function SettingsPanel({ currentUser, userDoc, onLogout, onNaviga
                   style={{ minWidth: "80px", minHeight: "24px", cursor: "pointer", fontWeight: "bold" }}
                   disabled={!!deleteStatus}
                 >
-                  [ CANCEL ]
+                  [ Cancel ]
                 </button>
                 <button 
                   onClick={handleWipeAccount}
                   style={{ minWidth: "110px", minHeight: "24px", cursor: "pointer", backgroundColor: "#ff0000", color: "#ffffff", fontWeight: "bold" }}
                   disabled={!!deleteStatus}
                 >
-                  [ WIPE ACCOUNT ]
+                  [ Wipe My Account ]
                 </button>
               </div>
             </div>
