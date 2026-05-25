@@ -10,10 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor-community/app-icon": "^7.0.0",
     "@capacitor/core": "^8.3.4",
     "@capacitor/device": "^8.0.2",
+    "@capacitor/geolocation": "^8.2.0",
     "@capacitor/ios": "^8.3.4",
     "@capacitor/privacy-screen": "^2.0.1",
+    "@capacitor/push-notifications": "^8.1.1",
     "98.css": "^0.1.21",
     "firebase": "^12.13.0",
     "react": "^19.2.6",

@@ -36,6 +36,39 @@
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
+	<key>CFBundleIcons</key>
+	<dict>
+		<key>CFBundleAlternateIcons</key>
+		<dict>
+			<key>MidnightRadar</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>MidnightRadar</string>
+				</array>
+				<key>UIPrerenderedIcon</key>
+				<false/>
+			</dict>
+			<key>PinkSilhouette</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>PinkSilhouette</string>
+				</array>
+				<key>UIPrerenderedIcon</key>
+				<false/>
+			</dict>
+			<key>NeonHeart</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>NeonHeart</string>
+				</array>
+				<key>UIPrerenderedIcon</key>
+				<false/>
+			</dict>
+		</dict>
+	</dict>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 </dict>

@@ -8,6 +8,8 @@ import AIMChat from "./components/AIMChat";
 import BSOD from "./components/BSOD";
 import MySpaceMusicPlayer from "./components/MySpaceMusicPlayer";
 import MySpaceProfileDialog from "./components/MySpaceProfileDialog";
+import SettingsPanel from "./components/SettingsPanel";
+
 
 import { 
   firebaseSignInAnonymously, 
@@ -1047,6 +1049,15 @@ export default function App() {
                   </span>
                 )}
               </span>
+              <span 
+                className={`myspace-nav-link ${navigationScreen === "settings" ? "active" : ""}`}
+                onClick={() => {
+                  setNavigationScreen("settings");
+                  setSelectedProfileUser(null);
+                }}
+              >
+                Settings
+              </span>
               <span className="myspace-nav-link" onClick={handleLogout}>Logout</span>
             </>
           ) : (
@@ -1922,6 +1933,16 @@ export default function App() {
             currentUserProfile={userDoc}
             onModerationError={setModerationError}
             city={selectedCity || userDoc?.selectedCity || "Phoenix"}
+          />
+        )}
+
+        {/* SETTINGS SCREEN */}
+        {navigationScreen === "settings" && (
+          <SettingsPanel 
+            currentUser={currentUser}
+            userDoc={userDoc}
+            onLogout={handleLogout}
+            onNavigateBack={() => setNavigationScreen("home")}
           />
         )}
 

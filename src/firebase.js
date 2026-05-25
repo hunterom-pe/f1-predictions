@@ -6,7 +6,10 @@ import {
   EmailAuthProvider, 
   signInWithEmailAndPassword,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  updateEmail,
+  sendPasswordResetEmail,
+  deleteUser
 } from "firebase/auth";
 import { 
   getFirestore, 
@@ -22,7 +25,8 @@ import {
   where, 
   orderBy, 
   limit, 
-  serverTimestamp 
+  serverTimestamp,
+  getDocs
 } from "firebase/firestore";
 
 // Read Firebase configurations from Vite environment variables
@@ -906,3 +910,126 @@ export const dbOnSnapshot = (collectionName, queryConstraints = [], callback) =>
 export const queryWhere = (field, op, value) => ({ type: "where", field, op, value });
 export const queryOrderBy = (field, direction = "asc") => ({ type: "orderBy", field, direction });
 export const queryLimit = (value) => ({ type: "limit", value });
+
+// Settings / Preferences helpers supporting both simulated and real modes
+export const firebaseWipeUserData = async (uid) => {
+  if (isSimulated) {
+    const store = simulatedStore.getDb();
+    if (store.users && store.users[uid]) {
+      delete store.users[uid];
+    }
+    if (store.posts) {
+      store.posts = store.posts.filter(p => p.userId !== uid);
+    }
+    if (store.connections) {
+      Object.keys(store.connections).forEach(id => {
+        if (store.connections[id].senderId === uid || store.connections[id].receiverId === uid) {
+          delete store.connections[id];
+        }
+      });
+    }
+    if (store.chats) {
+      Object.keys(store.chats).forEach(id => {
+        if (store.chats[id].participants && store.chats[id].participants.includes(uid)) {
+          delete store.chats[id];
+        }
+      });
+    }
+    simulatedStore.saveDb(store);
+    return;
+  }
+
+  // Real Firebase Mode
+  const firestore = realDb;
+  // 1. Delete user doc
+  await deleteDoc(doc(firestore, "users", uid));
+
+  // 2. Delete user's posts
+  const postsQuery = query(collection(firestore, "posts"), where("userId", "==", uid));
+  const postsSnap = await getDocs(postsQuery);
+  for (const docObj of postsSnap.docs) {
+    await deleteDoc(docObj.ref);
+  }
+
+  // 3. Delete user's connections (as sender)
+  const connQuery1 = query(collection(firestore, "connections"), where("senderId", "==", uid));
+  const connSnap1 = await getDocs(connQuery1);
+  for (const docObj of connSnap1.docs) {
+    await deleteDoc(docObj.ref);
+  }
+
+  // 4. Delete user's connections (as receiver)
+  const connQuery2 = query(collection(firestore, "connections"), where("receiverId", "==", uid));
+  const connSnap2 = await getDocs(connQuery2);
+  for (const docObj of connSnap2.docs) {
+    await deleteDoc(docObj.ref);
+  }
+
+  // 5. Delete chats user is participating in
+  const chatsQuery = query(collection(firestore, "chats"), where("participants", "array-contains", uid));
+  const chatsSnap = await getDocs(chatsQuery);
+  for (const docObj of chatsSnap.docs) {
+    await deleteDoc(docObj.ref);
+  }
+};
+
+export const firebaseUpdateEmail = async (newEmail) => {
+  if (isSimulated) {
+    if (!mockAuthInstance.currentUser) throw new Error("No authenticated user.");
+    const uid = mockAuthInstance.currentUser.uid;
+    const authPool = JSON.parse(localStorage.getItem("asl_auth_users") || "{}");
+    const oldEmail = Object.keys(authPool).find(k => authPool[k].uid === uid);
+    if (oldEmail) {
+      const creds = authPool[oldEmail];
+      delete authPool[oldEmail];
+      authPool[newEmail] = creds;
+      localStorage.setItem("asl_auth_users", JSON.stringify(authPool));
+    }
+    // Update simulated DB user doc
+    const dbData = simulatedStore.getDb();
+    if (dbData.users && dbData.users[uid]) {
+      dbData.users[uid].email = newEmail;
+      simulatedStore.saveDb(dbData);
+    }
+    // Update active session
+    mockAuthInstance.currentUser.email = newEmail;
+    mockAuthInstance.saveSession();
+    return;
+  }
+
+  // Real Firebase Mode
+  if (!realAuth.currentUser) throw new Error("No authenticated user.");
+  await updateEmail(realAuth.currentUser, newEmail);
+};
+
+export const firebaseSendPasswordResetEmail = async (email) => {
+  if (isSimulated) {
+    // Simulated mode success
+    console.log(`[Simulation] Password reset email sent to: ${email}`);
+    return;
+  }
+
+  // Real Firebase Mode
+  await sendPasswordResetEmail(realAuth, email);
+};
+
+export const firebaseDeleteAuthUser = async () => {
+  if (isSimulated) {
+    if (!mockAuthInstance.currentUser) return;
+    const uid = mockAuthInstance.currentUser.uid;
+    const authPool = JSON.parse(localStorage.getItem("asl_auth_users") || "{}");
+    const oldEmail = Object.keys(authPool).find(k => authPool[k].uid === uid);
+    if (oldEmail) {
+      delete authPool[oldEmail];
+      localStorage.setItem("asl_auth_users", JSON.stringify(authPool));
+    }
+    mockAuthInstance.currentUser = null;
+    mockAuthInstance.saveSession();
+    return;
+  }
+
+  // Real Firebase Mode
+  if (!realAuth.currentUser) return;
+  await deleteUser(realAuth.currentUser);
+};
+

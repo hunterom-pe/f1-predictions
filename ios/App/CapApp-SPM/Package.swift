@@ -12,8 +12,11 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.3.4"),
+        .package(name: "CapacitorCommunityAppIcon", path: "../../../node_modules/@capacitor-community/app-icon"),
         .package(name: "CapacitorDevice", path: "../../../node_modules/@capacitor/device"),
-        .package(name: "CapacitorPrivacyScreen", path: "../../../node_modules/@capacitor/privacy-screen")
+        .package(name: "CapacitorGeolocation", path: "../../../node_modules/@capacitor/geolocation"),
+        .package(name: "CapacitorPrivacyScreen", path: "../../../node_modules/@capacitor/privacy-screen"),
+        .package(name: "CapacitorPushNotifications", path: "../../../node_modules/@capacitor/push-notifications")
     ],
     targets: [
         .target(
@@ -21,8 +24,11 @@ let package = Package(
             dependencies: [
                 .product(name: "Capacitor", package: "capacitor-swift-pm"),
                 .product(name: "Cordova", package: "capacitor-swift-pm"),
+                .product(name: "CapacitorCommunityAppIcon", package: "CapacitorCommunityAppIcon"),
                 .product(name: "CapacitorDevice", package: "CapacitorDevice"),
-                .product(name: "CapacitorPrivacyScreen", package: "CapacitorPrivacyScreen")
+                .product(name: "CapacitorGeolocation", package: "CapacitorGeolocation"),
+                .product(name: "CapacitorPrivacyScreen", package: "CapacitorPrivacyScreen"),
+                .product(name: "CapacitorPushNotifications", package: "CapacitorPushNotifications")
             ]
         )
     ]
