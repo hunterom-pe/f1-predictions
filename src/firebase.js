@@ -751,18 +751,37 @@ export const firebaseSignInAnonymously = async () => {
 };
 
 export const firebaseLinkWithCredential = async (email, password) => {
+  console.log("firebaseLinkWithCredential: start. isSimulated =", isSimulated, "hasCurrentUser =", !!(isSimulated ? mockAuthInstance.currentUser : realAuth.currentUser));
   if (isSimulated) {
     if (mockAuthInstance.currentUser) {
+      console.log("firebaseLinkWithCredential: [Simulated] Linking credentials to current anonymous user...");
       return mockAuthInstance.linkWithCredential({ email, password });
     } else {
+      console.log("firebaseLinkWithCredential: [Simulated] Creating new email/password account from scratch...");
       return mockAuthInstance.createUserWithEmailAndPassword(email, password);
     }
   }
   if (realAuth.currentUser) {
+    console.log("firebaseLinkWithCredential: [Real] Linking credentials to current anonymous user:", realAuth.currentUser.uid);
     const credential = EmailAuthProvider.credential(email, password);
-    return linkWithCredential(realAuth.currentUser, credential);
+    try {
+      const res = await linkWithCredential(realAuth.currentUser, credential);
+      console.log("firebaseLinkWithCredential: [Real] Link completed successfully.");
+      return res;
+    } catch (err) {
+      console.error("firebaseLinkWithCredential: [Real] Link failed:", err);
+      throw err;
+    }
   } else {
-    return createUserWithEmailAndPassword(realAuth, email, password);
+    console.log("firebaseLinkWithCredential: [Real] Creating new email/password account from scratch...");
+    try {
+      const res = await createUserWithEmailAndPassword(realAuth, email, password);
+      console.log("firebaseLinkWithCredential: [Real] Account creation completed successfully.");
+      return res;
+    } catch (err) {
+      console.error("firebaseLinkWithCredential: [Real] Account creation failed:", err);
+      throw err;
+    }
   }
 };
 

@@ -42,10 +42,13 @@ export default function AuthDialog({ onClose, onSuccess }) {
 
       setLoading(true);
       try {
+        console.log("AuthDialog: handleSubmit register start for email:", email);
         await firebaseLinkWithCredential(email, password);
+        console.log("AuthDialog: handleSubmit register finished successfully");
         setLoading(false);
         onSuccess();
       } catch (err) {
+        console.error("AuthDialog: handleSubmit register failed:", err);
         setLoading(false);
         let msg = err.message;
         if (msg.includes("email-already-in-use")) {
