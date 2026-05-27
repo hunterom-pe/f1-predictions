@@ -13,7 +13,8 @@ import {
   linkWithPopup,
   signInWithPopup,
   GoogleAuthProvider,
-  OAuthProvider
+  OAuthProvider,
+  createUserWithEmailAndPassword
 } from "firebase/auth";
 import { 
   getFirestore, 
@@ -688,6 +689,41 @@ class MockAuth {
     return { user: this.currentUser };
   }
 
+  async createUserWithEmailAndPassword(email, password) {
+    const authPool = JSON.parse(localStorage.getItem("asl_auth_users") || "{}");
+    if (authPool[email]) {
+      throw new Error("auth/email-already-in-use: The email address is already in use by another account.");
+    }
+    
+    const newUid = "user_" + Math.random().toString(36).slice(2, 11);
+    authPool[email] = { uid: newUid, password };
+    localStorage.setItem("asl_auth_users", JSON.stringify(authPool));
+    
+    this.currentUser = {
+      uid: newUid,
+      isAnonymous: false,
+      email: email,
+      flag_count: 0,
+      banned: false,
+      uuid: localStorage.getItem("asl_device_uuid") || ""
+    };
+    
+    const db = simulatedStore.getDb();
+    db.users[newUid] = {
+      uid: newUid,
+      isAnonymous: false,
+      email: email,
+      flag_count: 0,
+      banned: false,
+      uuid: this.currentUser.uuid,
+      createdAt: Date.now()
+    };
+    simulatedStore.saveDb(db);
+    
+    this.saveSession();
+    return { user: this.currentUser };
+  }
+
   async signOut() {
     this.currentUser = null;
     this.saveSession();
@@ -716,17 +752,29 @@ export const firebaseSignInAnonymously = async () => {
 
 export const firebaseLinkWithCredential = async (email, password) => {
   if (isSimulated) {
-    return mockAuthInstance.linkWithCredential({ email, password });
+    if (mockAuthInstance.currentUser) {
+      return mockAuthInstance.linkWithCredential({ email, password });
+    } else {
+      return mockAuthInstance.createUserWithEmailAndPassword(email, password);
+    }
   }
-  const credential = EmailAuthProvider.credential(email, password);
-  return linkWithCredential(realAuth.currentUser, credential);
+  if (realAuth.currentUser) {
+    const credential = EmailAuthProvider.credential(email, password);
+    return linkWithCredential(realAuth.currentUser, credential);
+  } else {
+    return createUserWithEmailAndPassword(realAuth, email, password);
+  }
 };
 
 export const firebaseLinkWithOAuth = async (providerName) => {
   if (isSimulated) {
     await new Promise(resolve => setTimeout(resolve, 1000));
     const mockEmail = providerName === "google" ? "hunter.google@gmail.com" : "hunter.apple@icloud.com";
-    return mockAuthInstance.linkWithOAuth(mockEmail);
+    if (mockAuthInstance.currentUser) {
+      return mockAuthInstance.linkWithOAuth(mockEmail);
+    } else {
+      return mockAuthInstance.signInWithOAuth(mockEmail);
+    }
   }
   
   let provider;
@@ -738,7 +786,11 @@ export const firebaseLinkWithOAuth = async (providerName) => {
     throw new Error("Unsupported provider: " + providerName);
   }
   
-  return linkWithPopup(realAuth.currentUser, provider);
+  if (realAuth.currentUser) {
+    return linkWithPopup(realAuth.currentUser, provider);
+  } else {
+    return signInWithPopup(realAuth, provider);
+  }
 };
 
 export const firebaseSignInWithOAuth = async (providerName) => {
