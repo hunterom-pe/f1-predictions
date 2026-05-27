@@ -1568,58 +1568,33 @@ export default function App() {
                         Yo, {userDoc?.username || currentUser.email?.split("@")[0] || "User"}!
                       </h2>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <span style={{ fontSize: "10px", color: "#555" }}>Mood:</span>
-                        <div style={{ position: "relative", display: "inline-block" }}>
-                          <select
-                            value={userDoc?.mood || "Chillin' 😎"}
-                            onChange={(e) => handleSaveProfile({ mood: e.target.value })}
-                            style={{ 
-                              fontSize: "10px", 
-                              backgroundColor: "#ffffff", 
-                              color: "#000000", 
-                              padding: "2px 14px 2px 4px", 
-                              border: "1px inset", 
-                              boxShadow: "inset -1px -1px #fff, inset 1px 1px #808080",
-                              fontWeight: "bold",
-                              borderRadius: 0,
-                              appearance: "none",
-                              WebkitAppearance: "none",
-                              cursor: "pointer",
-                              outline: "none"
-                            }}
-                          >
-                            <option>Chillin' 😎</option>
-                            <option>Excited ⚡</option>
-                            <option>Crushing 😍</option>
-                            <option>Mellow 🎧</option>
-                            <option>Melancholy 🌧️</option>
-                            <option>Goth Emo 🖤</option>
-                            <option>Ready to Party 🍹</option>
-                            <option>Hyper 🤪</option>
-                            <option>Sassy 💅</option>
-                            <option>Pissed 😡</option>
-                            <option>Bored 😑</option>
-                            <option>Creative 🎨</option>
-                            <option>Spacey 🚀</option>
-                            <option>Tired 😴</option>
-                            <option>Reflective 📖</option>
-                            <option>Rebellious ✊</option>
-                            <option>Nostalgic 📼</option>
-                          </select>
-                          <span 
-                            style={{ 
-                              fontSize: "7px", 
-                              color: "#808080", 
-                              position: "absolute", 
-                              right: "5px", 
-                              top: "50%", 
-                              transform: "translateY(-50%)", 
-                              pointerEvents: "none" 
-                            }}
-                          >
-                            ▼
-                          </span>
-                        </div>
+                        <span style={{ fontSize: "11px", color: "#000", fontWeight: "bold" }}>Mood:</span>
+                        <select
+                          className="retro-select"
+                          value={userDoc?.mood || "Chillin' 😎"}
+                          onChange={(e) => handleSaveProfile({ mood: e.target.value })}
+                          style={{
+                            width: "150px"
+                          }}
+                        >
+                          <option>Chillin' 😎</option>
+                          <option>Excited ⚡</option>
+                          <option>Crushing 😍</option>
+                          <option>Mellow 🎧</option>
+                          <option>Melancholy 🌧️</option>
+                          <option>Goth Emo 🖤</option>
+                          <option>Ready to Party 🍹</option>
+                          <option>Hyper 🤪</option>
+                          <option>Sassy 💅</option>
+                          <option>Pissed 😡</option>
+                          <option>Bored 😑</option>
+                          <option>Creative 🎨</option>
+                          <option>Spacey 🚀</option>
+                          <option>Tired 😴</option>
+                          <option>Reflective 📖</option>
+                          <option>Rebellious ✊</option>
+                          <option>Nostalgic 📼</option>
+                        </select>
                       </div>
                       <p style={{ margin: "2px 0 6px 0", fontSize: "11px", color: "#666", fontStyle: "italic", textAlign: "left", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>
                         "{userDoc?.headline || "everyone's favorite dial-up partner"}"

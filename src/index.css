@@ -3901,5 +3901,33 @@ legend {
   100% { opacity: 1; }
 }
 
+/* Custom retro select dropdown to override mobile input overrides */
+select.retro-select {
+  font-size: 11px !important;
+  padding: 1px 20px 1px 4px !important;
+  min-height: 22px !important;
+  height: 22px !important;
+  box-sizing: border-box !important;
+  border-radius: 0 !important;
+  cursor: pointer !important;
+  font-family: "MS Sans Serif", Tahoma, sans-serif !important;
+  font-weight: bold !important;
+  background-color: #ffffff !important;
+  color: #333333 !important;
+  
+  /* Standard 98.css inset border */
+  box-shadow: inset -1px -1px #fff, inset 1px 1px #808080, inset -2px -2px #dfdfdf, inset 2px 2px #0a0a0a !important;
+  border: none !important;
+
+  /* Standard 98.css dropdown button graphics */
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='17' fill='none' viewBox='0 0 16 17'><path fill='%23C0C0C0' d='M0 0h16v17H0z'/><path stroke='%23FFF' d='M.5.5h14v15H.5z'/><path stroke='%23808080' d='M1.5 15.5h14v-14'/><path stroke='%23000' d='M.5 16.5h15v-16'/><path fill='%23000' d='M4 6h8l-4 4z'/></svg>") !important;
+  background-position: right 1px center !important;
+  background-repeat: no-repeat !important;
+}
+
+
 
 
