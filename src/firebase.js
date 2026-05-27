@@ -1,6 +1,9 @@
 import { initializeApp, getApps } from "firebase/app";
 import { 
-  getAuth, 
+  getAuth,
+  initializeAuth,
+  indexedDBLocalPersistence,
+  browserLocalPersistence,
   signInAnonymously, 
   linkWithCredential, 
   EmailAuthProvider, 
@@ -56,7 +59,22 @@ let realDb = null;
 if (isRealFirebaseConfigured) {
   try {
     const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-    realAuth = getAuth(firebaseApp);
+    
+    // Capacitor iOS WebView has a known bug where Firebase Auth hangs indefinitely
+    // when detecting the default persistence. Explicitly setting persistence fixes it.
+    try {
+      realAuth = initializeAuth(firebaseApp, {
+        persistence: [indexedDBLocalPersistence, browserLocalPersistence]
+      });
+    } catch (err) {
+      // In case of hot reloads where auth is already initialized
+      if (err.code === "auth/already-initialized") {
+        realAuth = getAuth(firebaseApp);
+      } else {
+        throw err;
+      }
+    }
+    
     realDb = getFirestore(firebaseApp);
     console.log("Firebase initialized successfully using environment credentials.");
   } catch (err) {
