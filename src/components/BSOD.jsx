@@ -1,30 +1,13 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { dbAddDoc } from "../firebase";
 
 /**
- * Full-screen Windows 98 Blue Screen of Death (BSOD) lockout component.
+ * Full-screen Windows 98 Blue Screen of Death (BSOD) lockout component (Simplified).
  */
 export default function BSOD({ currentUser, deviceUuid }) {
-  const [keypressCount, setKeypressCount] = useState(0);
   const [appealText, setAppealText] = useState("");
   const [appealSent, setAppealSent] = useState(false);
   const [appealError, setAppealError] = useState("");
-
-  useEffect(() => {
-    // Intercept all keyboard events only if they are not typing in the textarea
-    const handleKeyDown = (e) => {
-      if (e.target.tagName === "TEXTAREA" || e.target.tagName === "INPUT") {
-        return;
-      }
-      e.preventDefault();
-      setKeypressCount(prev => prev + 1);
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
 
   const handleAppealSubmit = async (e) => {
     e.preventDefault();
@@ -46,41 +29,27 @@ export default function BSOD({ currentUser, deviceUuid }) {
   };
 
   return (
-    <div className="bsod-screen" style={{ overflowY: "auto", padding: "20px" }}>
-      <div className="bsod-content" style={{ maxWidth: "650px", margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: "30px" }}>
-          <span className="bsod-title">asl</span>
-        </div>
-
-        <p>A fatal exception 0x000000FA has occurred at system governance layer. The current user session has been terminated due to policy violations.</p>
+    <div className="bsod-screen" style={{ overflowY: "auto", padding: "40px 20px", display: "flex", alignItems: "center", minHeight: "100vh", boxSizing: "border-box" }}>
+      <div className="bsod-content" style={{ maxWidth: "600px", margin: "0 auto", width: "100%", fontFamily: "Courier New, monospace" }}>
         
-        <p style={{ margin: "20px 0" }}>
-          *  3 flag reports have been filed against this account by independent peers.<br />
-          *  The account credentials have been suspended in Firebase Auth database.<br />
-          *  The Capacitor Device UUID has been added to the hardware blocklist.<br />
-          *  Any subsequent guest or registration registrations from this device are blocked.
-        </p>
-
-        <p>System access terminated due to policy violation. Pressing keys will not restore connection.</p>
+        <h1 style={{ fontSize: "28px", color: "#ffffff", fontWeight: "bold", margin: "0 0 20px 0", lineHeight: "1.3" }}>
+          Three strikes...you've been banned :)
+        </h1>
         
-        {keypressCount > 0 && (
-          <p style={{ color: "#ffff55", fontWeight: "bold", marginTop: "20px", textTransform: "uppercase", textAlign: "center" }}>
-            *** Keypress detected: {keypressCount} attempt(s). Connection remains blocked. ***
-          </p>
-        )}
+        <h2 style={{ fontSize: "24px", color: "#ffffff", fontWeight: "bold", margin: "0 0 40px 0" }}>
+          GTFO
+        </h2>
 
-        <div style={{ border: "2px dashed #ffffff", padding: "15px", marginTop: "30px", backgroundColor: "rgba(0,0,0,0.2)" }}>
-          <h4 style={{ margin: "0 0 10px 0", color: "#ffff55" }}>SYSOP APPEAL CHANNELS</h4>
-          
+        <div style={{ border: "2px dashed #ffffff", padding: "20px", backgroundColor: "rgba(0,0,0,0.2)" }}>
           {appealSent ? (
-            <p style={{ color: "#55ff55", fontWeight: "bold", margin: 0 }}>
+            <p style={{ color: "#55ff55", fontWeight: "bold", margin: 0, fontSize: "14px" }}>
               YOUR APPEAL TRANSMISSION WAS RECEIVED. SYSOP ADMINISTRATOR WILL AUDIT TERMINAL LOGS.
             </p>
           ) : (
             <form onSubmit={handleAppealSubmit}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                <label htmlFor="appeal-input" style={{ fontSize: "12px" }}>
-                  IF THIS IS AN UNJUST BAN, ENTER BRIEF APPEAL EXPLANATION BELOW:
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <label htmlFor="appeal-input" style={{ fontSize: "16px", fontWeight: "bold", color: "#ffff55" }}>
+                  "I promise to be a good boy"
                 </label>
                 <textarea
                   id="appeal-input"
@@ -92,42 +61,40 @@ export default function BSOD({ currentUser, deviceUuid }) {
                     color: "#ffffff",
                     border: "1px solid #ffffff",
                     fontFamily: "Courier New, monospace",
-                    fontSize: "13px",
-                    padding: "8px",
+                    fontSize: "14px",
+                    padding: "10px",
                     width: "100%",
-                    minHeight: "60px",
-                    boxSizing: "border-box"
+                    minHeight: "80px",
+                    boxSizing: "border-box",
+                    outline: "none"
                   }}
-                  placeholder="e.g. Please review logs, flags are unjustified spite bans..."
+                  placeholder="Explain why you should be unbanned..."
                 />
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "11px" }}>Max 300 characters</span>
+                  <span style={{ fontSize: "11px", color: "#ccc" }}>Max 300 characters</span>
                   <button
                     type="submit"
                     style={{
                       backgroundColor: "#ffffff",
                       color: "#0000aa",
                       border: "none",
-                      padding: "6px 12px",
+                      padding: "8px 20px",
                       fontFamily: "Courier New, monospace",
+                      fontSize: "14px",
                       fontWeight: "bold",
                       cursor: "pointer"
                     }}
                   >
-                    SEND APPEAL
+                    SEND
                   </button>
                 </div>
               </div>
             </form>
           )}
-          {appealError && <p style={{ color: "red", margin: "10px 0 0 0" }}>{appealError}</p>}
+          {appealError && <p style={{ color: "#ff5555", margin: "10px 0 0 0", fontWeight: "bold" }}>{appealError}</p>}
         </div>
 
-        <div style={{ textAlign: "center", marginTop: "40px" }}>
-          Press any key to remain locked in safe mode . . .
-        </div>
       </div>
     </div>
   );
 }
-
