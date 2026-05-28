@@ -284,7 +284,7 @@ export default function App() {
       }
 
       setCurrentUser(user);
-      if (user) {
+      if (user && !user.isAnonymous) {
         // Sync user device registration in background
         dbSetDoc("users", user.uid, {
           uid: user.uid,
