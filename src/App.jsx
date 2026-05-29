@@ -1677,13 +1677,18 @@ export default function App() {
                         borderBottom: feedTab === "radar" ? "1px solid #ffffff" : "1px solid #003399",
                         fontWeight: "bold",
                         fontSize: "10px",
-                        minHeight: "32px",
+                        minHeight: "38px",
                         cursor: "pointer",
-                        whiteSpace: "nowrap",
-                        padding: "2px"
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: "2px",
+                        lineHeight: "1.1"
                       }}
                     >
-                      📡 Radar ({radarPosts.length})
+                      <span>📡 Radar</span>
+                      <span style={{ fontSize: "9px", fontWeight: "normal", opacity: 0.8 }}>({radarPosts.length})</span>
                     </button>
                     <button 
                       onClick={() => setFeedTab("global")}
@@ -1696,13 +1701,18 @@ export default function App() {
                         borderBottom: feedTab === "global" ? "1px solid #ffffff" : "1px solid #003399",
                         fontWeight: "bold",
                         fontSize: "10px",
-                        minHeight: "32px",
+                        minHeight: "38px",
                         cursor: "pointer",
-                        whiteSpace: "nowrap",
-                        padding: "2px"
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: "2px",
+                        lineHeight: "1.1"
                       }}
                     >
-                      🌍 Global ({globalActivePosts.length})
+                      <span>🌍 Global</span>
+                      <span style={{ fontSize: "9px", fontWeight: "normal", opacity: 0.8 }}>({globalActivePosts.length})</span>
                     </button>
                     <button 
                       onClick={() => setFeedTab("my_posts")}
@@ -1715,13 +1725,18 @@ export default function App() {
                         borderBottom: feedTab === "my_posts" ? "1px solid #ffffff" : "1px solid #003399",
                         fontWeight: "bold",
                         fontSize: "10px",
-                        minHeight: "32px",
+                        minHeight: "38px",
                         cursor: "pointer",
-                        whiteSpace: "nowrap",
-                        padding: "2px"
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: "2px",
+                        lineHeight: "1.1"
                       }}
                     >
-                      📝 My Posts ({myPosts.length})
+                      <span>📝 My Posts</span>
+                      <span style={{ fontSize: "9px", fontWeight: "normal", opacity: 0.8 }}>({myPosts.length})</span>
                     </button>
                   </div>
 
