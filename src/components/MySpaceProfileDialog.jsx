@@ -408,7 +408,8 @@ export default function MySpaceProfileDialog({
                     <option>Crushing 😍</option>
                     <option>Mellow 🎧</option>
                     <option>Melancholy 🌧️</option>
-                    <option>Goth Emo 🖤</option>
+                    <option>Emo 🖤</option>
+                    <option>Gay 🌈</option>
                     <option>Ready to Party 🍹</option>
                     <option>Hyper 🤪</option>
                     <option>Sassy 💅</option>

@@ -348,7 +348,7 @@ class SimulatedStore {
           "user_scorpion": {
             uid: "user_scorpion",
             username: "ScorpionQ",
-            mood: "Goth Emo 🖤",
+            mood: "Emo 🖤",
             bio: "Nocturnal by choice. Scorpio by birth.",
             profileTheme: "cyberpunk",
             emoji_avatar: "🦂🖤🌑",
@@ -956,7 +956,7 @@ class SimulatedStore {
           "user_rave": { uid: "user_rave", username: "DJ_Spin", mood: "Ready to Party 🍹", bio: "Catch me at the warehouse party tonight.", profileTheme: "cyberpunk", emoji_avatar: "🎧🎛️⚡", favorited_bars: ["venue_sunbar", "venue_riot"], createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000 },
           "user_retro": { uid: "user_retro", username: "NeonGirl", mood: "Chillin' 😎", bio: "Living in the wrong decade.", profileTheme: "classic", emoji_avatar: "✨🍭🛸", favorited_bars: ["venue_cobra", "venue_linger", "venue_gracies"], createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000 },
           "user_indie": { uid: "user_indie", username: "VinylVixen", mood: "Mellow 🎧", bio: "Vinyl records sound better. Period.", profileTheme: "sunset", emoji_avatar: "📻🍂☕", favorited_bars: ["venue_valley", "venue_caseys"], createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000 },
-          "user_metal": { uid: "user_metal", username: "IronHead", mood: "Goth Emo 🖤", bio: "Metal head for life. Slayer rules.", profileTheme: "classic", emoji_avatar: "🤘🎸🔥", favorited_bars: ["venue_yucca", "venue_cobra"], createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000 },
+          "user_metal": { uid: "user_metal", username: "IronHead", mood: "Emo 🖤", bio: "Metal head for life. Slayer rules.", profileTheme: "classic", emoji_avatar: "🤘🎸🔥", favorited_bars: ["venue_yucca", "venue_cobra"], createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000 },
           "user_gamer": { uid: "user_gamer", username: "PixelKnight", mood: "Excited ⚡", bio: "Galaga high score champion.", profileTheme: "cyberpunk", emoji_avatar: "🎮👾🏆", favorited_bars: ["venue_cobra", "venue_sunbar"], createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000 },
           "user_coffee": { uid: "user_coffee", username: "BeanQueen", mood: "Mellow 🎧", bio: "Too much espresso, not enough time.", profileTheme: "classic", emoji_avatar: "☕🍩⏳", favorited_bars: ["venue_linger", "venue_caseys"], createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000 },
           "user_punk": { uid: "user_punk", username: "RiotGrrrl", mood: "Rebellious ✊", bio: "Support local zines and bands.", profileTheme: "sunset", emoji_avatar: "✊🎸🖤", favorited_bars: ["venue_gracies", "venue_valley", "venue_yucca"], createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000 },
@@ -972,7 +972,7 @@ class SimulatedStore {
           "user_monsoon": { uid: "user_monsoon", username: "MonsoonSzn", mood: "Melancholy 🌧️", bio: "I love this city most when it rains.", profileTheme: "classic", emoji_avatar: "🌧️⛈️🌈", favorited_bars: ["venue_linger", "venue_valley"], createdAt: Date.now() - 4 * 24 * 60 * 60 * 1000 },
           "user_roadrunner": { uid: "user_roadrunner", username: "RoadRunner", mood: "Hyper 🤪", bio: "Beep beep. Can't catch me.", profileTheme: "cyberpunk", emoji_avatar: "🏃💨🤪", favorited_bars: ["venue_cobra", "venue_sunbar", "venue_yucca"], createdAt: Date.now() - 3 * 24 * 60 * 60 * 1000 },
           "user_saguaro": { uid: "user_saguaro", username: "SaguaroSoul", mood: "Reflective 📖", bio: "Journaling at the bar. Don't judge.", profileTheme: "classic", emoji_avatar: "🌵📖🌅", favorited_bars: ["venue_gracies", "venue_linger", "venue_caseys"], createdAt: Date.now() - 6 * 24 * 60 * 60 * 1000 },
-          "user_scorpion": { uid: "user_scorpion", username: "ScorpionQ", mood: "Goth Emo 🖤", bio: "Nocturnal by choice. Scorpio by birth.", profileTheme: "cyberpunk", emoji_avatar: "🦂🖤🌑", favorited_bars: ["venue_yucca", "venue_valley", "venue_cobra"], createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000 },
+          "user_scorpion": { uid: "user_scorpion", username: "ScorpionQ", mood: "Emo 🖤", bio: "Nocturnal by choice. Scorpio by birth.", profileTheme: "cyberpunk", emoji_avatar: "🦂🖤🌑", favorited_bars: ["venue_yucca", "venue_valley", "venue_cobra"], createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000 },
           "user_turquoise": { uid: "user_turquoise", username: "TurquoiseRing", mood: "Crushing 😍", bio: "Collecting turquoise and bad decisions.", profileTheme: "sunset", emoji_avatar: "💎💙🌻", favorited_bars: ["venue_coach", "venue_bottled", "venue_gracies"], createdAt: Date.now() - 2 * 24 * 60 * 60 * 1000 },
           "user_prickly": { uid: "user_prickly", username: "PricklyPear", mood: "Ready to Party 🍹", bio: "Margarita in hand, always.", profileTheme: "classic", emoji_avatar: "🍹🌺🎉", favorited_bars: ["venue_riot", "venue_sunbar", "venue_bottled"], createdAt: Date.now() - 4 * 24 * 60 * 60 * 1000 },
           "user_sidewinder": { uid: "user_sidewinder", username: "Sidewinder", mood: "Tired 😴", bio: "Night shift nurse. Bar is my morning coffee.", profileTheme: "classic", emoji_avatar: "🐍😴🌙", favorited_bars: ["venue_caseys", "venue_gracies", "venue_linger"], createdAt: Date.now() - 3 * 24 * 60 * 60 * 1000 }

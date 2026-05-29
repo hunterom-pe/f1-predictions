@@ -25,7 +25,7 @@ const db = getFirestore(app);
 
 const VALID_MOODS = [
   "Chillin' 😎", "Excited ⚡", "Crushing 😍", "Mellow 🎧", 
-  "Melancholy 🌧️", "Goth Emo 🖤", "Ready to Party 🍹", "Hyper 🤪", 
+  "Melancholy 🌧️", "Emo 🖤", "Gay 🌈", "Ready to Party 🍹", "Hyper 🤪", 
   "Sassy 💅", "Pissed 😡", "Bored 😑", "Creative 🎨", "Spacey 🚀", 
   "Tired 😴", "Reflective 📖", "Rebellious ✊", "Nostalgic 📼"
 ];
