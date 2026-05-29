@@ -158,6 +158,8 @@ export default function App() {
   const [feedTab, setFeedTab] = useState("radar");
   const [inboundClaimsCount, setInboundClaimsCount] = useState(0);
   const [favoriters, setFavoriters] = useState([]);
+  const [showPostSuccess, setShowPostSuccess] = useState(false);
+  const [successTargetVenue, setSuccessTargetVenue] = useState(null);
 
   // Bar search states
   const [barSearchQuery, setBarSearchQuery] = useState("");
@@ -858,19 +860,27 @@ export default function App() {
         lastPostAt: Date.now()
       }, true);
 
-      // Auto-navigate to the venue's feed
+      // Set success modal states
       const matchedVenue = venues.find(v => v.fsq_id === postData.venueId);
-      if (matchedVenue) {
-        setSelectedVenue(matchedVenue);
-        setSelectedCity(matchedVenue.city);
-        setNavigationScreen("feed");
-      } else {
-        setNavigationScreen("home");
-      }
+      setSuccessTargetVenue(matchedVenue || null);
+      setShowPostSuccess(true);
+      setNavigationScreen("home"); // Close the wizard modal in the background
     } catch (err) {
       console.error("Error creating post:", err);
       setModerationError(err.message || String(err));
     }
+  };
+
+  const handleSuccessThanks = () => {
+    setShowPostSuccess(false);
+    if (successTargetVenue) {
+      setSelectedVenue(successTargetVenue);
+      setSelectedCity(successTargetVenue.city);
+      setNavigationScreen("feed");
+    } else {
+      setNavigationScreen("home");
+    }
+    setSuccessTargetVenue(null);
   };
 
   const handleThatWasMe = (post) => {
@@ -2809,6 +2819,35 @@ export default function App() {
                     style={{ width: "80px", fontWeight: "bold", minHeight: "36px" }}
                   >
                     OK
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Post Success Dialog */}
+      {showPostSuccess && (
+        <div className="modal-overlay">
+          <div className="modal-container" style={{ maxWidth: "320px" }}>
+            <div className="window">
+              <TitleBar title="System Message" onClose={handleSuccessThanks} />
+              <div className="window-body" style={{ gap: "12px", padding: "12px" }}>
+                <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                  <span style={{ fontSize: "32px" }}>📬</span>
+                  <div>
+                    <h4 style={{ margin: "0 0 4px 0", fontSize: "13px", color: "#003399" }}>Success</h4>
+                    <p style={{ margin: 0, fontSize: "12px", lineHeight: "1.4", fontWeight: "bold" }}>
+                      Posted! Good luck
+                    </p>
+                  </div>
+                </div>
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "12px" }}>
+                  <button 
+                    onClick={handleSuccessThanks} 
+                    style={{ width: "80px", fontWeight: "bold", minHeight: "36px", cursor: "pointer" }}
+                  >
+                    Thanks!
                   </button>
                 </div>
               </div>
