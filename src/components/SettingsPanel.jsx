@@ -222,10 +222,10 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
   };
 
   const TABS = [
-    { id: "account", label: "👤 Account" },
-    { id: "appearance", label: "🎨 Appearance" },
-    { id: "diagnostics", label: "⚡ Diagnostics" },
-    { id: "legal", label: "📜 Legal" }
+    { id: "account", emoji: "👤", text: "Account" },
+    { id: "appearance", emoji: "🎨", text: "Appearance" },
+    { id: "diagnostics", emoji: "⚡", text: "Diagnostics" },
+    { id: "legal", emoji: "📜", text: "Legal" }
   ];
 
   const ICONS_METADATA = {
@@ -260,7 +260,7 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
           </button>
 
           {/* Windows 98 properties tabs */}
-          <div style={{ display: "flex", gap: "2px", margin: "4px 0 0 0", padding: 0 }}>
+          <div style={{ display: "flex", gap: "2px", margin: "4px 0 0 0", padding: 0, width: "100%" }}>
             {TABS.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
@@ -269,23 +269,28 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
                   style={{
-                    padding: "4px 8px",
-                    fontSize: "11px",
-                    fontWeight: "bold",
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "2px",
+                    padding: "4px 2px",
                     cursor: "pointer",
                     backgroundColor: isActive ? "#f0f0f0" : "#dfdfdf",
                     borderStyle: "solid",
                     borderWidth: "1px 1px 0 1px",
                     borderColor: isActive ? "#ffffff #808080 #f0f0f0 #ffffff" : "#ffffff #808080 #808080 #ffffff",
                     marginTop: isActive ? "0px" : "2px",
-                    height: isActive ? "24px" : "22px",
+                    height: isActive ? "38px" : "36px",
                     zIndex: isActive ? 2 : 1,
                     position: "relative",
                     borderRadius: "2px 2px 0 0",
                     color: isActive ? "#000000" : "#555555"
                   }}
                 >
-                  {tab.label}
+                  <span style={{ fontSize: "14px", lineHeight: 1 }}>{tab.emoji}</span>
+                  <span style={{ fontSize: "9px", fontWeight: "bold", whiteSpace: "nowrap" }}>{tab.text}</span>
                 </button>
               );
             })}
