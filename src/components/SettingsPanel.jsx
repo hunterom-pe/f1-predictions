@@ -9,6 +9,13 @@ import {
 import { Geolocation } from "@capacitor/geolocation";
 import { AppIcon } from "@capacitor-community/app-icon";
 
+const TAB_COLORS = {
+  account: "#ff007f",      // Neon Pink
+  appearance: "#00a86b",   // Emerald Green
+  diagnostics: "#ff8c00",  // Amber Orange
+  legal: "#3366cc"         // Cobalt Blue
+};
+
 export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) {
   const [activeTab, setActiveTab] = useState("account");
 
@@ -254,7 +261,12 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
           <button 
             type="button" 
             onClick={onNavigateBack}
-            style={{ width: "fit-content", minHeight: "26px", alignSelf: "flex-start", cursor: "pointer" }}
+            className="asl-btn asl-btn-blue"
+            style={{ 
+              width: "fit-content", 
+              minHeight: "36px", 
+              alignSelf: "flex-start"
+            }}
           >
             ← Back to Dashboard
           </button>
@@ -279,8 +291,10 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
                     cursor: "pointer",
                     backgroundColor: isActive ? "#f0f0f0" : "#dfdfdf",
                     borderStyle: "solid",
-                    borderWidth: "1px 1px 0 1px",
-                    borderColor: isActive ? "#ffffff #808080 #f0f0f0 #ffffff" : "#ffffff #808080 #808080 #ffffff",
+                    borderWidth: isActive ? "3px 1px 0 1px" : "1px 1px 0 1px",
+                    borderColor: isActive 
+                      ? `${TAB_COLORS[tab.id]} #808080 #f0f0f0 #ffffff` 
+                      : "#ffffff #808080 #808080 #ffffff",
                     marginTop: isActive ? "0px" : "2px",
                     height: isActive ? "38px" : "36px",
                     zIndex: isActive ? 2 : 1,
@@ -324,14 +338,31 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
                           onChange={(e) => setEmailInput(e.target.value)}
                           style={{ flex: 1, padding: "2px", backgroundColor: "#ffffff", color: "#333333", border: "1px inset #808080" }}
                         />
-                        <button onClick={handleUpdateEmail} style={{ minHeight: "22px", cursor: "pointer" }}>Save</button>
+                        <button 
+                          onClick={handleUpdateEmail} 
+                          className="asl-btn asl-btn-emerald"
+                          style={{ 
+                            minHeight: "28px",
+                            padding: "2px 12px"
+                          }}
+                        >
+                          Save
+                        </button>
                       </div>
                       {emailStatus && <div style={{ fontSize: "10px", color: emailStatus.startsWith("Error") ? "red" : "green", marginTop: "2px" }}>{emailStatus}</div>}
                     </div>
                     <hr style={{ border: "1px inset #ffffff", margin: "4px 0" }} />
                     <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                       <label style={{ fontWeight: "bold" }}>Password Reset:</label>
-                      <button onClick={handlePasswordReset} style={{ alignSelf: "flex-start", minHeight: "24px", cursor: "pointer" }}>
+                      <button 
+                        onClick={handlePasswordReset} 
+                        className="asl-btn asl-btn-pink"
+                        style={{ 
+                          alignSelf: "flex-start", 
+                          minHeight: "36px",
+                          padding: "6px 12px"
+                        }}
+                      >
                         🔑 Email Me a Password Reset Link
                       </button>
                       {pwResetStatus && <div style={{ fontSize: "10px", color: pwResetStatus.startsWith("Error") ? "red" : "green", marginTop: "2px" }}>{pwResetStatus}</div>}
@@ -351,15 +382,10 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
                     </div>
                     <button 
                       onClick={() => setShowDeleteConfirm(true)} 
+                      className="asl-btn asl-btn-crimson"
                       style={{ 
-                        backgroundColor: "#ff0000", 
-                        color: "#ffffff", 
-                        fontWeight: "bold", 
-                        border: "1px solid #8b0000", 
-                        padding: "4px 8px", 
-                        minHeight: "26px", 
-                        alignSelf: "flex-start",
-                        cursor: "pointer"
+                        minHeight: "36px", 
+                        alignSelf: "flex-start"
                       }}
                     >
                       Delete My Account Forever
@@ -385,8 +411,8 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
                           <div 
                             key={key}
                             onClick={() => changeAppIcon(key)}
+                            className={`asl-icon-card ${isSelected ? "asl-icon-card-selected" : ""}`}
                             style={{
-                              border: isSelected ? "2px solid #000080" : "1px solid #808080",
                               backgroundColor: info.color,
                               padding: "8px",
                               cursor: "pointer",
@@ -395,8 +421,9 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
                               alignItems: "center",
                               textAlign: "center",
                               gap: "4px",
-                              boxShadow: isSelected ? "inset 1px 1px #000" : "1px 1px 2px rgba(0,0,0,0.15)",
-                              borderRadius: "4px"
+                              borderRadius: "4px",
+                              border: isSelected ? "2px solid #000080" : "1px solid #808080",
+                              boxShadow: isSelected ? "inset 1px 1px #000" : "1px 1px 2px rgba(0,0,0,0.15)"
                             }}
                           >
                             <span style={{ fontSize: "28px" }}>{info.emoji}</span>
@@ -420,7 +447,12 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
                     <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                       <button 
                         onClick={handlePingGeofence} 
-                        style={{ alignSelf: "flex-start", padding: "4px 8px", minHeight: "26px", cursor: "pointer", fontWeight: "bold" }}
+                        className="asl-btn asl-btn-blue"
+                        style={{ 
+                          alignSelf: "flex-start", 
+                          minHeight: "36px",
+                          padding: "6px 12px"
+                        }}
                       >
                         [ ping local area network ]
                       </button>
@@ -450,7 +482,11 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
                     <div>
                       <button 
                         onClick={handleFlushCache} 
-                        style={{ padding: "4px 8px", minHeight: "26px", cursor: "pointer", backgroundColor: "#dfdfdf", color: "#000000" }}
+                        className="asl-btn asl-btn-orange"
+                        style={{ 
+                          minHeight: "36px",
+                          padding: "6px 12px"
+                        }}
                       >
                         [ clear browser cache / hard reset ]
                       </button>
@@ -474,41 +510,45 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "4px" }}>
                       <div 
                         onClick={() => setShowPrivacyModal(true)}
+                        className="asl-legal-card"
                         style={{
-                          border: "1px solid #808080",
+                          border: "2px outset #ffffff",
+                          borderLeft: "4px solid #ff007f",
                           backgroundColor: "#f5f9ff",
                           padding: "10px",
                           cursor: "pointer",
                           display: "flex",
                           alignItems: "center",
                           gap: "8px",
-                          boxShadow: "1px 1px 1px rgba(0,0,0,0.1)"
+                          boxShadow: "inset -1px -1px #808080, inset 1px 1px #ffffff, 1px 1px 0 0 #000"
                         }}
                       >
                         <span style={{ fontSize: "20px" }}>📖</span>
                         <div style={{ display: "flex", flexDirection: "column" }}>
-                          <span style={{ color: "#000080", textDecoration: "underline", fontWeight: "bold" }}>Privacy Policy</span>
-                          <span style={{ fontSize: "9px", color: "#666666" }}>Data collection, retention, and deletion policy</span>
+                          <span style={{ color: "#003399", textDecoration: "underline", fontWeight: "bold", fontSize: "12px" }}>Privacy Policy</span>
+                          <span style={{ fontSize: "10px", color: "#666666" }}>Data collection, retention, and deletion policy</span>
                         </div>
                       </div>
 
                       <div 
                         onClick={() => setShowTermsModal(true)}
+                        className="asl-legal-card"
                         style={{
-                          border: "1px solid #808080",
+                          border: "2px outset #ffffff",
+                          borderLeft: "4px solid #3366cc",
                           backgroundColor: "#f5f9ff",
                           padding: "10px",
                           cursor: "pointer",
                           display: "flex",
                           alignItems: "center",
                           gap: "8px",
-                          boxShadow: "1px 1px 1px rgba(0,0,0,0.1)"
+                          boxShadow: "inset -1px -1px #808080, inset 1px 1px #ffffff, 1px 1px 0 0 #000"
                         }}
                       >
                         <span style={{ fontSize: "20px" }}>📜</span>
                         <div style={{ display: "flex", flexDirection: "column" }}>
-                          <span style={{ color: "#000080", textDecoration: "underline", fontWeight: "bold" }}>Terms of Service & EULA</span>
-                          <span style={{ fontSize: "9px", color: "#666666" }}>Zero-tolerance UGC policies, reporting, and blocking terms</span>
+                          <span style={{ color: "#003399", textDecoration: "underline", fontWeight: "bold", fontSize: "12px" }}>Terms of Service & EULA</span>
+                          <span style={{ fontSize: "10px", color: "#666666" }}>Zero-tolerance UGC policies, reporting, and blocking terms</span>
                         </div>
                       </div>
                     </div>
@@ -562,17 +602,25 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "4px" }}>
                 <button 
                   onClick={() => setShowDeleteConfirm(false)}
-                  style={{ minWidth: "80px", minHeight: "24px", cursor: "pointer", fontWeight: "bold" }}
+                  className="asl-btn asl-btn-slate"
+                  style={{ 
+                    minWidth: "80px", 
+                    minHeight: "36px"
+                  }}
                   disabled={!!deleteStatus}
                 >
-                  [ Cancel ]
+                  Cancel
                 </button>
                 <button 
                   onClick={handleWipeAccount}
-                  style={{ minWidth: "110px", minHeight: "24px", cursor: "pointer", backgroundColor: "#ff0000", color: "#ffffff", fontWeight: "bold" }}
+                  className="asl-btn asl-btn-crimson"
+                  style={{ 
+                    minWidth: "130px", 
+                    minHeight: "36px"
+                  }}
                   disabled={!!deleteStatus}
                 >
-                  [ Wipe My Account ]
+                  Wipe My Account
                 </button>
               </div>
             </div>
@@ -639,7 +687,11 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
             <div style={{ display: "flex", justifyContent: "flex-end", padding: "0 8px 8px 8px", backgroundColor: "#f0f0f0" }}>
               <button 
                 onClick={() => setShowPrivacyModal(false)}
-                style={{ minWidth: "80px", minHeight: "24px", cursor: "pointer", fontWeight: "bold" }}
+                className="asl-btn asl-btn-blue"
+                style={{ 
+                  minWidth: "80px", 
+                  minHeight: "36px"
+                }}
               >
                 Close
               </button>
@@ -713,7 +765,11 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
             <div style={{ display: "flex", justifyContent: "flex-end", padding: "0 8px 8px 8px", backgroundColor: "#f0f0f0" }}>
               <button 
                 onClick={() => setShowTermsModal(false)}
-                style={{ minWidth: "80px", minHeight: "24px", cursor: "pointer", fontWeight: "bold" }}
+                className="asl-btn asl-btn-blue"
+                style={{ 
+                  minWidth: "80px", 
+                  minHeight: "36px"
+                }}
               >
                 Close
               </button>

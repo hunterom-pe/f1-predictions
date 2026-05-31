@@ -6,6 +6,20 @@ const formatTime = (seconds) => {
   return `${mins < 10 ? "0" : ""}${mins}:${secs < 10 ? "0" : ""}${secs}`;
 };
 
+const MOCK_TRACK_DATABASE = {
+  "4PTG3Z6ehGkBF3zI7YSp6g": { title: "Such Great Heights", artist: "The Postal Service", duration: 266, durationStr: "04:26" },
+  "298gs9ATwr2rD9tGYJKlQR": { title: "Dance Our Tears Away", artist: "John de Sohn", duration: 180, durationStr: "03:00" },
+  "0VjIjW4GlUZAMYd2vXMi6b": { title: "Blinding Lights", artist: "The Weeknd", duration: 200, durationStr: "03:20" },
+  "1u8c2t27vOIyUARilX3B6k": { title: "Seven Nation Army", artist: "The White Stripes", duration: 231, durationStr: "03:51" },
+  "7w87Iwjcl627Ty80Gc73UI": { title: "Get Lucky", artist: "Daft Punk", duration: 369, durationStr: "06:09" },
+  "3n3Pp39vTxncFG7510v5dr": { title: "Doin' It Right", artist: "Daft Punk", duration: 251, durationStr: "04:11" },
+  "4iV5W9uYEdY5a7niJjQ6yP": { title: "Get Lucky", artist: "Daft Punk", duration: 369, durationStr: "06:09" },
+  "6habF0tbwRg1uXwZ4uXk3t": { title: "Starlight", artist: "Muse", duration: 240, durationStr: "04:00" },
+  "3aW0v27ARuU3w2oH6EgPGg": { title: "Supermassive Black Hole", artist: "Muse", duration: 209, durationStr: "03:29" },
+  "7ouMYWpwJ422jWrk72SpbW": { title: "Hysteria", artist: "Muse", duration: 227, durationStr: "03:47" },
+  "1Q5vVFVmC5jH3Y9F2lZ0kC": { title: "Uprising", artist: "Muse", duration: 303, durationStr: "05:03" }
+};
+
 /**
  * MySpace Music Player integrated with Spotify Embed IFrame API and Mock fallback.
  * @param {object} props
@@ -43,54 +57,56 @@ export default function MySpaceMusicPlayer({
       setCurrentTime(0);
     }, 0);
 
-    // Hardcode the default track metadata to avoid hitting oembed API issues
-    if (spotifyTrackUri === "spotify:track:4PTG3Z6ehGkBF3zI7YSp6g" && !spotifySongTitle && !spotifyArtistName) {
+    const trackId = spotifyTrackUri.split(":")[2] || spotifyTrackUri;
+    const mockTrack = MOCK_TRACK_DATABASE[trackId];
+
+    // Determine values based on user inputs or local mock database
+    const finalTitle = spotifySongTitle || (mockTrack ? mockTrack.title : "");
+    const finalArtist = spotifyArtistName || (mockTrack ? mockTrack.artist : "");
+
+    // If both fields are successfully resolved, apply directly and skip fetching
+    if (finalTitle && finalArtist) {
       setTimeout(() => {
         setTrackInfo({
-          title: "Such Great Heights",
-          artist: "The Postal Service",
-          duration: 266,
-          durationStr: "04:26"
+          title: finalTitle,
+          artist: finalArtist,
+          duration: mockTrack?.duration || 240,
+          durationStr: mockTrack?.durationStr || "04:00"
         });
       }, 0);
       return;
     }
-
-    if (spotifySongTitle && spotifyArtistName) {
-      setTimeout(() => {
-        setTrackInfo({
-          title: spotifySongTitle,
-          artist: spotifyArtistName,
-          duration: 240, // default placeholder
-          durationStr: "04:00"
-        });
-      }, 0);
-      return;
-    }
-
 
     const fetchMetadata = async () => {
       try {
-        const trackId = spotifyTrackUri.split(":")[2] || spotifyTrackUri;
         const res = await fetch(`https://open.spotify.com/oembed?url=https://open.spotify.com/track/${trackId}`);
         if (res.ok) {
           const data = await res.json();
-          
           const rawTitle = data.title || "Unknown Song";
-          let parsedTitle = spotifySongTitle || rawTitle;
-          let parsedArtist = spotifyArtistName || "Unknown Artist";
           
-          if (!spotifyArtistName) {
+          let parsedTitle = finalTitle || rawTitle;
+          let parsedArtist = finalArtist || "Spotify Artist";
+          
+          if (!finalArtist) {
             // Match "Song Title - Song by Artist Name" (case-insensitive)
             const match = rawTitle.match(/(.+?)\s+-\s+song\s+by\s+(.+)/i);
             if (match) {
-              if (!spotifySongTitle) parsedTitle = match[1];
+              if (!finalTitle) parsedTitle = match[1];
               parsedArtist = match[2];
             } else {
               const parts = rawTitle.split(" - ");
               if (parts.length > 1) {
-                if (!spotifySongTitle) parsedTitle = parts[0];
-                parsedArtist = parts[1];
+                const secondPart = parts[1].toLowerCase();
+                const isEditTag = ["radio edit", "edit", "remix", "single version", "album version", "remastered", "live"].some(tag => secondPart.includes(tag));
+                if (!isEditTag) {
+                  if (!finalTitle) parsedTitle = parts[0];
+                  parsedArtist = parts[1];
+                } else {
+                  if (!finalTitle) parsedTitle = rawTitle;
+                  parsedArtist = "Spotify Artist";
+                }
+              } else {
+                parsedArtist = "Spotify Artist";
               }
             }
           }
@@ -98,24 +114,24 @@ export default function MySpaceMusicPlayer({
           setTrackInfo({
             title: parsedTitle,
             artist: parsedArtist,
-            duration: 240, // default placeholder
-            durationStr: "04:00"
+            duration: mockTrack?.duration || 240,
+            durationStr: mockTrack?.durationStr || "04:00"
           });
         } else {
           setTrackInfo({
-            title: spotifySongTitle || "Spotify Track",
-            artist: spotifyArtistName || spotifyTrackUri,
-            duration: 240,
-            durationStr: "04:00"
+            title: finalTitle || "Spotify Track",
+            artist: finalArtist || "Spotify Artist",
+            duration: mockTrack?.duration || 240,
+            durationStr: mockTrack?.durationStr || "04:00"
           });
         }
       } catch (err) {
         console.error("Failed to load Spotify oembed details:", err);
         setTrackInfo({
-          title: spotifySongTitle || "Spotify Track",
-          artist: spotifyArtistName || "Active Session",
-          duration: 240,
-          durationStr: "04:00"
+          title: finalTitle || "Spotify Track",
+          artist: finalArtist || "Active Session",
+          duration: mockTrack?.duration || 240,
+          durationStr: mockTrack?.durationStr || "04:00"
         });
       }
     };

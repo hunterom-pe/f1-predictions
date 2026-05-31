@@ -54,14 +54,29 @@ export async function fetchProductDetails(productIds) {
       let desc = "Unlock classic premium theme styles.";
       
       if (id === "cozy_pack") {
-        title = "Cozy Girl Pack";
-        desc = "Unlocks 3 themes: Animal Crossing, Spirited Away, Matcha Tea.";
+        title = "Cozy Village Pack";
+        desc = "Unlocks 3 themes: Pocket Crossing, Spirit Bathhouse, Matcha Tea.";
       } else if (id === "badbitch_pack") {
-        title = "Bad Bitch Pack";
+        title = "Y2K Glam Pack";
         desc = "Unlocks 3 themes: 8-Ball, Long Nails, Sheer.";
       } else if (id === "weeb_pack") {
-        title = "Weeb Pack";
-        desc = "Unlocks 3 themes: One Piece, Demon Slayer, Jujutsu Kaisen.";
+        title = "Otaku Legends Pack";
+        desc = "Unlocks 3 themes: Straw Hat Pirate, Slayer Blade, Sorcery Curse.";
+      } else if (id === "screamo_pack") {
+        title = "Mall Goth / Screamo Pack";
+        desc = "Unlocks 3 themes: Vampire Romance, Sunday Showdown, Quiet Things.";
+      } else if (id === "teen_idol_pack") {
+        title = "Teen Idol Pack";
+        desc = "Unlocks 3 themes: Oops Pink, Frosted Tips, Wannabe Leopard.";
+      } else if (id === "skateland_punk_pack") {
+        title = "Skateland Punk Pack";
+        desc = "Unlocks 3 themes: Sk8er Boi, Rock Show 182, Boulevard Stencil.";
+      } else if (id === "file_share_pack") {
+        title = "P2P File Share Pack";
+        desc = "Unlocks 3 themes: LemonWire, Napster Kitty, Winamp Classic.";
+      } else if (id === "socialite_gossip_pack") {
+        title = "Socialite Gossip Pack";
+        desc = "Unlocks 3 themes: Simple Life, Metallic Razr, Gossip Blog.";
       }
       
       return {

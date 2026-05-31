@@ -38,16 +38,18 @@ body {
 
 /* MySpace Navigation Header (2003) */
 .myspace-nav-header {
-  background-color: #003399; /* Classic MySpace blue */
+  background: linear-gradient(135deg, #001a4d 0%, #003399 50%, #004fe6 100%);
   color: #ffffff;
   width: 100%;
   box-sizing: border-box;
-  padding: 8px 16px;
-  padding-top: calc(env(safe-area-inset-top) + 8px);
+  padding: 10px 16px;
+  padding-top: calc(env(safe-area-inset-top) + 10px);
   font-family: Arial, sans-serif;
   z-index: 10000;
   position: sticky;
   top: 0;
+  border-bottom: 3px solid #ff66cc;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
 }
 
 .myspace-nav-top {
@@ -104,7 +106,7 @@ body {
 .myspace-nav-links-row {
   max-width: 950px;
   margin: 0 auto;
-  border-top: 1px solid #6699ff;
+  border-top: 1px dashed rgba(255, 102, 204, 0.4);
   padding: 8px 0 2px 0;
   display: flex;
   justify-content: space-around;
@@ -4093,5 +4095,508 @@ select.retro-select {
   background-repeat: no-repeat !important;
 }
 
+/* Dashboard buttons styling override to prevent text wrap issues due to global font scaling */
+.dashboard-btn {
+  font-size: 13px !important;
+  white-space: nowrap !important;
+  padding: 6px 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  min-height: 38px !important;
+}
 
+/* Feed tab buttons styling override to prevent text wrap due to global button font scale */
+.feed-tab-btn {
+  font-size: 11px !important;
+  padding: 4px 4px !important;
+  min-height: 38px !important;
+}
+
+.feed-tab-btn span {
+  font-size: inherit !important;
+  white-space: nowrap !important;
+}
+
+/* Premium Retro-Neon Outset Buttons and Cards */
+.asl-btn {
+  font-family: 'MS Sans Serif', Geneva, sans-serif !important;
+  font-size: 11px !important;
+  font-weight: bold !important;
+  border-radius: 0 !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  transition: all 0.1s ease !important;
+  padding: 6px 12px !important;
+}
+
+/* 1. Cobalt Blue Button */
+.asl-btn-blue {
+  background-color: #3366cc !important;
+  color: #ffffff !important;
+  border: 2px outset #3366cc !important;
+  box-shadow: inset -1px -1px #001f66, inset 1px 1px #99bbff, 1px 1px 0px 0px #000 !important;
+}
+.asl-btn-blue:hover {
+  background-color: #4d80e6 !important;
+  border-color: #4d80e6 !important;
+  box-shadow: inset -1px -1px #002db3, inset 1px 1px #b3ccff, 1px 1px 0px 0px #000, 0 0 5px rgba(77, 128, 230, 0.5) !important;
+}
+.asl-btn-blue:active {
+  border-style: inset !important;
+  box-shadow: inset 1px 1px #001f66, inset -1px -1px #99bbff, 1px 1px 0px 0px #000 !important;
+}
+
+/* 2. Neon Pink Button */
+.asl-btn-pink {
+  background-color: #ff007f !important;
+  color: #ffffff !important;
+  border: 2px outset #ff007f !important;
+  box-shadow: inset -1px -1px #99004c, inset 1px 1px #ff99cc, 1px 1px 0px 0px #000 !important;
+}
+.asl-btn-pink:hover {
+  background-color: #ff3399 !important;
+  border-color: #ff3399 !important;
+  box-shadow: inset -1px -1px #cc0066, inset 1px 1px #ffb3d9, 1px 1px 0px 0px #000, 0 0 5px rgba(255, 0, 127, 0.5) !important;
+}
+.asl-btn-pink:active {
+  border-style: inset !important;
+  box-shadow: inset 1px 1px #99004c, inset -1px -1px #ff99cc, 1px 1px 0px 0px #000 !important;
+}
+
+/* 3. Emerald Green Button */
+.asl-btn-emerald {
+  background-color: #00a86b !important;
+  color: #ffffff !important;
+  border: 2px outset #00a86b !important;
+  box-shadow: inset -1px -1px #004d33, inset 1px 1px #66ffcc, 1px 1px 0px 0px #000 !important;
+}
+.asl-btn-emerald:hover {
+  background-color: #00c47d !important;
+  border-color: #00c47d !important;
+  box-shadow: inset -1px -1px #006644, inset 1px 1px #99ffe6, 1px 1px 0px 0px #000, 0 0 5px rgba(0, 168, 107, 0.5) !important;
+}
+.asl-btn-emerald:active {
+  border-style: inset !important;
+  box-shadow: inset 1px 1px #004d33, inset -1px -1px #66ffcc, 1px 1px 0px 0px #000 !important;
+}
+
+/* 4. Amber Orange Button */
+.asl-btn-orange {
+  background-color: #ff8c00 !important;
+  color: #ffffff !important;
+  border: 2px outset #ff8c00 !important;
+  box-shadow: inset -1px -1px #994c00, inset 1px 1px #ffc280, 1px 1px 0px 0px #000 !important;
+}
+.asl-btn-orange:hover {
+  background-color: #ffa533 !important;
+  border-color: #ffa533 !important;
+  box-shadow: inset -1px -1px #cc6600, inset 1px 1px #ffe0b3, 1px 1px 0px 0px #000, 0 0 5px rgba(255, 140, 0, 0.5) !important;
+}
+.asl-btn-orange:active {
+  border-style: inset !important;
+  box-shadow: inset 1px 1px #994c00, inset -1px -1px #ffc280, 1px 1px 0px 0px #000 !important;
+}
+
+/* 5. Deep Crimson Button (Destructive) */
+.asl-btn-crimson {
+  background-color: #d91414 !important;
+  color: #ffffff !important;
+  border: 2px outset #d91414 !important;
+  box-shadow: inset -1px -1px #660000, inset 1px 1px #ff6666, 1px 1px 0px 0px #000 !important;
+}
+.asl-btn-crimson:hover {
+  background-color: #f22424 !important;
+  border-color: #f22424 !important;
+  box-shadow: inset -1px -1px #990000, inset 1px 1px #ff9999, 1px 1px 0px 0px #000, 0 0 5px rgba(217, 20, 20, 0.5) !important;
+}
+.asl-btn-crimson:active {
+  border-style: inset !important;
+  box-shadow: inset 1px 1px #660000, inset -1px -1px #ff6666, 1px 1px 0px 0px #000 !important;
+}
+
+/* 6. Dark Violet/Purple Button */
+.asl-btn-purple {
+  background-color: #9933cc !important;
+  color: #ffffff !important;
+  border: 2px outset #9933cc !important;
+  box-shadow: inset -1px -1px #4c0099, inset 1px 1px #cc99ff, 1px 1px 0px 0px #000 !important;
+}
+.asl-btn-purple:hover {
+  background-color: #b366ff !important;
+  border-color: #b366ff !important;
+  box-shadow: inset -1px -1px #6600cc, inset 1px 1px #e6ccff, 1px 1px 0px 0px #000, 0 0 5px rgba(153, 51, 204, 0.5) !important;
+}
+.asl-btn-purple:active {
+  border-style: inset !important;
+  box-shadow: inset 1px 1px #4c0099, inset -1px -1px #cc99ff, 1px 1px 0px 0px #000 !important;
+}
+
+/* 7. Slate Blue Button (Cancel/Neutral) */
+.asl-btn-slate {
+  background-color: #708090 !important;
+  color: #ffffff !important;
+  border: 2px outset #708090 !important;
+  box-shadow: inset -1px -1px #384048, inset 1px 1px #b0c4de, 1px 1px 0px 0px #000 !important;
+}
+.asl-btn-slate:hover {
+  background-color: #8596a6 !important;
+  border-color: #8596a6 !important;
+  box-shadow: inset -1px -1px #48525c, inset 1px 1px #c6d4e8, 1px 1px 0px 0px #000, 0 0 5px rgba(112, 128, 144, 0.5) !important;
+}
+.asl-btn-slate:active {
+  border-style: inset !important;
+  box-shadow: inset 1px 1px #384048, inset -1px -1px #b0c4de, 1px 1px 0px 0px #000 !important;
+}
+
+/* App icon card style hover */
+.asl-icon-card {
+  transition: all 0.15s ease-in-out !important;
+}
+.asl-icon-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.2) !important;
+  border-color: #ff007f !important;
+}
+.asl-icon-card-selected {
+  border: 2px solid #000080 !important;
+  box-shadow: inset 1px 1px #000 !important;
+}
+
+/* Legal Cards hover */
+.asl-legal-card {
+  transition: all 0.15s ease-in-out !important;
+}
+.asl-legal-card:hover {
+  transform: translateY(-2px) !important;
+  background-color: #eaf2ff !important;
+  box-shadow: inset -1px -1px #666666, inset 1px 1px #ffffff, 2px 2px 4px rgba(0,0,0,0.15) !important;
+}
+.asl-legal-card:active {
+  transform: translateY(0px) !important;
+  box-shadow: inset 2px 2px #666666, 1px 1px 0 0 #000 !important;
+}
+
+/* ==========================================
+   MALL GOTH / SCREAMO PACK
+   ========================================== */
+/* Vampire Romance */
+.myspace-theme-vampireromance {
+  --player-border: #660000;
+  --player-inner-bg: #1a0000;
+  --player-screen-bg: #000000;
+  --player-screen-text: #ff3333;
+  --player-screen-subtext: #990000;
+  --player-accent: #ff3333;
+  --player-btn-active: #ff3333;
+  --player-btn-inactive: #444444;
+  --player-progress-fill: #ff3333;
+  --player-visualizer-bar: #660000;
+}
+.myspace-theme-vampireromance .window { border: 2px solid #660000 !important; }
+.myspace-theme-vampireromance .title-bar { background: linear-gradient(90deg, #660000 0%, #000000 100%) !important; }
+.myspace-theme-vampireromance .title-bar-text { color: #ffffff !important; }
+.myspace-theme-vampireromance .myspace-profile-body { background: linear-gradient(135deg, #1a0000, #330000, #000000) !important; color: #ffffff !important; font-family: 'Courier New', Courier, monospace !important; }
+.myspace-theme-vampireromance .profile-details-table, .myspace-theme-vampireromance .profile-bio-box, .myspace-theme-vampireromance .top8-container, .myspace-theme-vampireromance .profile-photo-box { background-color: rgba(26, 0, 0, 0.9) !important; border: 2px solid #660000 !important; color: #ffffff !important; }
+.myspace-theme-vampireromance .section-header-orange { background-color: #660000 !important; color: #ffffff !important; border-left-color: #ff3333 !important; }
+.myspace-theme-vampireromance .profile-name-header { color: #ff3333 !important; }
+
+/* Sunday Showdown */
+.myspace-theme-sundayshowdown {
+  --player-border: #222222;
+  --player-inner-bg: #111111;
+  --player-screen-bg: #1c1c1c;
+  --player-screen-text: #00d2ff;
+  --player-screen-subtext: #0088cc;
+  --player-accent: #00d2ff;
+  --player-btn-active: #00d2ff;
+  --player-btn-inactive: #555555;
+  --player-progress-fill: #00d2ff;
+  --player-visualizer-bar: #0088cc;
+}
+.myspace-theme-sundayshowdown .window { border: 2px solid #222222 !important; }
+.myspace-theme-sundayshowdown .title-bar { background: linear-gradient(90deg, #222222 0%, #00d2ff 100%) !important; }
+.myspace-theme-sundayshowdown .title-bar-text { color: #ffffff !important; }
+.myspace-theme-sundayshowdown .myspace-profile-body { background: linear-gradient(135deg, #2b2b2b, #121212) !important; color: #ffffff !important; font-family: 'MS Sans Serif', Geneva, sans-serif !important; }
+.myspace-theme-sundayshowdown .profile-details-table, .myspace-theme-sundayshowdown .profile-bio-box, .myspace-theme-sundayshowdown .top8-container, .myspace-theme-sundayshowdown .profile-photo-box { background-color: rgba(30, 30, 30, 0.9) !important; border: 2px solid #222222 !important; color: #ffffff !important; box-shadow: 0 0 5px rgba(0, 210, 255, 0.3) !important; }
+.myspace-theme-sundayshowdown .section-header-orange { background-color: #222222 !important; color: #00d2ff !important; border-left-color: #00d2ff !important; }
+.myspace-theme-sundayshowdown .profile-name-header { color: #00d2ff !important; }
+
+/* Quiet Things */
+.myspace-theme-quietthings {
+  --player-border: #2e6f7a;
+  --player-inner-bg: #5d9e9e;
+  --player-screen-bg: #fffdf7;
+  --player-screen-text: #2e6f7a;
+  --player-screen-subtext: #8ab6b8;
+  --player-accent: #2e6f7a;
+  --player-btn-active: #2e6f7a;
+  --player-btn-inactive: #b8c8c9;
+  --player-progress-fill: #2e6f7a;
+  --player-visualizer-bar: #5d9e9e;
+}
+.myspace-theme-quietthings .window { border: 2px solid #2e6f7a !important; }
+.myspace-theme-quietthings .title-bar { background: linear-gradient(90deg, #2e6f7a 0%, #5d9e9e 100%) !important; }
+.myspace-theme-quietthings .title-bar-text { color: #ffffff !important; }
+.myspace-theme-quietthings .myspace-profile-body { background: linear-gradient(135deg, #f2ebd9, #d9ccb5) !important; color: #443c30 !important; font-family: Georgia, serif !important; }
+.myspace-theme-quietthings .profile-details-table, .myspace-theme-quietthings .profile-bio-box, .myspace-theme-quietthings .top8-container, .myspace-theme-quietthings .profile-photo-box { background-color: rgba(255, 253, 247, 0.95) !important; border: 2px solid #2e6f7a !important; color: #443c30 !important; }
+.myspace-theme-quietthings .section-header-orange { background-color: #5d9e9e !important; color: #ffffff !important; border-left-color: #2e6f7a !important; }
+.myspace-theme-quietthings .profile-name-header { color: #2e6f7a !important; }
+
+/* ==========================================
+   TEEN IDOL PACK
+   ========================================== */
+/* Oops Pink */
+.myspace-theme-oopspink {
+  --player-border: #ff007f;
+  --player-inner-bg: #ff66cc;
+  --player-screen-bg: #ffffff;
+  --player-screen-text: #ff007f;
+  --player-accent: #ff007f;
+  --player-btn-active: #ff007f;
+  --player-btn-inactive: #ffb3d9;
+  --player-progress-fill: #ff007f;
+  --player-visualizer-bar: #ff66cc;
+}
+.myspace-theme-oopspink .window { border: 2px solid #ff007f !important; }
+.myspace-theme-oopspink .title-bar { background: linear-gradient(90deg, #ff007f 0%, #ff66cc 100%) !important; }
+.myspace-theme-oopspink .title-bar-text { color: #ffffff !important; }
+.myspace-theme-oopspink .myspace-profile-body { background: linear-gradient(135deg, #ff99cc, #ffccf2) !important; color: #400020 !important; }
+.myspace-theme-oopspink .profile-details-table, .myspace-theme-oopspink .profile-bio-box, .myspace-theme-oopspink .top8-container, .myspace-theme-oopspink .profile-photo-box { background-color: rgba(255, 255, 255, 0.95) !important; border: 2px solid #ff007f !important; color: #400020 !important; }
+.myspace-theme-oopspink .section-header-orange { background-color: #ff66cc !important; color: #ffffff !important; border-left-color: #ff007f !important; }
+.myspace-theme-oopspink .profile-name-header { color: #ff007f !important; text-shadow: 1px 1px white !important; }
+
+/* Frosted Tips */
+.myspace-theme-frostedtips {
+  --player-border: #0044cc;
+  --player-inner-bg: #80c0ff;
+  --player-screen-bg: #f0f5ff;
+  --player-screen-text: #0044cc;
+  --player-accent: #0044cc;
+  --player-btn-active: #0044cc;
+  --player-btn-inactive: #bfe0ff;
+  --player-progress-fill: #0044cc;
+  --player-visualizer-bar: #80c0ff;
+}
+.myspace-theme-frostedtips .window { border: 2px solid #0044cc !important; }
+.myspace-theme-frostedtips .title-bar { background: linear-gradient(90deg, #0044cc 0%, #80c0ff 100%) !important; }
+.myspace-theme-frostedtips .title-bar-text { color: #ffffff !important; }
+.myspace-theme-frostedtips .myspace-profile-body { background: linear-gradient(135deg, #c0c0c0, #e0e0e0, #80c0ff) !important; color: #002266 !important; }
+.myspace-theme-frostedtips .profile-details-table, .myspace-theme-frostedtips .profile-bio-box, .myspace-theme-frostedtips .top8-container, .myspace-theme-frostedtips .profile-photo-box { background-color: rgba(240, 245, 255, 0.95) !important; border: 2px solid #0044cc !important; color: #002266 !important; }
+.myspace-theme-frostedtips .section-header-orange { background-color: #80c0ff !important; color: #0044cc !important; border-left-color: #0044cc !important; }
+.myspace-theme-frostedtips .profile-name-header { color: #0044cc !important; }
+
+/* Wannabe Leopard */
+.myspace-theme-wannabeleopard {
+  --player-border: #9933cc;
+  --player-inner-bg: #ff9900;
+  --player-screen-bg: #ffffe6;
+  --player-screen-text: #663300;
+  --player-accent: #9933cc;
+  --player-btn-active: #9933cc;
+  --player-btn-inactive: #ffdd99;
+  --player-progress-fill: #9933cc;
+  --player-visualizer-bar: #ff9900;
+}
+.myspace-theme-wannabeleopard .window { border: 2px solid #9933cc !important; }
+.myspace-theme-wannabeleopard .title-bar { background: linear-gradient(90deg, #ff9900 0%, #9933cc 100%) !important; }
+.myspace-theme-wannabeleopard .title-bar-text { color: #ffffff !important; }
+.myspace-theme-wannabeleopard .myspace-profile-body { background: linear-gradient(135deg, #ffcc00, #ff9900, #663300) !important; color: #331a00 !important; }
+.myspace-theme-wannabeleopard .profile-details-table, .myspace-theme-wannabeleopard .profile-bio-box, .myspace-theme-wannabeleopard .top8-container, .myspace-theme-wannabeleopard .profile-photo-box { background-color: rgba(255, 255, 230, 0.95) !important; border: 2px solid #9933cc !important; color: #331a00 !important; }
+.myspace-theme-wannabeleopard .section-header-orange { background-color: #ff9900 !important; color: #663300 !important; border-left-color: #9933cc !important; }
+.myspace-theme-wannabeleopard .profile-name-header { color: #9933cc !important; }
+
+/* ==========================================
+   SKATELAND PUNK PACK
+   ========================================== */
+/* Sk8er Boi */
+.myspace-theme-sk8erboi {
+  --player-border: #ff007f;
+  --player-inner-bg: #111111;
+  --player-screen-bg: #000000;
+  --player-screen-text: #39ff14;
+  --player-accent: #ff007f;
+  --player-btn-active: #ff007f;
+  --player-btn-inactive: #444444;
+  --player-progress-fill: #ff007f;
+  --player-visualizer-bar: #39ff14;
+}
+.myspace-theme-sk8erboi .window { border: 2px solid #ff007f !important; }
+.myspace-theme-sk8erboi .title-bar { background: linear-gradient(90deg, #000000 0%, #ff007f 100%) !important; }
+.myspace-theme-sk8erboi .title-bar-text { color: #ffffff !important; }
+.myspace-theme-sk8erboi .myspace-profile-body { background: linear-gradient(135deg, #111111, #ff3399) !important; color: #ffffff !important; }
+.myspace-theme-sk8erboi .profile-details-table, .myspace-theme-sk8erboi .profile-bio-box, .myspace-theme-sk8erboi .top8-container, .myspace-theme-sk8erboi .profile-photo-box { background-color: rgba(20, 20, 20, 0.95) !important; border: 2px solid #ff007f !important; color: #ffffff !important; }
+.myspace-theme-sk8erboi .section-header-orange { background-color: #111111 !important; color: #ff007f !important; border-left-color: #39ff14 !important; }
+.myspace-theme-sk8erboi .profile-name-header { color: #39ff14 !important; }
+
+/* Rock Show 182 */
+.myspace-theme-rockshow182 {
+  --player-border: #ccff00;
+  --player-inner-bg: #009933;
+  --player-screen-bg: #ffff00;
+  --player-screen-text: #000000;
+  --player-accent: #000000;
+  --player-btn-active: #000000;
+  --player-btn-inactive: #888888;
+  --player-progress-fill: #009933;
+  --player-visualizer-bar: #009933;
+}
+.myspace-theme-rockshow182 .window { border: 2px solid #ccff00 !important; }
+.myspace-theme-rockshow182 .title-bar { background: linear-gradient(90deg, #ccff00 0%, #009933 100%) !important; }
+.myspace-theme-rockshow182 .title-bar-text { color: #000000 !important; }
+.myspace-theme-rockshow182 .myspace-profile-body { background: linear-gradient(135deg, #39ff14, #ccff00, #111111) !important; color: #111111 !important; font-family: monospace !important; }
+.myspace-theme-rockshow182 .profile-details-table, .myspace-theme-rockshow182 .profile-bio-box, .myspace-theme-rockshow182 .top8-container, .myspace-theme-rockshow182 .profile-photo-box { background-color: rgba(255, 255, 255, 0.95) !important; border: 2px solid #009933 !important; color: #111111 !important; }
+.myspace-theme-rockshow182 .section-header-orange { background-color: #ccff00 !important; color: #000000 !important; border-left-color: #009933 !important; }
+.myspace-theme-rockshow182 .profile-name-header { color: #ccff00 !important; text-shadow: 1px 1px 2px #000000 !important; }
+
+/* Boulevard Stencil */
+.myspace-theme-boulevardstencil {
+  --player-border: #b30000;
+  --player-inner-bg: #1c1c1c;
+  --player-screen-bg: #050505;
+  --player-screen-text: #b30000;
+  --player-accent: #b30000;
+  --player-btn-active: #b30000;
+  --player-btn-inactive: #444444;
+  --player-progress-fill: #b30000;
+  --player-visualizer-bar: #b30000;
+}
+.myspace-theme-boulevardstencil .window { border: 2px solid #b30000 !important; }
+.myspace-theme-boulevardstencil .title-bar { background: linear-gradient(90deg, #b30000 0%, #000000 100%) !important; }
+.myspace-theme-boulevardstencil .title-bar-text { color: #ffffff !important; }
+.myspace-theme-boulevardstencil .myspace-profile-body { background: linear-gradient(135deg, #800000, #000000) !important; color: #ffffff !important; }
+.myspace-theme-boulevardstencil .profile-details-table, .myspace-theme-boulevardstencil .profile-bio-box, .myspace-theme-boulevardstencil .top8-container, .myspace-theme-boulevardstencil .profile-photo-box { background-color: rgba(15, 15, 15, 0.95) !important; border: 2px solid #b30000 !important; color: #ffffff !important; }
+.myspace-theme-boulevardstencil .section-header-orange { background-color: #b30000 !important; color: #ffffff !important; border-left-color: #ff3333 !important; }
+.myspace-theme-boulevardstencil .profile-name-header { color: #b30000 !important; }
+
+/* ==========================================
+   P2P FILE SHARE PACK
+   ========================================== */
+/* LemonWire */
+.myspace-theme-lemonwire {
+  --player-border: #009900;
+  --player-inner-bg: #39ff14;
+  --player-screen-bg: #000000;
+  --player-screen-text: #39ff14;
+  --player-accent: #39ff14;
+  --player-btn-active: #39ff14;
+  --player-btn-inactive: #226622;
+  --player-progress-fill: #39ff14;
+  --player-visualizer-bar: #009900;
+}
+.myspace-theme-lemonwire .window { border: 2px solid #009900 !important; }
+.myspace-theme-lemonwire .title-bar { background: linear-gradient(90deg, #006600 0%, #39ff14 100%) !important; }
+.myspace-theme-lemonwire .title-bar-text { color: #ffffff !important; }
+.myspace-theme-lemonwire .myspace-profile-body { background: linear-gradient(135deg, #009900, #33ff33, #ffffff) !important; color: #111111 !important; font-family: monospace !important; }
+.myspace-theme-lemonwire .profile-details-table, .myspace-theme-lemonwire .profile-bio-box, .myspace-theme-lemonwire .top8-container, .myspace-theme-lemonwire .profile-photo-box { background-color: rgba(255, 255, 255, 0.95) !important; border: 2px solid #009900 !important; color: #111111 !important; }
+.myspace-theme-lemonwire .section-header-orange { background-color: #006600 !important; color: #39ff14 !important; border-left-color: #39ff14 !important; }
+.myspace-theme-lemonwire .profile-name-header { color: #006600 !important; }
+
+/* Napster Kitty */
+.myspace-theme-napsterkitty {
+  --player-border: #003366;
+  --player-inner-bg: #3399ff;
+  --player-screen-bg: #ffffff;
+  --player-screen-text: #003366;
+  --player-accent: #3399ff;
+  --player-btn-active: #3399ff;
+  --player-btn-inactive: #99ccff;
+  --player-progress-fill: #3399ff;
+  --player-visualizer-bar: #003366;
+}
+.myspace-theme-napsterkitty .window { border: 2px solid #003366 !important; }
+.myspace-theme-napsterkitty .title-bar { background: linear-gradient(90deg, #003366 0%, #3399ff 100%) !important; }
+.myspace-theme-napsterkitty .title-bar-text { color: #ffffff !important; }
+.myspace-theme-napsterkitty .myspace-profile-body { background: linear-gradient(135deg, #003366, #0066cc, #ffffff) !important; color: #001f4d !important; }
+.myspace-theme-napsterkitty .profile-details-table, .myspace-theme-napsterkitty .profile-bio-box, .myspace-theme-napsterkitty .top8-container, .myspace-theme-napsterkitty .profile-photo-box { background-color: rgba(240, 245, 255, 0.95) !important; border: 2px solid #003366 !important; color: #001f4d !important; }
+.myspace-theme-napsterkitty .section-header-orange { background-color: #003366 !important; color: #ffffff !important; border-left-color: #3399ff !important; }
+.myspace-theme-napsterkitty .profile-name-header { color: #3399ff !important; }
+
+/* Winamp Classic */
+.myspace-theme-winampclassic {
+  --player-border: #3a3a3c;
+  --player-inner-bg: #1c1c1e;
+  --player-screen-bg: #000000;
+  --player-screen-text: #00ff00;
+  --player-accent: #00ff00;
+  --player-btn-active: #00ff00;
+  --player-btn-inactive: #444444;
+  --player-progress-fill: #00ff00;
+  --player-visualizer-bar: #00ff00;
+}
+.myspace-theme-winampclassic .window { border: 2px solid #3a3a3c !important; }
+.myspace-theme-winampclassic .title-bar { background: linear-gradient(90deg, #2c2c2e 0%, #4a4a4c 100%) !important; }
+.myspace-theme-winampclassic .title-bar-text { color: #00ff00 !important; font-family: monospace !important; }
+.myspace-theme-winampclassic .myspace-profile-body { background: linear-gradient(135deg, #3a3a3c, #1c1c1e) !important; color: #00ff00 !important; font-family: monospace !important; }
+.myspace-theme-winampclassic .profile-details-table, .myspace-theme-winampclassic .profile-bio-box, .myspace-theme-winampclassic .top8-container, .myspace-theme-winampclassic .profile-photo-box { background-color: rgba(28, 28, 30, 0.95) !important; border: 2px solid #3a3a3c !important; color: #00ff00 !important; }
+.myspace-theme-winampclassic .section-header-orange { background-color: #2c2c2e !important; color: #00ff00 !important; border-left-color: #00ff00 !important; }
+.myspace-theme-winampclassic .profile-name-header { color: #00ff00 !important; }
+
+/* ==========================================
+   SOCIALITE GOSSIP PACK
+   ========================================== */
+/* Simple Life */
+.myspace-theme-simplelife {
+  --player-border: #ffd700;
+  --player-inner-bg: #e60073;
+  --player-screen-bg: #ffffff;
+  --player-screen-text: #e60073;
+  --player-accent: #ffd700;
+  --player-btn-active: #ffd700;
+  --player-btn-inactive: #ff80bf;
+  --player-progress-fill: #ffd700;
+  --player-visualizer-bar: #e60073;
+}
+.myspace-theme-simplelife .window { border: 2px solid #ffd700 !important; }
+.myspace-theme-simplelife .title-bar { background: linear-gradient(90deg, #b30059 0%, #ffd700 100%) !important; }
+.myspace-theme-simplelife .title-bar-text { color: #ffffff !important; font-family: Georgia, serif !important; }
+.myspace-theme-simplelife .myspace-profile-body { background: linear-gradient(135deg, #e60073, #ff66b2) !important; color: #660033 !important; font-family: Georgia, serif !important; }
+.myspace-theme-simplelife .profile-details-table, .myspace-theme-simplelife .profile-bio-box, .myspace-theme-simplelife .top8-container, .myspace-theme-simplelife .profile-photo-box { background-color: rgba(255, 240, 245, 0.95) !important; border: 2px solid #ffd700 !important; color: #660033 !important; }
+.myspace-theme-simplelife .section-header-orange { background-color: #b30059 !important; color: #ffd700 !important; border-left-color: #ffd700 !important; }
+.myspace-theme-simplelife .profile-name-header { color: #ffd700 !important; text-shadow: 1px 1px 2px #b30059 !important; }
+
+/* Metallic Razr */
+.myspace-theme-metallicrazr {
+  --player-border: #ff007f;
+  --player-inner-bg: #b30059;
+  --player-screen-bg: #00d2ff;
+  --player-screen-text: #ffffff;
+  --player-accent: #ffffff;
+  --player-btn-active: #ffffff;
+  --player-btn-inactive: #ff80bf;
+  --player-progress-fill: #00d2ff;
+  --player-visualizer-bar: #ffffff;
+}
+.myspace-theme-metallicrazr .window { border: 2px solid #ff007f !important; }
+.myspace-theme-metallicrazr .title-bar { background: linear-gradient(90deg, #ff007f 0%, #e0e0e0 100%) !important; }
+.myspace-theme-metallicrazr .title-bar-text { color: #ffffff !important; }
+.myspace-theme-metallicrazr .myspace-profile-body { background: linear-gradient(135deg, #ff007f, #b30059) !important; color: #ffffff !important; }
+.myspace-theme-metallicrazr .profile-details-table, .myspace-theme-metallicrazr .profile-bio-box, .myspace-theme-metallicrazr .top8-container, .myspace-theme-metallicrazr .profile-photo-box { background-color: rgba(255, 255, 255, 0.95) !important; border: 2px solid #ff007f !important; color: #333333 !important; }
+.myspace-theme-metallicrazr .section-header-orange { background-color: #b30059 !important; color: #ffffff !important; border-left-color: #ff007f !important; }
+.myspace-theme-metallicrazr .profile-name-header { color: #ff007f !important; text-shadow: 1px 1px 2px #000000 !important; }
+
+/* Gossip Blog */
+.myspace-theme-gossipblog {
+  --player-border: #000000;
+  --player-inner-bg: #ffff00;
+  --player-screen-bg: #000000;
+  --player-screen-text: #ff0000;
+  --player-accent: #ff0000;
+  --player-btn-active: #ff0000;
+  --player-btn-inactive: #555555;
+  --player-progress-fill: #ff0000;
+  --player-visualizer-bar: #ff0000;
+}
+.myspace-theme-gossipblog .window { border: 3px solid #000000 !important; }
+.myspace-theme-gossipblog .title-bar { background: linear-gradient(90deg, #cccc00 0%, #000000 100%) !important; }
+.myspace-theme-gossipblog .title-bar-text { color: #ffff00 !important; font-weight: bold !important; }
+.myspace-theme-gossipblog .myspace-profile-body { background: linear-gradient(135deg, #ffff00, #000000) !important; color: #ff0000 !important; font-family: Impact, sans-serif !important; }
+.myspace-theme-gossipblog .profile-details-table, .myspace-theme-gossipblog .profile-bio-box, .myspace-theme-gossipblog .top8-container, .myspace-theme-gossipblog .profile-photo-box { background-color: rgba(255, 255, 255, 0.95) !important; border: 2px solid #000000 !important; color: #ff0000 !important; text-transform: uppercase !important; }
+.myspace-theme-gossipblog .section-header-orange { background-color: #ffff00 !important; color: #000000 !important; border-left-color: #ff0000 !important; }
+.myspace-theme-gossipblog .profile-name-header { color: #ffff00 !important; text-shadow: 2px 2px #000000 !important; }
 

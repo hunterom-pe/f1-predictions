@@ -1,0 +1,159 @@
+{
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
+  "identifier" : "3238E73F",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "1.99",
+      "familyShareable" : false,
+      "internalID" : "A8F67D77",
+      "localizations" : [
+        {
+          "description" : "",
+          "displayName" : "",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "weeb_pack",
+      "referenceName" : "Weeb Pack",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "1.99",
+      "familyShareable" : false,
+      "internalID" : "B3840583",
+      "localizations" : [
+        {
+          "description" : "",
+          "displayName" : "",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "cozy_pack",
+      "referenceName" : "Cozy Pack",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "1.99",
+      "familyShareable" : false,
+      "internalID" : "5EE9C58A",
+      "localizations" : [
+        {
+          "description" : "",
+          "displayName" : "",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "badbitch_pack",
+      "referenceName" : "Bad Bitch Pack",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "1.99",
+      "familyShareable" : false,
+      "internalID" : "A1B2C3D4",
+      "localizations" : [
+        {
+          "description" : "Unlocks 3 themes: Vampire Romance, Sunday Showdown, Quiet Things.",
+          "displayName" : "Mall Goth / Screamo Pack",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "screamo_pack",
+      "referenceName" : "Mall Goth / Screamo Pack",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "1.99",
+      "familyShareable" : false,
+      "internalID" : "B2C3D4E5",
+      "localizations" : [
+        {
+          "description" : "Unlocks 3 themes: Oops Pink, Frosted Tips, Wannabe Leopard.",
+          "displayName" : "Teen Idol Pack",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "teen_idol_pack",
+      "referenceName" : "Teen Idol Pack",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "1.99",
+      "familyShareable" : false,
+      "internalID" : "C3D4E5F6",
+      "localizations" : [
+        {
+          "description" : "Unlocks 3 themes: Sk8er Boi, Rock Show 182, Boulevard Stencil.",
+          "displayName" : "Skateland Punk Pack",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "skateland_punk_pack",
+      "referenceName" : "Skateland Punk Pack",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "1.99",
+      "familyShareable" : false,
+      "internalID" : "D4E5F6A7",
+      "localizations" : [
+        {
+          "description" : "Unlocks 3 themes: LemonWire, Napster Kitty, Winamp Classic.",
+          "displayName" : "P2P File Share Pack",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "file_share_pack",
+      "referenceName" : "P2P File Share Pack",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "1.99",
+      "familyShareable" : false,
+      "internalID" : "E5F6A7B8",
+      "localizations" : [
+        {
+          "description" : "Unlocks 3 themes: Simple Life, Metallic Razr, Gossip Blog.",
+          "displayName" : "Socialite Gossip Pack",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "socialite_gossip_pack",
+      "referenceName" : "Socialite Gossip Pack",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_askToBuyEnabled" : false,
+    "_billingGracePeriodEnabled" : false,
+    "_billingIssuesEnabled" : false,
+    "_disableDialogs" : false,
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_renewalBillingIssuesEnabled" : false,
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+
+    ],
+    "_timeRate" : 0
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 5,
+    "minor" : 0
+  }
+}

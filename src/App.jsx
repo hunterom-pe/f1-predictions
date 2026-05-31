@@ -1482,7 +1482,7 @@ export default function App() {
     return (
       <div className="sysop-terminal">
         <div className="sysop-header">
-          <h1>asl.com - Secure System Operator Terminal v2.1</h1>
+          <h1>asl - Secure System Operator Terminal v2.1</h1>
           <p>Device UUID: {deviceUuid || "UNKNOWN_NODE"}</p>
         </div>
         
@@ -1612,7 +1612,7 @@ export default function App() {
         <div className="myspace-nav-top" style={{ justifyContent: "center", gap: "15px" }}>
           <div className="myspace-logo" onClick={() => setNavigationScreen("home")}>
             <div className="myspace-logo-icons" style={{ fontSize: "20px", color: "#ff66cc" }}>⚡</div>
-            <span>asl.com</span>
+            <span>asl // missed connections</span>
           </div>
           <div style={{ fontStyle: "italic", fontSize: "14px", color: "#ff66cc" }}>
             {activeTagline}
@@ -1696,7 +1696,7 @@ export default function App() {
                 className="window" 
                 style={{ 
                   borderRadius: 0, 
-                  boxShadow: "none", 
+                  boxShadow: "4px 4px 0px rgba(0, 0, 0, 0.15)", 
                   border: "2px outset #ffffff", 
                   backgroundColor: "#c0c0c0", 
                   padding: "2px" 
@@ -1706,15 +1706,16 @@ export default function App() {
                   className="title-bar" 
                   style={{ 
                     borderRadius: 0, 
-                    backgroundColor: "#000080", 
-                    padding: "3px 5px", 
+                    background: "linear-gradient(90deg, #000080 0%, #1084d0 100%)", 
+                    padding: "4px 6px", 
                     display: "flex", 
                     justifyContent: "space-between", 
                     alignItems: "center", 
                     color: "#fff", 
                     fontWeight: "bold", 
                     fontSize: "12px", 
-                    fontFamily: "MS Sans Serif, sans-serif" 
+                    fontFamily: "MS Sans Serif, sans-serif",
+                    textShadow: "1px 1px 1px rgba(0,0,0,0.5)"
                   }}
                 >
                   <span className="title-bar-text">Welcome.exe</span>
@@ -1744,10 +1745,17 @@ export default function App() {
                       fontSize: "17px", 
                       fontWeight: "bold",
                       borderRadius: 0,
-                      border: "2px outset",
-                      boxShadow: "inset -1px -1px #0a0a0a, inset 1px 1px #dfdfdf, 1px 1px 0 0 #000",
-                      backgroundColor: "#c0c0c0",
-                      cursor: "pointer"
+                      border: "2px outset #ff66cc",
+                      backgroundColor: "#ff66cc",
+                      color: "#fff",
+                      textShadow: "1px 1px 0px #000",
+                      boxShadow: "inset -2px -2px #800080, inset 2px 2px #ffcce6, 2px 2px 0 0 #000",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                      transition: "all 0.1s ease"
                     }}
                   >
                     🌵 Enter Regional Portal
@@ -1760,12 +1768,23 @@ export default function App() {
               /* LOGGED-IN HOME EXPERIENCE */
               <>
                 {/* 1. MySpace-style User Dashboard Widget */}
-                <div className="window" style={{ width: "100%", boxSizing: "border-box", borderRadius: 0 }}>
-                  <div className="window-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderRadius: 0 }}>
+                <div className="window" style={{ width: "100%", boxSizing: "border-box", borderRadius: 0, boxShadow: "4px 4px 0px rgba(0, 0, 0, 0.15)", border: "2px outset #ffffff" }}>
+                  <div 
+                    className="window-title" 
+                    style={{ 
+                      display: "flex", 
+                      justifyContent: "space-between", 
+                      alignItems: "center", 
+                      borderRadius: 0,
+                      background: "linear-gradient(90deg, #003399 0%, #3366cc 50%, #6699ff 100%)",
+                      padding: "4px 8px",
+                      textShadow: "1px 1px 1px rgba(0,0,0,0.5)"
+                    }}
+                  >
                     <span>👤 My Dashboard</span>
-                    <span>asl // v2.0</span>
+                    <span style={{ fontSize: "11px", opacity: 0.9 }}>asl // v2.0</span>
                   </div>
-                  <div className="window-body" style={{ display: "flex", gap: "12px", padding: "10px", alignItems: "center", backgroundColor: "#ffffff", margin: 0, borderRadius: 0 }}>
+                  <div className="window-body" style={{ display: "flex", gap: "12px", padding: "12px", alignItems: "center", backgroundColor: "#ffffff", margin: 0, borderRadius: 0 }}>
                     <div 
                       onClick={handleOpenMyProfile}
                       style={{ 
@@ -1830,13 +1849,49 @@ export default function App() {
                       <div style={{ display: "flex", gap: "6px", width: "100%", marginTop: "4px" }}>
                         <button 
                           onClick={handleOpenMyProfile} 
-                          style={{ flex: 1, padding: "2px 6px", fontSize: "11px", minHeight: "24px", cursor: "pointer", borderRadius: 0 }}
+                          className="dashboard-btn"
+                          style={{ 
+                            flex: 1, 
+                            padding: "6px 12px", 
+                            fontSize: "13px", 
+                            minHeight: "36px", 
+                            cursor: "pointer", 
+                            borderRadius: 0,
+                            backgroundColor: "#3366cc",
+                            color: "#fff",
+                            border: "2px outset #3366cc",
+                            boxShadow: "inset -1px -1px #001f66, inset 1px 1px #99bbff, 1px 1px 0px 0px #000",
+                            fontWeight: "bold",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "4px",
+                            boxSizing: "border-box"
+                          }}
                         >
                           ✏️ Profile
                         </button>
                         <button 
                           onClick={() => setNavigationScreen("city")} 
-                          style={{ flex: 1, padding: "2px 6px", fontSize: "11px", minHeight: "24px", cursor: "pointer", borderRadius: 0 }}
+                          className="dashboard-btn"
+                          style={{ 
+                            flex: 1, 
+                            padding: "6px 12px", 
+                            fontSize: "13px", 
+                            minHeight: "36px", 
+                            cursor: "pointer", 
+                            borderRadius: 0,
+                            backgroundColor: "#ff007f",
+                            color: "#fff",
+                            border: "2px outset #ff007f",
+                            boxShadow: "inset -1px -1px #99004c, inset 1px 1px #ff99cc, 1px 1px 0px 0px #000",
+                            fontWeight: "bold",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "4px",
+                            boxSizing: "border-box"
+                          }}
                         >
                           🌵 Find Bars
                         </button>
@@ -1851,6 +1906,7 @@ export default function App() {
                   <div style={{ display: "flex", gap: "4px", marginBottom: "0", position: "relative", zIndex: 1 }}>
                     <button 
                       onClick={() => setFeedTab("radar")}
+                      className="feed-tab-btn"
                       style={{
                         flex: 1,
                         borderRadius: "4px 4px 0 0",
@@ -1875,6 +1931,7 @@ export default function App() {
                     </button>
                     <button 
                       onClick={() => setFeedTab("global")}
+                      className="feed-tab-btn"
                       style={{
                         flex: 1,
                         borderRadius: "4px 4px 0 0",
@@ -1899,6 +1956,7 @@ export default function App() {
                     </button>
                     <button 
                       onClick={() => setFeedTab("my_posts")}
+                      className="feed-tab-btn"
                       style={{
                         flex: 1,
                         borderRadius: "4px 4px 0 0",

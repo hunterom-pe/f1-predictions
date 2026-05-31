@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import TitleBar from "./TitleBar";
 import MySpaceMusicPlayer from "./MySpaceMusicPlayer";
-import { dbGetDoc } from "../firebase";
+import { dbGetDoc, dbUpdateDoc } from "../firebase";
 import { Share } from "@capacitor/share";
 import { isIAPSupported, fetchProductDetails, purchaseProduct, restorePurchases } from "../services/iap";
 
@@ -81,6 +81,15 @@ export default function MySpaceProfileDialog({
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editUsername, setEditUsername] = useState(username);
+
+  const bodyRef = useRef(null);
+
+  useEffect(() => {
+    if (bodyRef.current) {
+      bodyRef.current.scrollTop = 0;
+    }
+    window.scrollTo(0, 0);
+  }, [userId]);
 
   const isAdmin = currentUserDoc?.isAdmin || false;
 
@@ -176,13 +185,35 @@ export default function MySpaceProfileDialog({
         await new Promise(resolve => setTimeout(resolve, 800));
         
         if (onSaveProfile) {
-          const isCozy = checkoutProduct.id === "cozy_pack";
-          const isBadBitch = checkoutProduct.id === "badbitch_pack";
-          const themesToUnlock = isCozy 
-            ? ["animal-crossing", "spirited-away", "matcha-tea"]
-            : isBadBitch
-            ? ["8-ball", "long-nails", "sheer"]
-            : ["one-piece", "demon-slayer", "jujutsu-kaisen"];
+          let themesToUnlock = [];
+          switch (checkoutProduct.id) {
+            case "cozy_pack":
+              themesToUnlock = ["animal-crossing", "spirited-away", "matcha-tea"];
+              break;
+            case "badbitch_pack":
+              themesToUnlock = ["8-ball", "long-nails", "sheer"];
+              break;
+            case "weeb_pack":
+              themesToUnlock = ["one-piece", "demon-slayer", "jujutsu-kaisen"];
+              break;
+            case "screamo_pack":
+              themesToUnlock = ["vampire-romance", "sunday-showdown", "quiet-things"];
+              break;
+            case "teen_idol_pack":
+              themesToUnlock = ["oops-pink", "frosted-tips", "wannabe-leopard"];
+              break;
+            case "skateland_punk_pack":
+              themesToUnlock = ["sk8er-boi", "rock-show-182", "boulevard-stencil"];
+              break;
+            case "file_share_pack":
+              themesToUnlock = ["lemonwire", "napster-kitty", "winamp-classic"];
+              break;
+            case "socialite_gossip_pack":
+              themesToUnlock = ["simple-life", "metallic-razr", "gossip-blog"];
+              break;
+            default:
+              themesToUnlock = [];
+          }
           const updatedUnlocked = [
             ...new Set([...ownedThemes, ...themesToUnlock])
           ];
@@ -218,6 +249,21 @@ export default function MySpaceProfileDialog({
         }
         if (restoredIds.includes("weeb_pack")) {
           themesToUnlock.push("one-piece", "demon-slayer", "jujutsu-kaisen");
+        }
+        if (restoredIds.includes("screamo_pack")) {
+          themesToUnlock.push("vampire-romance", "sunday-showdown", "quiet-things");
+        }
+        if (restoredIds.includes("teen_idol_pack")) {
+          themesToUnlock.push("oops-pink", "frosted-tips", "wannabe-leopard");
+        }
+        if (restoredIds.includes("skateland_punk_pack")) {
+          themesToUnlock.push("sk8er-boi", "rock-show-182", "boulevard-stencil");
+        }
+        if (restoredIds.includes("file_share_pack")) {
+          themesToUnlock.push("lemonwire", "napster-kitty", "winamp-classic");
+        }
+        if (restoredIds.includes("socialite_gossip_pack")) {
+          themesToUnlock.push("simple-life", "metallic-razr", "gossip-blog");
         }
         
         if (themesToUnlock.length > 0 && onSaveProfile) {
@@ -283,6 +329,98 @@ export default function MySpaceProfileDialog({
         postText: "Connecting from profile"
       });
       onClose();
+    }
+  };
+
+  const handleReportUser = async () => {
+    const confirmFlag = window.confirm(
+      "Report User:\nAre you sure you want to flag this user for safety policy violations? 3 unique reports will result in an immediate system ban."
+    );
+    if (!confirmFlag) return;
+
+    try {
+      // ── Spite-Ban Shield Checks ──────────────────────────────────────────
+      let passShield = true;
+      
+      if (!currentUserDoc) {
+        passShield = false;
+      } else {
+        // Check A: Reporter must be a permanent (non-anonymous) account
+        if (currentUserDoc.isAnonymous) {
+          passShield = false;
+        }
+
+        // Check B: Reporter account must be >= 48 hours old
+        const ageMs = Date.now() - (currentUserDoc.createdAt || 0);
+        if (ageMs < 48 * 60 * 60 * 1000) {
+          passShield = false;
+        }
+      }
+
+      // Check C: Reporter must have had an interaction (connection) with the target user
+      const hasInteraction = acceptedConnections.some(conn => conn.userId === userId);
+      if (!hasInteraction) {
+        alert("Report could not be submitted. You must have an active chat connection/interaction with this user first before you can file a report.");
+        return;
+      }
+
+      if (!passShield) {
+        alert("Report could not be submitted. Your account does not meet the minimum requirements to file a report.");
+        return;
+      }
+
+      // ── Daily Report Rate Limit (max 3 per calendar day) ────────────────
+      const todayStr = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+      const reporterDailyDate = currentUserDoc.dailyReportDate || "";
+      const reporterDailyCount = reporterDailyDate === todayStr
+        ? (currentUserDoc.dailyReportCount || 0)
+        : 0;
+
+      if (reporterDailyCount >= 3) {
+        alert("Daily Report Limit Reached: You can only file 3 reports per day. This limit prevents system abuse. Try again tomorrow.");
+        return;
+      }
+
+      // ── Unique Reporter Enforcement ──────────────────────────────────────
+      const otherUserSnap = await dbGetDoc("users", userId);
+      if (!otherUserSnap.exists()) {
+        alert("User not found.");
+        return;
+      }
+
+      const otherUserData = otherUserSnap.data();
+      const existingReporters = Array.isArray(otherUserData.reporterIds) ? otherUserData.reporterIds : [];
+
+      // Check D: This user has already reported this person — one report per user
+      if (existingReporters.includes(currentUserId)) {
+        alert("You have already reported this user. No further action is needed — our team has been notified.");
+        return;
+      }
+
+      // Append reporter and check ban threshold (3 unique reports)
+      const updatedReporters = [...existingReporters, currentUserId];
+      const shouldBan = updatedReporters.length >= 3;
+
+      // Write report to target user AND increment reporter's daily count atomically
+      await Promise.all([
+        dbUpdateDoc("users", userId, {
+          reporterIds: updatedReporters,
+          flag_count: updatedReporters.length,
+          ...(shouldBan ? { isBanned: true, bannedAt: Date.now() } : {})
+        }),
+        dbUpdateDoc("users", currentUserId, {
+          dailyReportCount: reporterDailyCount + 1,
+          dailyReportDate: todayStr
+        })
+      ]);
+
+      if (shouldBan) {
+        alert("Report submitted. This user has reached the report threshold and has been removed from the platform.");
+      } else {
+        alert("Report submitted. Safety team has been notified.");
+      }
+    } catch (err) {
+      console.error("Error flagging user:", err);
     }
   };
 
@@ -360,30 +498,16 @@ export default function MySpaceProfileDialog({
   };
 
   const getThemeClass = () => {
-    switch (isEditing ? editProfileTheme : profileTheme) {
-      case "glitter": return "myspace-theme-glitter";
-      case "cyberpunk": return "myspace-theme-cyberpunk";
-      case "sunset": return "myspace-theme-sunset";
-      case "goth": return "myspace-theme-goth";
-      case "gameboy": return "myspace-theme-gameboy";
-      case "one-piece": return "myspace-theme-onepiece";
-      case "demon-slayer": return "myspace-theme-demonslayer";
-      case "jujutsu-kaisen": return "myspace-theme-jujutsukaisen";
-      case "animal-crossing": return "myspace-theme-animalcrossing";
-      case "spirited-away": return "myspace-theme-spiritedaway";
-      case "matcha-tea": return "myspace-theme-matchatea";
-      case "8-ball": return "myspace-theme-8ball";
-      case "long-nails": return "myspace-theme-longnails";
-      case "sheer": return "myspace-theme-sheer";
-      default: return "myspace-theme-classic";
-    }
+    const val = isEditing ? editProfileTheme : profileTheme;
+    if (!val) return "myspace-theme-classic";
+    return "myspace-theme-" + val.replace(/-/g, "");
   };
 
   return (
     <div className={`window ${getThemeClass()}`} style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
       <TitleBar title={`asl - ${isEditing ? "Editing Profile" : `${username}'s Profile`}`} onClose={onClose} />
       
-      <div className="window-body myspace-profile-body" style={{ flex: 1, overflowY: "auto", padding: "12px", margin: 0 }}>
+      <div ref={bodyRef} className="window-body myspace-profile-body" style={{ flex: 1, overflowY: "auto", padding: "12px", margin: 0 }}>
         
         {/* Top Header Card */}
         <div className="profile-top-section">
@@ -538,11 +662,46 @@ export default function MySpaceProfileDialog({
                       if (!isThemeUnlocked(selectedTheme) && userId === currentUserId) {
                         const cozyThemes = ["animal-crossing", "spirited-away", "matcha-tea"];
                         const badBitchThemes = ["8-ball", "long-nails", "sheer"];
+                        const screamoThemes = ["vampire-romance", "sunday-showdown", "quiet-things"];
+                        const teenIdolThemes = ["oops-pink", "frosted-tips", "wannabe-leopard"];
+                        const skatelandThemes = ["sk8er-boi", "rock-show-182", "boulevard-stencil"];
+                        const fileShareThemes = ["lemonwire", "napster-kitty", "winamp-classic"];
+                        const socialiteThemes = ["simple-life", "metallic-razr", "gossip-blog"];
+
                         const isCozy = cozyThemes.includes(selectedTheme);
                         const isBadBitch = badBitchThemes.includes(selectedTheme);
-                        const packId = isCozy ? "cozy_pack" : isBadBitch ? "badbitch_pack" : "weeb_pack";
-                        const packName = isCozy ? "Cozy Girl Theme Bundle" : isBadBitch ? "Bad Bitch Theme Bundle" : "Weeb Theme Bundle";
-                        const packThemes = isCozy ? cozyThemes : isBadBitch ? badBitchThemes : ["one-piece", "demon-slayer", "jujutsu-kaisen"];
+                        const isScreamo = screamoThemes.includes(selectedTheme);
+                        const isTeenIdol = teenIdolThemes.includes(selectedTheme);
+                        const isSkateland = skatelandThemes.includes(selectedTheme);
+                        const isFileShare = fileShareThemes.includes(selectedTheme);
+                        const isSocialite = socialiteThemes.includes(selectedTheme);
+
+                        const packId = isCozy ? "cozy_pack" 
+                                     : isBadBitch ? "badbitch_pack" 
+                                     : isScreamo ? "screamo_pack" 
+                                     : isTeenIdol ? "teen_idol_pack" 
+                                     : isSkateland ? "skateland_punk_pack" 
+                                     : isFileShare ? "file_share_pack" 
+                                     : isSocialite ? "socialite_gossip_pack" 
+                                     : "weeb_pack";
+
+                        const packName = isCozy ? "Cozy Village Theme Bundle" 
+                                       : isBadBitch ? "Y2K Glam Theme Bundle" 
+                                       : isScreamo ? "Mall Goth / Screamo Theme Bundle" 
+                                       : isTeenIdol ? "Teen Idol Theme Bundle" 
+                                       : isSkateland ? "Skateland Punk Theme Bundle" 
+                                       : isFileShare ? "P2P File Share Theme Bundle" 
+                                       : isSocialite ? "Socialite Gossip Theme Bundle" 
+                                       : "Otaku Legends Theme Bundle";
+
+                        const packThemes = isCozy ? cozyThemes 
+                                         : isBadBitch ? badBitchThemes 
+                                         : isScreamo ? screamoThemes 
+                                         : isTeenIdol ? teenIdolThemes 
+                                         : isSkateland ? skatelandThemes 
+                                         : isFileShare ? fileShareThemes 
+                                         : isSocialite ? socialiteThemes 
+                                         : ["one-piece", "demon-slayer", "jujutsu-kaisen"];
                         
                         setCheckoutProduct({ id: packId, name: packName, cost: "$1.99", themes: packThemes, targetTheme: selectedTheme });
                         setCheckoutStep("idle");
@@ -567,31 +726,76 @@ export default function MySpaceProfileDialog({
                     <option value="goth">Goth 🖤</option>
                     <option value="gameboy">Gameboy 🎮</option>
                     <option value="one-piece">
-                      {isThemeUnlocked("one-piece") ? "One Piece ⚓" : "One Piece ⚓ (🔒 Weeb Pack - $1.99)"}
+                      {isThemeUnlocked("one-piece") ? "Straw Hat Pirate ⚓" : "Straw Hat Pirate ⚓ (🔒 Otaku Legends Pack - $1.99)"}
                     </option>
                     <option value="demon-slayer">
-                      {isThemeUnlocked("demon-slayer") ? "Demon Slayer ⚔️" : "Demon Slayer ⚔️ (🔒 Weeb Pack - $1.99)"}
+                      {isThemeUnlocked("demon-slayer") ? "Slayer Blade ⚔️" : "Slayer Blade ⚔️ (🔒 Otaku Legends Pack - $1.99)"}
                     </option>
                     <option value="jujutsu-kaisen">
-                      {isThemeUnlocked("jujutsu-kaisen") ? "Jujutsu Kaisen 💀" : "Jujutsu Kaisen 💀 (🔒 Weeb Pack - $1.99)"}
+                      {isThemeUnlocked("jujutsu-kaisen") ? "Sorcery Curse 💀" : "Sorcery Curse 💀 (🔒 Otaku Legends Pack - $1.99)"}
                     </option>
                     <option value="animal-crossing">
-                      {isThemeUnlocked("animal-crossing") ? "Animal Crossing 🍃" : "Animal Crossing 🍃 (🔒 Cozy Girl Pack - $1.99)"}
+                      {isThemeUnlocked("animal-crossing") ? "Pocket Crossing 🍃" : "Pocket Crossing 🍃 (🔒 Cozy Village Pack - $1.99)"}
                     </option>
                     <option value="spirited-away">
-                      {isThemeUnlocked("spirited-away") ? "Spirited Away 🏮" : "Spirited Away 🏮 (🔒 Cozy Girl Pack - $1.99)"}
+                      {isThemeUnlocked("spirited-away") ? "Spirit Bathhouse 🏮" : "Spirit Bathhouse 🏮 (🔒 Cozy Village Pack - $1.99)"}
                     </option>
                     <option value="matcha-tea">
-                      {isThemeUnlocked("matcha-tea") ? "Matcha Tea 🍵" : "Matcha Tea 🍵 (🔒 Cozy Girl Pack - $1.99)"}
+                      {isThemeUnlocked("matcha-tea") ? "Matcha Tea 🍵" : "Matcha Tea 🍵 (🔒 Cozy Village Pack - $1.99)"}
                     </option>
                     <option value="8-ball">
-                      {isThemeUnlocked("8-ball") ? "8-Ball 🎱" : "8-Ball 🎱 (🔒 Bad Bitch Pack - $1.99)"}
+                      {isThemeUnlocked("8-ball") ? "8-Ball 🎱" : "8-Ball 🎱 (🔒 Y2K Glam Pack - $1.99)"}
                     </option>
                     <option value="long-nails">
-                      {isThemeUnlocked("long-nails") ? "Long Nails 💅" : "Long Nails 💅 (🔒 Bad Bitch Pack - $1.99)"}
+                      {isThemeUnlocked("long-nails") ? "Long Nails 💅" : "Long Nails 💅 (🔒 Y2K Glam Pack - $1.99)"}
                     </option>
                     <option value="sheer">
-                      {isThemeUnlocked("sheer") ? "Sheer ✨" : "Sheer ✨ (🔒 Bad Bitch Pack - $1.99)"}
+                      {isThemeUnlocked("sheer") ? "Sheer ✨" : "Sheer ✨ (🔒 Y2K Glam Pack - $1.99)"}
+                    </option>
+                    <option value="vampire-romance">
+                      {isThemeUnlocked("vampire-romance") ? "Vampire Romance 🦇" : "Vampire Romance 🦇 (🔒 Mall Goth Pack - $1.99)"}
+                    </option>
+                    <option value="sunday-showdown">
+                      {isThemeUnlocked("sunday-showdown") ? "Sunday Showdown 🎤" : "Sunday Showdown 🎤 (🔒 Mall Goth Pack - $1.99)"}
+                    </option>
+                    <option value="quiet-things">
+                      {isThemeUnlocked("quiet-things") ? "Quiet Things 🎧" : "Quiet Things 🎧 (🔒 Mall Goth Pack - $1.99)"}
+                    </option>
+                    <option value="oops-pink">
+                      {isThemeUnlocked("oops-pink") ? "Oops Pink 🎀" : "Oops Pink 🎀 (🔒 Teen Idol Pack - $1.99)"}
+                    </option>
+                    <option value="frosted-tips">
+                      {isThemeUnlocked("frosted-tips") ? "Frosted Tips ⭐" : "Frosted Tips ⭐ (🔒 Teen Idol Pack - $1.99)"}
+                    </option>
+                    <option value="wannabe-leopard">
+                      {isThemeUnlocked("wannabe-leopard") ? "Wannabe Leopard 🐆" : "Wannabe Leopard 🐆 (🔒 Teen Idol Pack - $1.99)"}
+                    </option>
+                    <option value="sk8er-boi">
+                      {isThemeUnlocked("sk8er-boi") ? "Sk8er Boi 🛹" : "Sk8er Boi 🛹 (🔒 Skateland Punk Pack - $1.99)"}
+                    </option>
+                    <option value="rock-show-182">
+                      {isThemeUnlocked("rock-show-182") ? "Rock Show 182 🎸" : "Rock Show 182 🎸 (🔒 Skateland Punk Pack - $1.99)"}
+                    </option>
+                    <option value="boulevard-stencil">
+                      {isThemeUnlocked("boulevard-stencil") ? "Boulevard Stencil 💥" : "Boulevard Stencil 💥 (🔒 Skateland Punk Pack - $1.99)"}
+                    </option>
+                    <option value="lemonwire">
+                      {isThemeUnlocked("lemonwire") ? "LemonWire 🍋" : "LemonWire 🍋 (🔒 P2P File Share Pack - $1.99)"}
+                    </option>
+                    <option value="napster-kitty">
+                      {isThemeUnlocked("napster-kitty") ? "Napster Kitty 🐱" : "Napster Kitty 🐱 (🔒 P2P File Share Pack - $1.99)"}
+                    </option>
+                    <option value="winamp-classic">
+                      {isThemeUnlocked("winamp-classic") ? "Winamp Classic 📻" : "Winamp Classic 📻 (🔒 P2P File Share Pack - $1.99)"}
+                    </option>
+                    <option value="simple-life">
+                      {isThemeUnlocked("simple-life") ? "Simple Life 👑" : "Simple Life 👑 (🔒 Socialite Gossip Pack - $1.99)"}
+                    </option>
+                    <option value="metallic-razr">
+                      {isThemeUnlocked("metallic-razr") ? "Metallic Razr 📱" : "Metallic Razr 📱 (🔒 Socialite Gossip Pack - $1.99)"}
+                    </option>
+                    <option value="gossip-blog">
+                      {isThemeUnlocked("gossip-blog") ? "Gossip Blog ✍️" : "Gossip Blog ✍️ (🔒 Socialite Gossip Pack - $1.99)"}
                     </option>
                   </select>
                   {userId === currentUserId && (
@@ -693,16 +897,10 @@ export default function MySpaceProfileDialog({
               <div className="contact-box">
                 <div className="contact-box-header">Contacting {username}</div>
                 <div className="contact-box-grid">
-                  <div className="contact-action" onClick={handleSendMessage}>
-                    ✉️ Send Message (AIM)
-                  </div>
-                  <div className="contact-action" onClick={() => alert(`${username} added to friends list!`)}>
-                    ➕ Add to Friends
-                  </div>
                   <div className="contact-action" onClick={handleShareProfile}>
                     🔗 Share Profile
                   </div>
-                  <div className="contact-action" onClick={() => alert("Reported to system sysop.")}>
+                  <div className="contact-action" onClick={handleReportUser}>
                     ⚠️ Report User
                   </div>
                 </div>
@@ -1008,8 +1206,20 @@ export default function MySpaceProfileDialog({
                     <p style={{ margin: "0 0 6px 0" }}><strong>Price:</strong> {checkoutProduct.cost}</p>
                     <p style={{ margin: 0, fontSize: "11px", color: "#666" }}>
                       {checkoutProduct.id === "cozy_pack"
-                        ? "Unlocks 3 themes: Animal Crossing 🍃, Spirited Away 🏮, and Matcha Tea 🍵."
-                        : "Unlocks 3 themes: One Piece ⚓, Demon Slayer ⚔️, and Jujutsu Kaisen 💀."}
+                        ? "Unlocks 3 themes: Pocket Crossing 🍃, Spirit Bathhouse 🏮, and Matcha Tea 🍵."
+                        : checkoutProduct.id === "badbitch_pack"
+                        ? "Unlocks 3 themes: 8-Ball 🎱, Long Nails 💅, and Sheer ✨."
+                        : checkoutProduct.id === "screamo_pack"
+                        ? "Unlocks 3 themes: Vampire Romance 🦇, Sunday Showdown 🎤, and Quiet Things 🎧."
+                        : checkoutProduct.id === "teen_idol_pack"
+                        ? "Unlocks 3 themes: Oops Pink 🎀, Frosted Tips ⭐, and Wannabe Leopard 🐆."
+                        : checkoutProduct.id === "skateland_punk_pack"
+                        ? "Unlocks 3 themes: Sk8er Boi 🛹, Rock Show 182 🎸, and Boulevard Stencil 💥."
+                        : checkoutProduct.id === "file_share_pack"
+                        ? "Unlocks 3 themes: LemonWire 🍋, Napster Kitty 🐱, and Winamp Classic 📻."
+                        : checkoutProduct.id === "socialite_gossip_pack"
+                        ? "Unlocks 3 themes: Simple Life 👑, Metallic Razr 📱, and Gossip Blog ✍️."
+                        : "Unlocks 3 themes: Straw Hat Pirate ⚓, Slayer Blade ⚔️, and Sorcery Curse 💀."}
                     </p>
                   </div>
                   <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "10px" }}>
@@ -1037,7 +1247,14 @@ export default function MySpaceProfileDialog({
                     Purchase Successful!
                   </p>
                   <p style={{ margin: "6px 0", fontSize: "12px", textAlign: "center" }}>
-                    The "{checkoutProduct.id === "cozy_pack" ? "Cozy Girl" : "Weeb"}" themes bundle has been permanently unlocked and credited to your node.
+                    The "{checkoutProduct.id === "cozy_pack" ? "Cozy Village" 
+                          : checkoutProduct.id === "badbitch_pack" ? "Y2K Glam" 
+                          : checkoutProduct.id === "screamo_pack" ? "Mall Goth / Screamo"
+                          : checkoutProduct.id === "teen_idol_pack" ? "Teen Idol"
+                          : checkoutProduct.id === "skateland_punk_pack" ? "Skateland Punk"
+                          : checkoutProduct.id === "file_share_pack" ? "P2P File Share"
+                          : checkoutProduct.id === "socialite_gossip_pack" ? "Socialite Gossip"
+                          : "Otaku Legends"}" themes bundle has been permanently unlocked and credited to your node.
                   </p>
                   <div style={{ display: "flex", justifyContent: "center", marginTop: "10px" }}>
                     <button className="default" onClick={handleCloseSuccess}>OK</button>
