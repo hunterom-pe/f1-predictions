@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import TitleBar from "./TitleBar";
 import MySpaceMusicPlayer from "./MySpaceMusicPlayer";
-import { dbGetDoc, dbAddDoc, dbGetDocs } from "../firebase";
+import { dbGetDoc } from "../firebase";
 import { Share } from "@capacitor/share";
 import { isIAPSupported, fetchProductDetails, purchaseProduct, restorePurchases } from "../services/iap";
 
@@ -148,146 +148,7 @@ export default function MySpaceProfileDialog({
   };
   const [friendProfiles, setFriendProfiles] = useState({});
 
-  // Guestbook states
-  const [guestbookEntries, setGuestbookEntries] = useState([]);
-  const [isLoadingGuestbook, setIsLoadingGuestbook] = useState(false);
-  const [showSignGuestbook, setShowSignGuestbook] = useState(false);
-  const [newGuestbookMessage, setNewGuestbookMessage] = useState("");
-  const [newGuestbookStamp, setNewGuestbookStamp] = useState("glitter_heart");
-  const [isSubmittingGuestbook, setIsSubmittingGuestbook] = useState(false);
 
-  const GUESTBOOK_STAMPS = {
-    glitter_heart: { emoji: "💖", label: "Glitter Heart" },
-    pixel_rose: { emoji: "🌹", label: "Pixel Rose" },
-    ufo: { emoji: "🛸", label: "UFO" },
-    flame: { emoji: "🔥", label: "Flame" },
-    skateboard: { emoji: "🛹", label: "Skateboard" },
-    skull: { emoji: "☠️", label: "Skull" },
-    floppy_disk: { emoji: "💾", label: "Floppy Disk" }
-  };
-
-  const getTimestampMs = (ts) => {
-    if (!ts) return Date.now();
-    if (typeof ts === "number") return ts;
-    if (ts.toMillis) return ts.toMillis();
-    if (ts.seconds) return ts.seconds * 1000;
-    if (ts.toDate) return ts.toDate().getTime();
-    return Date.now();
-  };
-
-  const formatDate = (ts) => {
-    const ms = getTimestampMs(ts);
-    return new Date(ms).toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric"
-    });
-  };
-
-  const fetchGuestbook = async () => {
-    if (!userId) return;
-    setIsLoadingGuestbook(true);
-    try {
-      const snap = await dbGetDocs("guestbook_entries", [
-        { type: "where", field: "profileUid", op: "==", value: userId }
-      ]);
-      const entries = snap.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      // Sort client-side by timestamp descending
-      entries.sort((a, b) => getTimestampMs(b.timestamp) - getTimestampMs(a.timestamp));
-      setGuestbookEntries(entries);
-    } catch (err) {
-      console.error("Error loading guestbook:", err);
-    } finally {
-      setIsLoadingGuestbook(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchGuestbook();
-  }, [userId]);
-
-  const parseBBCode = (text) => {
-    if (!text) return "";
-    
-    // Escape HTML first to prevent XSS injection
-    let escaped = text
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-
-    // Replace [b]content[/b] -> <strong>content</strong>
-    escaped = escaped.replace(/\[b\]([\s\S]*?)\[\/b\]/gi, "<strong>$1</strong>");
-    
-    // Replace [i]content[/i] -> <em>content</em>
-    escaped = escaped.replace(/\[i\]([\s\S]*?)\[\/i\]/gi, "<em>$1</em>");
-    
-    // Replace [rainbow]content[/rainbow] -> <span class="rainbow-text">content</span>
-    escaped = escaped.replace(/\[rainbow\]([\s\S]*?)\[\/rainbow\]/gi, '<span class="rainbow-text">$1</span>');
-
-    return { __html: escaped };
-  };
-
-  const insertBBCode = (tag) => {
-    const textarea = document.getElementById("guestbook-textarea");
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const text = textarea.value;
-    const before = text.substring(0, start);
-    const selected = text.substring(start, end);
-    const after = text.substring(end);
-
-    const replacement = `[${tag}]${selected}[/${tag}]`;
-    setNewGuestbookMessage(before + replacement + after);
-    
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + tag.length + 2, start + tag.length + 2 + selected.length);
-    }, 0);
-  };
-
-  const handleSignGuestbook = async (e) => {
-    e.preventDefault();
-    if (!newGuestbookMessage.trim()) return;
-    setIsSubmittingGuestbook(true);
-    try {
-      let signerName = "Anonymous Partner";
-      let signerAvatar = "👥";
-      if (currentUserId) {
-        const userSnap = await dbGetDoc("users", currentUserId);
-        if (userSnap.exists()) {
-          const userData = userSnap.data();
-          signerName = userData.username || signerName;
-          signerAvatar = userData.emoji_avatar || signerAvatar;
-        }
-      }
-
-      await dbAddDoc("guestbook_entries", {
-        profileUid: userId,
-        authorUid: currentUserId || "anonymous",
-        authorName: signerName,
-        authorAvatar: signerAvatar,
-        message: newGuestbookMessage,
-        stamp: newGuestbookStamp
-      });
-
-      setNewGuestbookMessage("");
-      setNewGuestbookStamp("glitter_heart");
-      setShowSignGuestbook(false);
-      await fetchGuestbook();
-    } catch (err) {
-      console.error("Error signing guestbook:", err);
-      alert("Failed to sign guestbook: " + err.message);
-    } finally {
-      setIsSubmittingGuestbook(false);
-    }
-  };
 
   // IAP Simulation states
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
@@ -844,13 +705,6 @@ export default function MySpaceProfileDialog({
                   <div className="contact-action" onClick={() => alert("Reported to system sysop.")}>
                     ⚠️ Report User
                   </div>
-                  <div className="contact-action" style={{ gridColumn: "span 2" }} onClick={() => {
-                    setNewGuestbookMessage("");
-                    setNewGuestbookStamp("glitter_heart");
-                    setShowSignGuestbook(true);
-                  }}>
-                    ✍️ Sign {username}'s Guestbook
-                  </div>
                 </div>
               </div>
             )}
@@ -968,127 +822,7 @@ export default function MySpaceProfileDialog({
           </div>
         </div>
 
-        {/* Guestbook Section */}
-        <div className="top8-container beveled-box" style={{ marginTop: "16px", padding: "6px" }}>
-          <div className="section-header-orange" style={{ margin: "0 0 8px 0" }}>{username}'s Guestbook</div>
-          
-          {isLoadingGuestbook ? (
-            <div style={{ padding: "12px", textAlign: "center", fontSize: "11px", fontStyle: "italic" }}>
-              Loading guestbook signatures...
-            </div>
-          ) : guestbookEntries.length === 0 ? (
-            <div style={{ padding: "20px", textAlign: "center", color: "#888", fontSize: "11px", fontStyle: "italic", background: "#f9f9f9", border: "1px inset #808080" }} className="guestbook-ledger">
-              This guestbook is empty. Be the first to sign it!
-            </div>
-          ) : (
-            <div className="guestbook-ledger">
-              {guestbookEntries.map((entry) => (
-                <div key={entry.id} className="guestbook-entry-row">
-                  <div className="guestbook-stamp-col" title={GUESTBOOK_STAMPS[entry.stamp]?.label || "Stamp"}>
-                    {GUESTBOOK_STAMPS[entry.stamp]?.emoji || "✍️"}
-                  </div>
-                  <div className="guestbook-msg-col">
-                    <span dangerouslySetInnerHTML={parseBBCode(entry.message)} />
-                  </div>
-                  <div className="guestbook-meta-col">
-                    <a onClick={() => {
-                      if (onOpenProfile) {
-                        onOpenProfile(entry.authorUid, {
-                          username: entry.authorName,
-                          emoji_avatar: entry.authorAvatar,
-                          mood: "Vibing",
-                          bio: "Retro traveler...",
-                          profileTheme: "classic"
-                        });
-                      }
-                    }}>
-                      {entry.authorAvatar} {entry.authorName}
-                    </a>
-                    <span style={{ display: "block", marginTop: "2px" }}>{formatDate(entry.timestamp)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
 
-        {/* Sign Guestbook Modal Window Overlay */}
-        {showSignGuestbook && (
-          <div style={{
-            position: "fixed",
-            top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.4)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999
-          }}>
-            <form onSubmit={handleSignGuestbook} className="window" style={{ width: "320px", fontFamily: "inherit" }}>
-              <div className="title-bar">
-                <div className="title-bar-text">Sign {username}'s Guestbook</div>
-                <div className="title-bar-controls">
-                  <button type="button" aria-label="Close" onClick={() => setShowSignGuestbook(false)} />
-                </div>
-              </div>
-              <div className="window-body" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                <p style={{ margin: 0, fontSize: "11px" }}>Leave a message for {username}:</p>
-                
-                {/* BBCode shortcuts */}
-                <div style={{ display: "flex", gap: "4px" }}>
-                  <button type="button" onClick={() => insertBBCode("b")} style={{ minWidth: "24px", padding: "2px 4px", fontSize: "10px" }}><b>B</b></button>
-                  <button type="button" onClick={() => insertBBCode("i")} style={{ minWidth: "24px", padding: "2px 4px", fontSize: "10px" }}><i>I</i></button>
-                  <button type="button" onClick={() => insertBBCode("rainbow")} style={{ padding: "2px 6px", fontSize: "10px", fontWeight: "bold" }}>🌈 Rainbow</button>
-                </div>
-
-                <textarea
-                  id="guestbook-textarea"
-                  rows="4"
-                  value={newGuestbookMessage}
-                  onChange={(e) => setNewGuestbookMessage(e.target.value)}
-                  placeholder="Type your message here..."
-                  maxLength="250"
-                  style={{ width: "100%", boxSizing: "border-box", resize: "none" }}
-                  required
-                />
-                
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <label style={{ fontSize: "11px", fontWeight: "bold" }}>Select a Retro Stamp:</label>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", background: "#ffffff", padding: "6px", border: "1px inset #808080", borderRadius: 0 }}>
-                    {Object.entries(GUESTBOOK_STAMPS).map(([key, stampInfo]) => (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => setNewGuestbookStamp(key)}
-                        style={{
-                          width: "32px",
-                          height: "32px",
-                          fontSize: "20px",
-                          padding: 0,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          border: newGuestbookStamp === key ? "2px solid #000080" : "1px solid #dfdfdf",
-                          background: newGuestbookStamp === key ? "#fff0f5" : "#f0f0f0",
-                          boxShadow: newGuestbookStamp === key ? "inset 1px 1px #808080" : "none"
-                        }}
-                        title={stampInfo.label}
-                      >
-                        {stampInfo.emoji}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: "6px", marginTop: "4px" }}>
-                  <button type="button" onClick={() => setShowSignGuestbook(false)} style={{ width: "70px" }}>Cancel</button>
-                  <button type="submit" disabled={isSubmittingGuestbook} style={{ width: "100px", fontWeight: "bold" }}>
-                    {isSubmittingGuestbook ? "Signing..." : "Sign Guestbook"}
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-        )}
 
         {/* Profile Operations — at the very bottom, only visible to profile owner */}
         {(userId === currentUserId || isAdmin) && (

@@ -372,7 +372,7 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
                   checked={selectedIcon === "NeonHeart"}
                   onChange={() => changeAppIcon("NeonHeart")}
                 />
-                Neon Heart (💌 Guestbook Envelope)
+                Neon Heart (💌 Heart Envelope)
               </label>
             </div>
           </fieldset>
