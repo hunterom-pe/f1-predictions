@@ -8,7 +8,6 @@ import {
 } from "../firebase";
 import { Geolocation } from "@capacitor/geolocation";
 import { AppIcon } from "@capacitor-community/app-icon";
-import { PushNotifications } from "@capacitor/push-notifications";
 
 export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) {
   // Account Adjustments State
@@ -19,10 +18,7 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
   // App Icon State
   const [selectedIcon, setSelectedIcon] = useState("default");
 
-  // Notifications State
-  const [notifyHandshake, setNotifyHandshake] = useState(false);
-  const [notifyRadar, setNotifyRadar] = useState(false);
-  const [notifStatus, setNotifStatus] = useState("");
+
 
   // Diagnostics State
   const [geofenceStatus, setGeofenceStatus] = useState("Status: Offline / Standby");
@@ -64,13 +60,7 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
     };
     checkActiveIcon();
 
-    // Set initial notifications preferences from userDoc
-    if (userDoc) {
-      setTimeout(() => {
-        setNotifyHandshake(!!userDoc.notifyHandshake);
-        setNotifyRadar(!!userDoc.notifyRadar);
-      }, 0);
-    }
+
   }, [userDoc]);
 
   // A. Account Adjustments handlers
@@ -124,67 +114,7 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
     }
   };
 
-  // C. Dial-Up Signals (System Pings)
-  const handleToggleHandshake = async (checked) => {
-    setNotifyHandshake(checked);
-    if (checked) {
-      try {
-        const granted = await requestPushPermission();
-        if (!granted) {
-          setNotifStatus("Push permissions disabled in device settings.");
-          setNotifyHandshake(false);
-          return;
-        }
-      } catch {
-        console.warn("PushNotifications not supported on this platform.");
-      }
-    }
-    // Update preferences in DB
-    try {
-      await dbSetDoc("users", currentUser.uid, {
-        notifyHandshake: checked
-      }, true);
-    } catch (err) {
-      console.error("Failed to save push settings:", err);
-    }
-  };
 
-  const handleToggleRadar = async (checked) => {
-    setNotifyRadar(checked);
-    if (checked) {
-      try {
-        const granted = await requestPushPermission();
-        if (!granted) {
-          setNotifStatus("Push permissions disabled in device settings.");
-          setNotifyRadar(false);
-          return;
-        }
-      } catch {
-        console.warn("PushNotifications not supported on this platform.");
-      }
-    }
-    // Update preferences in DB
-    try {
-      await dbSetDoc("users", currentUser.uid, {
-        notifyRadar: checked
-      }, true);
-    } catch (err) {
-      console.error("Failed to save push settings:", err);
-    }
-  };
-
-  const requestPushPermission = async () => {
-    try {
-      let permStatus = await PushNotifications.checkPermissions();
-      if (permStatus.receive === "prompt") {
-        permStatus = await PushNotifications.requestPermissions();
-      }
-      return permStatus.receive === "granted";
-    } catch (e) {
-      console.warn(e);
-      return true; // simulated fallback
-    }
-  };
 
   // D. Node Diagnostics
   const handlePingGeofence = async () => {
@@ -381,31 +311,7 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
             </div>
           </fieldset>
 
-          {/* C. Dial-Up Signals (System Pings) */}
-          <fieldset style={{ border: "2px outset #ffffff", padding: "10px", margin: 0 }}>
-            <legend style={{ fontWeight: "bold", color: "#003399" }}>handshake alerts & signals</legend>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
-                <input 
-                  type="checkbox" 
-                  checked={notifyHandshake}
-                  onChange={(e) => handleToggleHandshake(e.target.checked)}
-                />
-                Warn me when someone claims a Handshake
-              </label>
-              
-              <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
-                <input 
-                  type="checkbox" 
-                  checked={notifyRadar}
-                  onChange={(e) => handleToggleRadar(e.target.checked)}
-                />
-                Alert me on new local Radar bulletins
-              </label>
 
-              {notifStatus && <div style={{ fontSize: "9px", color: "darkred", marginTop: "2px" }}>{notifStatus}</div>}
-            </div>
-          </fieldset>
 
           {/* D. Node Diagnostics */}
           <fieldset style={{ border: "2px outset #ffffff", padding: "10px", margin: 0 }}>
