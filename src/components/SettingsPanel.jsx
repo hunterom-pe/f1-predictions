@@ -10,6 +10,8 @@ import { Geolocation } from "@capacitor/geolocation";
 import { AppIcon } from "@capacitor-community/app-icon";
 
 export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) {
+  const [activeTab, setActiveTab] = useState("account");
+
   // Account Adjustments State
   const [emailInput, setEmailInput] = useState(currentUser?.email || "");
   const [emailStatus, setEmailStatus] = useState("");
@@ -219,6 +221,20 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
     }
   };
 
+  const TABS = [
+    { id: "account", label: "👤 Account" },
+    { id: "appearance", label: "🎨 Appearance" },
+    { id: "diagnostics", label: "⚡ Diagnostics" },
+    { id: "legal", label: "📜 Legal" }
+  ];
+
+  const ICONS_METADATA = {
+    default: { emoji: "⚡", title: "Default Runner", desc: "Classic Yellow Guy", color: "#ffffcc" },
+    MidnightRadar: { emoji: "📡", title: "Midnight Radar", desc: "Pink Radar Signals", color: "#ffe6f2" },
+    PinkSilhouette: { emoji: "👤", title: "Pink Silhouette", desc: "Hearts Border Theme", color: "#ffe6e6" },
+    NeonHeart: { emoji: "💌", title: "Neon Heart", desc: "Envelope Icon Pack", color: "#fff2e6" }
+  };
+
   return (
     <div style={{ maxWidth: "450px", margin: "0 auto", width: "100%" }}>
       {/* Settings Panel Window */}
@@ -232,7 +248,7 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
           </div>
         </div>
 
-        <div className="window-body" style={{ backgroundColor: "#f0f0f0", padding: "10px", margin: 0, display: "flex", flexDirection: "column", gap: "12px", fontFamily: "'MS Sans Serif', Geneva, sans-serif", fontSize: "11px" }}>
+        <div className="window-body" style={{ backgroundColor: "#f0f0f0", padding: "10px", margin: 0, display: "flex", flexDirection: "column", gap: "10px", fontFamily: "'MS Sans Serif', Geneva, sans-serif", fontSize: "11px" }}>
           
           {/* Back button */}
           <button 
@@ -243,188 +259,259 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
             ← Back to Dashboard
           </button>
 
-          {/* A. Account Adjustments */}
-          <fieldset style={{ border: "2px outset #ffffff", padding: "10px", margin: 0 }}>
-            <legend style={{ fontWeight: "bold", color: "#003399" }}>my login & password</legend>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
-                <label style={{ fontWeight: "bold" }}>My Email Address:</label>
-                <div style={{ display: "flex", gap: "6px" }}>
-                  <input 
-                    type="text" 
-                    value={emailInput}
-                    onChange={(e) => setEmailInput(e.target.value)}
-                    style={{ flex: 1, padding: "2px", backgroundColor: "#ffffff", color: "#333333", border: "1px inset #808080" }}
-                  />
-                  <button onClick={handleUpdateEmail} style={{ minHeight: "22px", cursor: "pointer" }}>Save</button>
-                </div>
-                {emailStatus && <div style={{ fontSize: "10px", color: emailStatus.startsWith("Error") ? "red" : "green", marginTop: "2px" }}>{emailStatus}</div>}
-              </div>
-              <hr style={{ border: "1px inset #ffffff", margin: "4px 0" }} />
-              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <label style={{ fontWeight: "bold" }}>Password Reset:</label>
-                <button onClick={handlePasswordReset} style={{ alignSelf: "flex-start", minHeight: "24px", cursor: "pointer" }}>
-                  🔑 Email Me a Password Reset Link
+          {/* Windows 98 properties tabs */}
+          <div style={{ display: "flex", gap: "2px", margin: "4px 0 0 0", padding: 0 }}>
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  style={{
+                    padding: "4px 8px",
+                    fontSize: "11px",
+                    fontWeight: "bold",
+                    cursor: "pointer",
+                    backgroundColor: isActive ? "#f0f0f0" : "#dfdfdf",
+                    borderStyle: "solid",
+                    borderWidth: "1px 1px 0 1px",
+                    borderColor: isActive ? "#ffffff #808080 #f0f0f0 #ffffff" : "#ffffff #808080 #808080 #ffffff",
+                    marginTop: isActive ? "0px" : "2px",
+                    height: isActive ? "24px" : "22px",
+                    zIndex: isActive ? 2 : 1,
+                    position: "relative",
+                    borderRadius: "2px 2px 0 0",
+                    color: isActive ? "#000000" : "#555555"
+                  }}
+                >
+                  {tab.label}
                 </button>
-                {pwResetStatus && <div style={{ fontSize: "10px", color: pwResetStatus.startsWith("Error") ? "red" : "green", marginTop: "2px" }}>{pwResetStatus}</div>}
+              );
+            })}
+          </div>
+
+          {/* Tabs Content Panel */}
+          <div style={{
+            backgroundColor: "#f0f0f0",
+            border: "2px outset #ffffff",
+            padding: "12px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px",
+            boxShadow: "1px 1px 0px #000000",
+            marginTop: "-2px",
+            zIndex: 1,
+            minHeight: "240px"
+          }}>
+            {activeTab === "account" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {/* A. Account Adjustments */}
+                <fieldset style={{ border: "2px outset #ffffff", padding: "10px", margin: 0, backgroundColor: "#ffffff" }}>
+                  <legend style={{ fontWeight: "bold", color: "#003399" }}>my login & password</legend>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                      <label style={{ fontWeight: "bold" }}>My Email Address:</label>
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        <input 
+                          type="text" 
+                          value={emailInput}
+                          onChange={(e) => setEmailInput(e.target.value)}
+                          style={{ flex: 1, padding: "2px", backgroundColor: "#ffffff", color: "#333333", border: "1px inset #808080" }}
+                        />
+                        <button onClick={handleUpdateEmail} style={{ minHeight: "22px", cursor: "pointer" }}>Save</button>
+                      </div>
+                      {emailStatus && <div style={{ fontSize: "10px", color: emailStatus.startsWith("Error") ? "red" : "green", marginTop: "2px" }}>{emailStatus}</div>}
+                    </div>
+                    <hr style={{ border: "1px inset #ffffff", margin: "4px 0" }} />
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <label style={{ fontWeight: "bold" }}>Password Reset:</label>
+                      <button onClick={handlePasswordReset} style={{ alignSelf: "flex-start", minHeight: "24px", cursor: "pointer" }}>
+                        🔑 Email Me a Password Reset Link
+                      </button>
+                      {pwResetStatus && <div style={{ fontSize: "10px", color: pwResetStatus.startsWith("Error") ? "red" : "green", marginTop: "2px" }}>{pwResetStatus}</div>}
+                    </div>
+                  </div>
+                </fieldset>
+
+                {/* E. System Format (Wipe Account) */}
+                <fieldset style={{ border: "2px outset #ff0000", padding: "10px", margin: 0, backgroundColor: "#fff5f5" }}>
+                  <legend style={{ fontWeight: "bold", color: "#ff0000" }}>delete my profile forever</legend>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <div style={{ color: "#8b0000", fontWeight: "bold" }}>
+                      ⚠️ Delete Account (App Store Compliance)
+                    </div>
+                    <div style={{ color: "#666666" }}>
+                      Wipes out your profile page, posts, handshake history, and connections.
+                    </div>
+                    <button 
+                      onClick={() => setShowDeleteConfirm(true)} 
+                      style={{ 
+                        backgroundColor: "#ff0000", 
+                        color: "#ffffff", 
+                        fontWeight: "bold", 
+                        border: "1px solid #8b0000", 
+                        padding: "4px 8px", 
+                        minHeight: "26px", 
+                        alignSelf: "flex-start",
+                        cursor: "pointer"
+                      }}
+                    >
+                      Delete My Account Forever
+                    </button>
+                  </div>
+                </fieldset>
               </div>
-            </div>
-          </fieldset>
+            )}
 
-          {/* B. Desktop Themes (Alternate Icons) */}
-          <fieldset style={{ border: "2px outset #ffffff", padding: "10px", margin: 0 }}>
-            <legend style={{ fontWeight: "bold", color: "#003399" }}>change my app icon</legend>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <span style={{ fontStyle: "italic", marginBottom: "4px" }}>Pick an icon style for your phone home screen:</span>
-              
-              <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
-                <input 
-                  type="radio" 
-                  name="appicon"
-                  value="default"
-                  checked={selectedIcon === "default"}
-                  onChange={() => changeAppIcon("default")}
-                />
-                Default Runner (⚡ Yellow Guy)
-              </label>
-
-              <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
-                <input 
-                  type="radio" 
-                  name="appicon"
-                  value="MidnightRadar"
-                  checked={selectedIcon === "MidnightRadar"}
-                  onChange={() => changeAppIcon("MidnightRadar")}
-                />
-                Midnight Radar (📡 Pink Signals)
-              </label>
-
-              <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
-                <input 
-                  type="radio" 
-                  name="appicon"
-                  value="PinkSilhouette"
-                  checked={selectedIcon === "PinkSilhouette"}
-                  onChange={() => changeAppIcon("PinkSilhouette")}
-                />
-                Pink Silhouette (👤 Hearts Border)
-              </label>
-
-              <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
-                <input 
-                  type="radio" 
-                  name="appicon"
-                  value="NeonHeart"
-                  checked={selectedIcon === "NeonHeart"}
-                  onChange={() => changeAppIcon("NeonHeart")}
-                />
-                Neon Heart (💌 Heart Envelope)
-              </label>
-            </div>
-          </fieldset>
-
-
-
-          {/* D. Node Diagnostics */}
-          <fieldset style={{ border: "2px outset #ffffff", padding: "10px", margin: 0 }}>
-            <legend style={{ fontWeight: "bold", color: "#003399" }}>connection diagnostic & test</legend>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <button 
-                  onClick={handlePingGeofence} 
-                  style={{ alignSelf: "flex-start", padding: "4px 8px", minHeight: "26px", cursor: "pointer" }}
-                >
-                  [ ping local area network ]
-                </button>
-                <div style={{ 
-                  backgroundColor: "#000000", 
-                  color: "#00ff00", 
-                  padding: "4px 6px", 
-                  fontFamily: "Courier, monospace", 
-                  fontSize: "10px",
-                  border: "1px inset #808080",
-                  whiteSpace: "pre-wrap",
-                  lineHeight: "1.3"
-                }}>
-                  {geofenceStatus}
-                </div>
-                <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "11px", marginTop: "4px" }}>
-                  <input 
-                    type="checkbox" 
-                    checked={devOverride} 
-                    onChange={(e) => handleToggleDevOverride(e.target.checked)} 
-                  />
-                  Enable Cupertino Reviewer Mode Override
-                </label>
+            {activeTab === "appearance" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {/* B. Desktop Themes (Alternate Icons) */}
+                <fieldset style={{ border: "2px outset #ffffff", padding: "10px", margin: 0, backgroundColor: "#ffffff" }}>
+                  <legend style={{ fontWeight: "bold", color: "#003399" }}>change my app icon</legend>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <span style={{ fontStyle: "italic" }}>Select an icon style to customize your phone home screen:</span>
+                    
+                    {/* Visual 2x2 grid for App Icons selection */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginTop: "4px" }}>
+                      {Object.entries(ICONS_METADATA).map(([key, info]) => {
+                        const isSelected = selectedIcon === key;
+                        return (
+                          <div 
+                            key={key}
+                            onClick={() => changeAppIcon(key)}
+                            style={{
+                              border: isSelected ? "2px solid #000080" : "1px solid #808080",
+                              backgroundColor: info.color,
+                              padding: "8px",
+                              cursor: "pointer",
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              textAlign: "center",
+                              gap: "4px",
+                              boxShadow: isSelected ? "inset 1px 1px #000" : "1px 1px 2px rgba(0,0,0,0.15)",
+                              borderRadius: "4px"
+                            }}
+                          >
+                            <span style={{ fontSize: "28px" }}>{info.emoji}</span>
+                            <span style={{ fontWeight: "bold", color: isSelected ? "#000080" : "#333333", fontSize: "11px" }}>{info.title}</span>
+                            <span style={{ fontSize: "9px", color: "#666666" }}>{info.desc}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </fieldset>
               </div>
-              <hr style={{ border: "1px inset #ffffff", margin: "2px 0" }} />
-              <div>
-                <button 
-                  onClick={handleFlushCache} 
-                  style={{ padding: "4px 8px", minHeight: "26px", cursor: "pointer", backgroundColor: "#dfdfdf", color: "#000000" }}
-                >
-                  [ clear browser cache / hard reset ]
-                </button>
-                <div style={{ color: "#666666", fontSize: "10px", marginTop: "3px" }}>
-                  Clears out stored files, logs you out, and does a fresh cold reload.
-                </div>
-              </div>
-            </div>
-          </fieldset>
+            )}
 
-          {/* E. System Format (Wipe Account) */}
-          <fieldset style={{ border: "2px outset #ff0000", padding: "10px", margin: 0 }}>
-            <legend style={{ fontWeight: "bold", color: "#ff0000" }}>delete my profile forever</legend>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <div style={{ color: "#8b0000", fontWeight: "bold" }}>
-                ⚠️ Delete Account (App Store Compliance)
+            {activeTab === "diagnostics" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {/* D. Node Diagnostics */}
+                <fieldset style={{ border: "2px outset #ffffff", padding: "10px", margin: 0, backgroundColor: "#ffffff" }}>
+                  <legend style={{ fontWeight: "bold", color: "#003399" }}>connection diagnostic & test</legend>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <button 
+                        onClick={handlePingGeofence} 
+                        style={{ alignSelf: "flex-start", padding: "4px 8px", minHeight: "26px", cursor: "pointer", fontWeight: "bold" }}
+                      >
+                        [ ping local area network ]
+                      </button>
+                      <div style={{ 
+                        backgroundColor: "#000000", 
+                        color: "#00ff00", 
+                        padding: "6px", 
+                        fontFamily: "monospace", 
+                        fontSize: "10px",
+                        border: "1px inset #808080",
+                        whiteSpace: "pre-wrap",
+                        lineHeight: "1.3",
+                        boxShadow: "inset 1px 1px #050505"
+                      }}>
+                        {geofenceStatus}
+                      </div>
+                      <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "11px", marginTop: "6px" }}>
+                        <input 
+                          type="checkbox" 
+                          checked={devOverride} 
+                          onChange={(e) => handleToggleDevOverride(e.target.checked)} 
+                        />
+                        Enable Cupertino Reviewer Mode Override
+                      </label>
+                    </div>
+                    <hr style={{ border: "1px inset #ffffff", margin: "4px 0" }} />
+                    <div>
+                      <button 
+                        onClick={handleFlushCache} 
+                        style={{ padding: "4px 8px", minHeight: "26px", cursor: "pointer", backgroundColor: "#dfdfdf", color: "#000000" }}
+                      >
+                        [ clear browser cache / hard reset ]
+                      </button>
+                      <div style={{ color: "#666666", fontSize: "10px", marginTop: "3px" }}>
+                        Clears out stored files, logs you out, and does a fresh cold reload.
+                      </div>
+                    </div>
+                  </div>
+                </fieldset>
               </div>
-              <div style={{ color: "#666666" }}>
-                Wipes out your profile page, posts, handshake history, and connections.
-              </div>
-              <button 
-                onClick={() => setShowDeleteConfirm(true)} 
-                style={{ 
-                  backgroundColor: "#ff0000", 
-                  color: "#ffffff", 
-                  fontWeight: "bold", 
-                  border: "1px solid #8b0000", 
-                  padding: "4px 8px", 
-                  minHeight: "26px", 
-                  alignSelf: "flex-start",
-                  cursor: "pointer"
-                }}
-              >
-                Delete My Account Forever
-              </button>
-            </div>
-          </fieldset>
+            )}
 
-          {/* F. App Store Legal / Compliance */}
-          <fieldset style={{ border: "2px outset #ffffff", padding: "10px", margin: 0 }}>
-            <legend style={{ fontWeight: "bold", color: "#003399" }}>legal & compliance</legend>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <div style={{ display: "flex", gap: "10px" }}>
-                <span 
-                  onClick={() => setShowPrivacyModal(true)}
-                  style={{ color: "#000080", textDecoration: "underline", fontWeight: "bold", cursor: "pointer" }}
-                >
-                  Privacy Policy
-                </span>
-                <span style={{ color: "#666" }}>|</span>
-                <span 
-                  onClick={() => setShowTermsModal(true)}
-                  style={{ color: "#000080", textDecoration: "underline", fontWeight: "bold", cursor: "pointer" }}
-                >
-                  Terms of Service & EULA
-                </span>
-              </div>
-              <div style={{ color: "#666666", fontSize: "10px", marginTop: "3px" }}>
-                Please review our terms regarding User-Generated Content, safety, blocking, and data retention policies.
-              </div>
-            </div>
-          </fieldset>
+            {activeTab === "legal" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {/* F. App Store Legal / Compliance */}
+                <fieldset style={{ border: "2px outset #ffffff", padding: "10px", margin: 0, backgroundColor: "#ffffff" }}>
+                  <legend style={{ fontWeight: "bold", color: "#003399" }}>legal & compliance</legend>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <span style={{ fontStyle: "italic" }}>Review legal agreements, user safety rules, and platform policies inside the application:</span>
+                    
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "4px" }}>
+                      <div 
+                        onClick={() => setShowPrivacyModal(true)}
+                        style={{
+                          border: "1px solid #808080",
+                          backgroundColor: "#f5f9ff",
+                          padding: "10px",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          boxShadow: "1px 1px 1px rgba(0,0,0,0.1)"
+                        }}
+                      >
+                        <span style={{ fontSize: "20px" }}>📖</span>
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                          <span style={{ color: "#000080", textDecoration: "underline", fontWeight: "bold" }}>Privacy Policy</span>
+                          <span style={{ fontSize: "9px", color: "#666666" }}>Data collection, retention, and deletion policy</span>
+                        </div>
+                      </div>
 
+                      <div 
+                        onClick={() => setShowTermsModal(true)}
+                        style={{
+                          border: "1px solid #808080",
+                          backgroundColor: "#f5f9ff",
+                          padding: "10px",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          boxShadow: "1px 1px 1px rgba(0,0,0,0.1)"
+                        }}
+                      >
+                        <span style={{ fontSize: "20px" }}>📜</span>
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                          <span style={{ color: "#000080", textDecoration: "underline", fontWeight: "bold" }}>Terms of Service & EULA</span>
+                          <span style={{ fontSize: "9px", color: "#666666" }}>Zero-tolerance UGC policies, reporting, and blocking terms</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </fieldset>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
