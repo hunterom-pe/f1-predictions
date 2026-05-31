@@ -63,6 +63,18 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
 
   }, [userDoc]);
 
+  // Prevent background scrolling when modals are open
+  useEffect(() => {
+    if (showPrivacyModal || showTermsModal || showDeleteConfirm) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [showPrivacyModal, showTermsModal, showDeleteConfirm]);
+
   // A. Account Adjustments handlers
   const handleUpdateEmail = async () => {
     if (!emailInput) {
