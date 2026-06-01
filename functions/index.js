@@ -1,6 +1,9 @@
 const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
+const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
 admin.initializeApp();
+
+const geminiKey = defineSecret("GEMINI_API_KEY");
 
 exports.banOffendingUser = onDocumentUpdated("users/{userId}", async (event) => {
   const newValue = event.data.after.data();
@@ -46,7 +49,7 @@ exports.banOffendingUser = onDocumentUpdated("users/{userId}", async (event) => 
 
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 
-exports.createPostSecure = onCall(async (request) => {
+exports.createPostSecure = onCall({ secrets: [geminiKey] }, async (request) => {
   const { data, auth } = request;
   if (!auth) {
     throw new HttpsError("unauthenticated", "Authentication credentials invalid.");
@@ -302,7 +305,7 @@ exports.restorePost = onCall(async (request) => {
   return { success: true };
 });
 
-exports.moderateText = onCall(async (request) => {
+exports.moderateText = onCall({ secrets: [geminiKey] }, async (request) => {
   const { data, auth } = request;
   if (!auth) {
     throw new HttpsError("unauthenticated", "Authentication required.");
