@@ -1536,6 +1536,18 @@ export const dbAddDoc = async (collectionName, data) => {
   return await addDoc(colRef, { ...data, timestamp: serverTimestamp() });
 };
 
+export const dbSubmitReport = async ({ targetUserId, postId, reason }) => {
+  if (isSimulated) {
+    console.log("[SimDB] submitReport (simulated) for", targetUserId);
+    return { success: true };
+  }
+  const { getFunctions, httpsCallable } = await import("firebase/functions");
+  const fns = getFunctions();
+  const fn = httpsCallable(fns, "submitReport");
+  const result = await fn({ targetUserId, postId, reason });
+  return result.data;
+};
+
 export const dbUpdateDoc = async (collectionName, docId, data) => {
   if (isSimulated) {
     const store = simulatedStore.getDb();

@@ -26,6 +26,7 @@ import {
   dbUpdateDoc,
   dbDeleteDoc,
   dbGetDocs,
+  dbSubmitReport,
   queryWhere
 } from "./firebase";
 import { searchVenues } from "./services/foursquare";
@@ -1129,40 +1130,32 @@ export default function App() {
     if (!showReportDialog) return;
     const post = showReportDialog;
     try {
-      // 1. Mark reported: true on the post document
-      await dbUpdateDoc("posts", post.id, { 
-        reported: true,
-        reportReason: reportReason,
-        reportedAt: Date.now(),
-        reportedBy: currentUser?.uid || "anonymous"
-      });
+      await dbSubmitReport({ targetUserId: post.userId, postId: post.id, reason: reportReason });
 
-      // 2. Increment poster's flag_count in their users document
-      const posterSnap = await dbGetDoc("users", post.userId);
-      if (posterSnap.exists()) {
-        const posterData = posterSnap.data();
-        const currentFlags = posterData.flag_count || 0;
-        await dbUpdateDoc("users", post.userId, { flag_count: currentFlags + 1 });
-      }
-
-      // 3. Block user option
       if (blockPoster && currentUser) {
         const currentBlocked = userDoc?.blockedUsers || [];
         if (!currentBlocked.includes(post.userId)) {
           const updatedBlocked = [...currentBlocked, post.userId];
           await dbUpdateDoc("users", currentUser.uid, { blockedUsers: updatedBlocked });
-          setUserDoc(prev => ({
-            ...prev,
-            blockedUsers: updatedBlocked
-          }));
+          setUserDoc(prev => ({ ...prev, blockedUsers: updatedBlocked }));
         }
       }
 
       alert("Thank you. The post has been flagged and removed from your feed.");
       setShowReportDialog(null);
     } catch (err) {
-      console.error("Error reporting post:", err);
-      alert("Failed to submit report. Please try again.");
+      const code = err?.code || "";
+      if (code === "functions/already-exists") {
+        alert("You have already reported this user. No further action is needed.");
+      } else if (code === "functions/resource-exhausted") {
+        alert("Daily Report Limit Reached: You can only file 3 reports per day. Try again tomorrow.");
+      } else if (code === "functions/failed-precondition") {
+        alert("Report could not be submitted. Your account does not meet the minimum requirements.");
+      } else {
+        console.error("Error reporting post:", err);
+        alert("Failed to submit report. Please try again.");
+      }
+      setShowReportDialog(null);
     }
   };
 

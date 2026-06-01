@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import TitleBar from "./TitleBar";
 import MySpaceMusicPlayer from "./MySpaceMusicPlayer";
-import { dbGetDoc, dbUpdateDoc } from "../firebase";
+import { dbGetDoc, dbUpdateDoc, dbSubmitReport } from "../firebase";
 import { Share } from "@capacitor/share";
 import { isIAPSupported, fetchProductDetails, purchaseProduct, restorePurchases } from "../services/iap";
 
@@ -338,89 +338,30 @@ export default function MySpaceProfileDialog({
     );
     if (!confirmFlag) return;
 
+    // UX pre-flight: must have a connection before reporting (enforced server-side too)
+    const hasInteraction = acceptedConnections.some(conn => conn.userId === userId);
+    if (!hasInteraction) {
+      alert("Report could not be submitted. You must have an active chat connection/interaction with this user first before you can file a report.");
+      return;
+    }
+
     try {
-      // ── Spite-Ban Shield Checks ──────────────────────────────────────────
-      let passShield = true;
-      
-      if (!currentUserDoc) {
-        passShield = false;
-      } else {
-        // Check A: Reporter must be a permanent (non-anonymous) account
-        if (currentUserDoc.isAnonymous) {
-          passShield = false;
-        }
-
-        // Check B: Reporter account must be >= 48 hours old
-        const ageMs = Date.now() - (currentUserDoc.createdAt || 0);
-        if (ageMs < 48 * 60 * 60 * 1000) {
-          passShield = false;
-        }
-      }
-
-      // Check C: Reporter must have had an interaction (connection) with the target user
-      const hasInteraction = acceptedConnections.some(conn => conn.userId === userId);
-      if (!hasInteraction) {
-        alert("Report could not be submitted. You must have an active chat connection/interaction with this user first before you can file a report.");
-        return;
-      }
-
-      if (!passShield) {
-        alert("Report could not be submitted. Your account does not meet the minimum requirements to file a report.");
-        return;
-      }
-
-      // ── Daily Report Rate Limit (max 3 per calendar day) ────────────────
-      const todayStr = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
-      const reporterDailyDate = currentUserDoc.dailyReportDate || "";
-      const reporterDailyCount = reporterDailyDate === todayStr
-        ? (currentUserDoc.dailyReportCount || 0)
-        : 0;
-
-      if (reporterDailyCount >= 3) {
-        alert("Daily Report Limit Reached: You can only file 3 reports per day. This limit prevents system abuse. Try again tomorrow.");
-        return;
-      }
-
-      // ── Unique Reporter Enforcement ──────────────────────────────────────
-      const otherUserSnap = await dbGetDoc("users", userId);
-      if (!otherUserSnap.exists()) {
-        alert("User not found.");
-        return;
-      }
-
-      const otherUserData = otherUserSnap.data();
-      const existingReporters = Array.isArray(otherUserData.reporterIds) ? otherUserData.reporterIds : [];
-
-      // Check D: This user has already reported this person — one report per user
-      if (existingReporters.includes(currentUserId)) {
-        alert("You have already reported this user. No further action is needed — our team has been notified.");
-        return;
-      }
-
-      // Append reporter and check ban threshold (3 unique reports)
-      const updatedReporters = [...existingReporters, currentUserId];
-      const shouldBan = updatedReporters.length >= 3;
-
-      // Write report to target user AND increment reporter's daily count atomically
-      await Promise.all([
-        dbUpdateDoc("users", userId, {
-          reporterIds: updatedReporters,
-          flag_count: updatedReporters.length,
-          ...(shouldBan ? { isBanned: true, bannedAt: Date.now() } : {})
-        }),
-        dbUpdateDoc("users", currentUserId, {
-          dailyReportCount: reporterDailyCount + 1,
-          dailyReportDate: todayStr
-        })
-      ]);
-
-      if (shouldBan) {
-        alert("Report submitted. This user has reached the report threshold and has been removed from the platform.");
-      } else {
-        alert("Report submitted. Safety team has been notified.");
-      }
+      await dbSubmitReport({ targetUserId: userId, reason: "policy_violation" });
+      alert("Report submitted. Safety team has been notified.");
     } catch (err) {
-      console.error("Error flagging user:", err);
+      const code = err?.code || "";
+      if (code === "functions/already-exists") {
+        alert("You have already reported this user. No further action is needed — our team has been notified.");
+      } else if (code === "functions/resource-exhausted") {
+        alert("Daily Report Limit Reached: You can only file 3 reports per day. Try again tomorrow.");
+      } else if (code === "functions/failed-precondition") {
+        alert("Report could not be submitted. Your account does not meet the minimum requirements to file a report.");
+      } else if (code === "functions/unauthenticated") {
+        alert("You must be signed in with a registered account to report users.");
+      } else {
+        console.error("Error flagging user:", err);
+        alert("Failed to submit report. Please try again.");
+      }
     }
   };
 

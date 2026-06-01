@@ -30,13 +30,17 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       // Allow users to initialize/update their own document
       allow create: if isUserOwned(userId);
-      allow update: if (isUserOwned(userId) 
+      // Clients may only update their own doc, homeCity is immutable once set,
+      // and server-managed fields (flag_count, banned, reporterIds, isAdmin, isBanned)
+      // can only be written by Cloud Functions via the Admin SDK.
+      allow update: if isUserOwned(userId)
                     && (
-                      // Either homeCity is not changing, or it is being set for the first time
-                      !("homeCity" in resource.data) 
+                      !("homeCity" in resource.data)
                       || request.resource.data.homeCity == resource.data.homeCity
-                    ))
-                    || (isAuthenticated() && request.resource.data.flag_count == resource.data.flag_count + 1); // Anyone logged in can increment flags
+                    )
+                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(
+                         ['isAdmin', 'banned', 'flag_count', 'reporterIds', 'isBanned']
+                       );
     }
 
     // Blacklisted Devices Collection

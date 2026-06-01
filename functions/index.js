@@ -116,8 +116,26 @@ exports.createPostSecure = onCall(async (request) => {
     throw new HttpsError("failed-precondition", randomRoast);
   }
 
+  // Verify homeCity server-side so city restriction can't be bypassed via direct CF call
+  const userSnap = await admin.firestore().collection("users").doc(auth.uid).get();
+  if (!userSnap.exists) {
+    throw new HttpsError("not-found", "User profile not found.");
+  }
+  const userData = userSnap.data();
+  if (userData.homeCity && data.venueCity && data.venueCity !== userData.homeCity) {
+    throw new HttpsError("failed-precondition", `Nice try, traveler. You can only post for your home node in ${userData.homeCity}.`);
+  }
+
+  // Explicit allowlist — never spread raw client data into Firestore
   const newPost = {
-    ...data,
+    text: data.text,
+    venueId: typeof data.venueId === "string" ? data.venueId : "",
+    venueName: typeof data.venueName === "string" ? data.venueName : "",
+    venueAddress: typeof data.venueAddress === "string" ? data.venueAddress : "",
+    venueCity: typeof data.venueCity === "string" ? data.venueCity : "",
+    venueZone: typeof data.venueZone === "string" ? data.venueZone : "",
+    date: typeof data.date === "string" ? data.date : "",
+    timeRange: typeof data.timeRange === "string" ? data.timeRange : "",
     userId: auth.uid,
     status: "active",
     timestamp: admin.firestore.FieldValue.serverTimestamp()
@@ -125,4 +143,80 @@ exports.createPostSecure = onCall(async (request) => {
 
   const newPostRef = await admin.firestore().collection("posts").add(newPost);
   return { id: newPostRef.id };
+});
+
+exports.submitReport = onCall(async (request) => {
+  const { data, auth } = request;
+
+  if (!auth || auth.token.firebase?.sign_in_provider === "anonymous") {
+    throw new HttpsError("unauthenticated", "You must have a registered account to submit reports.");
+  }
+
+  const { targetUserId, postId, reason } = data;
+  if (!targetUserId || typeof targetUserId !== "string") {
+    throw new HttpsError("invalid-argument", "Invalid target user ID.");
+  }
+  if (targetUserId === auth.uid) {
+    throw new HttpsError("invalid-argument", "You cannot report yourself.");
+  }
+
+  const db = admin.firestore();
+  const reporterId = auth.uid;
+
+  await db.runTransaction(async (tx) => {
+    const reporterRef = db.collection("users").doc(reporterId);
+    const targetRef = db.collection("users").doc(targetUserId);
+    const [reporterSnap, targetSnap] = await Promise.all([tx.get(reporterRef), tx.get(targetRef)]);
+
+    if (!reporterSnap.exists) throw new HttpsError("not-found", "Reporter account not found.");
+    if (!targetSnap.exists) throw new HttpsError("not-found", "User not found.");
+
+    const reporterData = reporterSnap.data();
+    const targetData = targetSnap.data();
+
+    // Account must be >= 48 hours old
+    const ageMs = Date.now() - (reporterData.createdAt || 0);
+    if (ageMs < 48 * 60 * 60 * 1000) {
+      throw new HttpsError("failed-precondition", "Your account must be at least 48 hours old to submit reports.");
+    }
+
+    // Max 3 reports per calendar day
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const dailyCount = reporterData.dailyReportDate === todayStr ? (reporterData.dailyReportCount || 0) : 0;
+    if (dailyCount >= 3) {
+      throw new HttpsError("resource-exhausted", "Daily report limit reached. Try again tomorrow.");
+    }
+
+    // One report per unique reporter
+    const existingReporters = Array.isArray(targetData.reporterIds) ? targetData.reporterIds : [];
+    if (existingReporters.includes(reporterId)) {
+      throw new HttpsError("already-exists", "You have already reported this user.");
+    }
+
+    const updatedReporters = [...existingReporters, reporterId];
+    const newFlagCount = updatedReporters.length;
+
+    tx.update(targetRef, {
+      reporterIds: updatedReporters,
+      flag_count: newFlagCount,
+      ...(newFlagCount >= 3 ? { banned: true } : {})
+    });
+
+    tx.update(reporterRef, {
+      dailyReportCount: dailyCount + 1,
+      dailyReportDate: todayStr
+    });
+
+    if (postId && typeof postId === "string") {
+      const postRef = db.collection("posts").doc(postId);
+      tx.update(postRef, {
+        reported: true,
+        reportReason: typeof reason === "string" ? reason : "policy_violation",
+        reportedAt: admin.firestore.FieldValue.serverTimestamp(),
+        reportedBy: reporterId
+      });
+    }
+  });
+
+  return { success: true };
 });
