@@ -220,3 +220,84 @@ exports.submitReport = onCall(async (request) => {
 
   return { success: true };
 });
+
+function isAdmin(auth) {
+  return auth && (auth.token.admin === true || auth.uid === "sysop_admin");
+}
+
+exports.resolveAppeal = onCall(async (request) => {
+  const { data, auth } = request;
+  if (!isAdmin(auth)) {
+    throw new HttpsError("permission-denied", "Admin access required.");
+  }
+
+  const { appealId, userId } = data;
+  if (!appealId || !userId) {
+    throw new HttpsError("invalid-argument", "appealId and userId are required.");
+  }
+
+  const db = admin.firestore();
+
+  // 1. Re-enable the Firebase Auth account
+  try {
+    await admin.auth().updateUser(userId, { disabled: false });
+  } catch (err) {
+    console.error(`Could not re-enable Auth account for ${userId}:`, err);
+  }
+
+  // 2. Reset the user document's ban fields
+  await db.collection("users").doc(userId).update({
+    flag_count: 0,
+    banned: false,
+    isBanned: false,
+    reporterIds: []
+  });
+
+  // 3. Remove device from blacklist
+  const userSnap = await db.collection("users").doc(userId).get();
+  if (userSnap.exists) {
+    const uuid = userSnap.data().uuid;
+    if (uuid) {
+      await db.collection("blacklisted_devices").doc(uuid).delete();
+    }
+  }
+
+  // 4. Delete the appeal document
+  await db.collection("appeals").doc(appealId).delete();
+
+  // 5. Write audit log
+  await db.collection("admin_audit_log").add({
+    action: "resolve_appeal",
+    targetId: userId,
+    appealId,
+    operatorUid: auth.uid,
+    timestamp: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  return { success: true };
+});
+
+exports.restorePost = onCall(async (request) => {
+  const { data, auth } = request;
+  if (!isAdmin(auth)) {
+    throw new HttpsError("permission-denied", "Admin access required.");
+  }
+
+  const { postId } = data;
+  if (!postId) {
+    throw new HttpsError("invalid-argument", "postId is required.");
+  }
+
+  const db = admin.firestore();
+
+  await db.collection("posts").doc(postId).update({ status: "active" });
+
+  await db.collection("admin_audit_log").add({
+    action: "restore_post",
+    targetId: postId,
+    operatorUid: auth.uid,
+    timestamp: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  return { success: true };
+});

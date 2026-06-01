@@ -27,6 +27,7 @@ import {
   dbDeleteDoc,
   dbGetDocs,
   dbSubmitReport,
+  dbCallFunction,
   queryWhere
 } from "./firebase";
 import { searchVenues } from "./services/foursquare";
@@ -1198,15 +1199,7 @@ export default function App() {
 
   const handleSysopRestorePost = async (postId) => {
     try {
-      await dbUpdateDoc("posts", postId, { status: "active" });
-      // SysOp Audit Trail — write every operator action
-      await dbAddDoc("admin_audit_log", {
-        action: "restore_post",
-        targetId: postId,
-        operatorUid: currentUser?.uid || "unknown",
-        // eslint-disable-next-line react-hooks/purity
-        timestamp: Date.now()
-      });
+      await dbCallFunction("restorePost", { postId });
       alert("Post status restored to active.");
     } catch (err) {
       alert("Error restoring post: " + err.message);
@@ -1215,37 +1208,7 @@ export default function App() {
 
   const handleSysopResolveAppeal = async (appeal) => {
     try {
-      // 1. Reset user flag count and banned status
-      await dbUpdateDoc("users", appeal.userId, {
-        flag_count: 0,
-        banned: false,
-        isBanned: false,
-        reporterIds: []
-      });
-
-      // 2. Delete device UUID from blacklisted_devices if it's there
-      const userSnap = await dbGetDoc("users", appeal.userId);
-      if (userSnap.exists()) {
-        const uuid = userSnap.data().uuid;
-        if (uuid) {
-          await dbDeleteDoc("blacklisted_devices", uuid);
-        }
-      }
-
-      // 3. Delete the appeal document itself
-      await dbDeleteDoc("appeals", appeal.id);
-
-      // SysOp Audit Trail — write every operator action
-      await dbAddDoc("admin_audit_log", {
-        action: "resolve_appeal",
-        targetId: appeal.userId,
-        appealId: appeal.id,
-        operatorUid: currentUser?.uid || "unknown",
-        // eslint-disable-next-line react-hooks/purity
-        timestamp: Date.now(),
-        details: { username: appeal.username || "unknown" }
-      });
-      
+      await dbCallFunction("resolveAppeal", { appealId: appeal.id, userId: appeal.userId });
       alert("User unbanned, flags reset, device unblacklisted.");
     } catch (err) {
       alert("Error resolving appeal: " + err.message);
