@@ -392,49 +392,199 @@ export const MOCK_VENUES = [
   },
   // Austin
   {
-    fsq_id: "venue_barbarella",
-    name: "Barbarella",
-    address: "611 Red River St",
+    fsq_id: "venue_chalmers",
+    name: "Chalmers",
+    address: "1700 E Cesar Chavez St",
     city: "Austin",
-    zone: "Red River Cultural District",
-    formatted_address: "611 Red River St, Austin, TX 78701",
+    zone: "East Austin",
+    formatted_address: "1700 E Cesar Chavez St, Austin, TX 78702",
     price: 2,
-    rating: 8.7,
-    categories: ["Dance Club", "Nightclub"],
-    open_start: 21,
-    open_end: 2,
-    hours_display: "Open Daily 9 PM - 2 AM",
-    amenities: ["Theme Dance Nights", "Vibrant Light Shows", "Huge Patio", "Credit Cards"]
-  },
-  {
-    fsq_id: "venue_deepedy",
-    name: "Deep Eddy Cabaret",
-    address: "2315 Lake Austin Blvd",
-    city: "Austin",
-    zone: "West Austin",
-    formatted_address: "2315 Lake Austin Blvd, Austin, TX 78703",
-    price: 1,
-    rating: 9.2,
-    categories: ["Historic Tavern", "Dive Bar"],
+    rating: 8.8,
+    categories: ["Beer Garden", "Cocktail Bar", "Tex-Mex"],
     open_start: 11,
     open_end: 2,
     hours_display: "Open Daily 11 AM - 2 AM",
-    amenities: ["Pitcher Beer", "Retro Jukebox", "Pool Tables", "Next to Deep Eddy Pool"]
+    amenities: ["Spacious Patio", "Margaritas", "Taco Truck", "Dog Friendly"]
   },
   {
-    fsq_id: "venue_lalas",
-    name: "Lala's Little Nugget",
-    address: "2207 Justin Ln",
+    fsq_id: "venue_central_machine",
+    name: "Central Machine Works",
+    address: "4824 E Cesar Chavez St",
     city: "Austin",
-    zone: "North Austin",
-    formatted_address: "2207 Justin Ln, Austin, TX 78757",
+    zone: "East Austin",
+    formatted_address: "4824 E Cesar Chavez St, Austin, TX 78702",
+    price: 2,
+    rating: 9.0,
+    categories: ["Brewery", "Beer Garden", "Industrial Space"],
+    open_start: 11,
+    open_end: 0,
+    hours_display: "Open 11 AM - Midnight",
+    amenities: ["House Brews", "Massive Outdoor Area", "Live Music Stage", "Art Gallery Vibe"]
+  },
+  {
+    fsq_id: "venue_dainty_dillo",
+    name: "Dainty Dillo",
+    address: "3201 E Cesar Chavez St",
+    city: "Austin",
+    zone: "East Austin",
+    formatted_address: "3201 E Cesar Chavez St, Austin, TX 78702",
+    price: 2,
+    rating: 8.7,
+    categories: ["Neighborhood Bar", "Cocktail Lounge"],
+    open_start: 12,
+    open_end: 2,
+    hours_display: "Open Daily 12 PM - 2 AM",
+    amenities: ["Nostalgic Vibe", "Craft Cocktails", "Shaded Patio", "Comfort Food"]
+  },
+  {
+    fsq_id: "venue_armadillo_den",
+    name: "Armadillo Den",
+    address: "10001 Menchaca Rd",
+    city: "Austin",
+    zone: "South Austin",
+    formatted_address: "10001 Menchaca Rd, Austin, TX 78748",
+    price: 2,
+    rating: 9.1,
+    categories: ["Beer Garden", "Live Music Venue"],
+    open_start: 12,
+    open_end: 2,
+    hours_display: "Open Daily 12 PM - 2 AM",
+    amenities: ["Off-Leash Dog Park", "Food Trucks", "Huge Oak Trees", "Cold Drafts"]
+  },
+  {
+    fsq_id: "venue_moontower",
+    name: "Moontower Saloon",
+    address: "10203 Menchaca Rd",
+    city: "Austin",
+    zone: "South Austin",
+    formatted_address: "10203 Menchaca Rd, Austin, TX 78748",
     price: 1,
     rating: 8.9,
-    categories: ["Neighborhood Pub", "Themed Bar"],
+    categories: ["Dive Bar", "Beer Garden", "Sports Bar"],
+    open_start: 11,
+    open_end: 2,
+    hours_display: "Open Daily 11 AM - 2 AM",
+    amenities: ["Sand Volleyball Courts", "Live Bands", "Dog Friendly", "Cheap Pitchers"]
+  },
+  {
+    fsq_id: "venue_little_darlin",
+    name: "The Little Darlin'",
+    address: "6507 Circle S Rd",
+    city: "Austin",
+    zone: "South Austin",
+    formatted_address: "6507 Circle S Rd, Austin, TX 78745",
+    price: 2,
+    rating: 9.2,
+    categories: ["Neighborhood Tavern", "Beer Garden"],
+    open_start: 11,
+    open_end: 2,
+    hours_display: "Open Daily 11 AM - 2 AM",
+    amenities: ["Spacious Backyard", "Horseshoes & Washers", "Southern Eats", "Local Taps"]
+  },
+  {
+    fsq_id: "venue_star_bar",
+    name: "Star Bar",
+    address: "600 W 6th St",
+    city: "Austin",
+    zone: "Downtown",
+    formatted_address: "600 W 6th St, Austin, TX 78701",
+    price: 2,
+    rating: 8.6,
+    categories: ["Sports Bar", "Dive Bar", "Neighborhood Spot"],
     open_start: 16,
     open_end: 2,
     hours_display: "Open Daily 4 PM - 2 AM",
-    amenities: ["Christmas Lights Year-Round", "Draft Beer", "Pool Table", "Nostalgic Santa Decor"]
+    amenities: ["Famous Bloody Marys", "Patio", "TVs for Games", "Historic 6th St Vibe"]
+  },
+  {
+    fsq_id: "venue_parlor_yard",
+    name: "Parlor & Yard",
+    address: "601 W 6th St",
+    city: "Austin",
+    zone: "Downtown",
+    formatted_address: "601 W 6th St, Austin, TX 78701",
+    price: 2,
+    rating: 8.8,
+    categories: ["Lounge", "Sports Bar", "Arcade"],
+    open_start: 15,
+    open_end: 2,
+    hours_display: "Open Daily 3 PM - 2 AM",
+    amenities: ["Backyard Games", "Craft Cocktails", "Lively Crowd", "Big Screens"]
+  },
+  {
+    fsq_id: "venue_little_woodrows",
+    name: "Little Woodrow’s",
+    address: "520 W 6th St",
+    city: "Austin",
+    zone: "Downtown",
+    formatted_address: "520 W 6th St, Austin, TX 78701",
+    price: 2,
+    rating: 8.7,
+    categories: ["Sports Bar", "Beer Garden"],
+    open_start: 12,
+    open_end: 2,
+    hours_display: "Open Daily 12 PM - 2 AM",
+    amenities: ["Turtle Racing Events", "Huge Draft Wall", "Outdoor Deck", "Ping Pong"]
+  },
+  {
+    fsq_id: "venue_golden_goose",
+    name: "The Golden Goose",
+    address: "2034 S Lamar Blvd",
+    city: "Austin",
+    zone: "South Lamar",
+    formatted_address: "2034 S Lamar Blvd, Austin, TX 78704",
+    price: 2,
+    rating: 9.0,
+    categories: ["Retro Lounge", "Cocktail Bar", "Dive Bar"],
+    open_start: 16,
+    open_end: 2,
+    hours_display: "Open Daily 4 PM - 2 AM",
+    amenities: ["Vintage Jukebox", "70s Decor Vibe", "Craft Old Fashioneds", "Red Booths"]
+  },
+  {
+    fsq_id: "venue_black_sheep",
+    name: "Black Sheep Lodge",
+    address: "2108 S Lamar Blvd",
+    city: "Austin",
+    zone: "South Lamar",
+    formatted_address: "2108 S Lamar Blvd, Austin, TX 78704",
+    price: 2,
+    rating: 9.1,
+    categories: ["Sports Bar", "Burger Joint", "Neighborhood Pub"],
+    open_start: 11,
+    open_end: 0,
+    hours_display: "Open Daily 11 AM - Midnight",
+    amenities: ["Award-Winning Burgers", "Frozen Margaritas", "Shuffleboard", "Draft Craft Beers"]
+  },
+  {
+    fsq_id: "venue_barton_springs_saloon",
+    name: "Barton Springs Saloon",
+    address: "424 S Lamar Blvd",
+    city: "Austin",
+    zone: "South Lamar",
+    formatted_address: "424 S Lamar Blvd, Austin, TX 78704",
+    price: 1,
+    rating: 8.8,
+    categories: ["Dive Bar", "Neighborhood Spot"],
+    open_start: 14,
+    open_end: 2,
+    hours_display: "Open Daily 2 PM - 2 AM",
+    amenities: ["Cheap Cans", "Relaxed Vibe", "Dog Friendly Patio", "Classic Jukebox"]
+  },
+  {
+    fsq_id: "venue_bouldin_acres",
+    name: "Bouldin Acres",
+    address: "2027 S Lamar Blvd",
+    city: "Austin",
+    zone: "South Lamar",
+    formatted_address: "2027 S Lamar Blvd, Austin, TX 78704",
+    price: 2,
+    rating: 9.3,
+    categories: ["Beer Garden", "Sports Bar", "Restaurant"],
+    open_start: 11,
+    open_end: 2,
+    hours_display: "Open Daily 11 AM - 2 AM",
+    amenities: ["Pickleball Courts", "Food Trucks", "Yard Games", "Playground Area"]
   }
 ];
 
@@ -537,6 +687,20 @@ export async function searchVenues(query, filterCity = "") {
           zone = "Brooklyn";
         } else {
           zone = "Manhattan";
+        }
+      } else if (city.toLowerCase() === "austin") {
+        const lowerAddress = address.toLowerCase();
+        const lowerName = place.name.toLowerCase();
+        if (lowerAddress.includes("cesar chavez") || lowerName.includes("chalmers") || lowerName.includes("machine") || lowerName.includes("dillo")) {
+          zone = "East Austin";
+        } else if (lowerAddress.includes("menchaca") || lowerAddress.includes("circle s") || lowerName.includes("armadillo") || lowerName.includes("moontower") || lowerName.includes("darlin")) {
+          zone = "South Austin";
+        } else if (lowerAddress.includes("6th st") || lowerAddress.includes("woodrow") || lowerName.includes("star bar") || lowerName.includes("parlor")) {
+          zone = "Downtown";
+        } else if (lowerAddress.includes("lamar") || lowerName.includes("golden goose") || lowerName.includes("black sheep") || lowerName.includes("bouldin") || lowerName.includes("barton springs")) {
+          zone = "South Lamar";
+        } else {
+          zone = "Downtown";
         }
       }
 
