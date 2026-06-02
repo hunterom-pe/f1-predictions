@@ -1496,6 +1496,7 @@ export default function App() {
     } catch (err) {
       console.error("Error submitting proof:", err);
       setModerationError(err.message || String(err));
+      throw err;
     }
   };
 

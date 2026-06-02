@@ -11,6 +11,7 @@ import TitleBar from "./TitleBar";
 export default function ProofDialog({ post, onClose, onSubmit }) {
   const [proofText, setProofText] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const validateText = (input) => {
     const hasBase64Image = /data:image\//i.test(input);
@@ -24,8 +25,10 @@ export default function ProofDialog({ post, onClose, onSubmit }) {
     return "";
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
+
     if (!proofText.trim()) {
       setErrorMsg("Please enter a proof description to send.");
       return;
@@ -42,7 +45,14 @@ export default function ProofDialog({ post, onClose, onSubmit }) {
       return;
     }
 
-    onSubmit(proofText);
+    setLoading(true);
+    setErrorMsg("");
+    try {
+      await onSubmit(proofText);
+    } catch (err) {
+      setErrorMsg(err.message || String(err));
+      setLoading(false);
+    }
   };
 
   return (
@@ -67,13 +77,14 @@ export default function ProofDialog({ post, onClose, onSubmit }) {
       }}>
         <span>Verify Connection - Blind Proof</span>
         <span 
-          onClick={onClose} 
+          onClick={loading ? undefined : onClose} 
           style={{ 
-            cursor: "pointer", 
+            cursor: loading ? "not-allowed" : "pointer", 
             fontWeight: "bold", 
             fontSize: "16px",
             color: "#ffffff",
-            padding: "0 4px"
+            padding: "0 4px",
+            opacity: loading ? 0.5 : 1
           }}
         >
           ✕
@@ -101,6 +112,7 @@ export default function ProofDialog({ post, onClose, onSubmit }) {
               rows="5"
               value={proofText}
               onChange={(e) => setProofText(e.target.value)}
+              disabled={loading}
               placeholder="e.g. I was wearing the green corduroy jacket and sitting at the corner of the bar next to the jukebox..."
               style={{ 
                 width: "100%", 
@@ -109,7 +121,8 @@ export default function ProofDialog({ post, onClose, onSubmit }) {
                 minHeight: "100px",
                 padding: "8px",
                 border: "1px solid #ccc",
-                boxSizing: "border-box"
+                boxSizing: "border-box",
+                opacity: loading ? 0.7 : 1
               }}
             />
           </div>
@@ -128,30 +141,45 @@ export default function ProofDialog({ post, onClose, onSubmit }) {
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "4px" }}>
             <button 
               type="submit" 
+              disabled={loading}
               style={{ 
                 minWidth: "120px", 
                 minHeight: "36px", 
-                cursor: "pointer", 
-                backgroundColor: "#6699cc", 
+                cursor: loading ? "wait" : "pointer", 
+                backgroundColor: loading ? "#a0c0e0" : "#6699cc", 
                 color: "white", 
                 fontWeight: "bold", 
                 border: "1px solid #4a7ebb",
-                fontSize: "12px"
+                fontSize: "12px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "6px",
+                opacity: loading ? 0.8 : 1
               }}
             >
-              Submit Proof
+              {loading ? (
+                <>
+                  <span className="retro-spinner"></span>
+                  Submitting...
+                </>
+              ) : (
+                "Submit Proof"
+              )}
             </button>
             <button 
               type="button" 
               onClick={onClose} 
+              disabled={loading}
               style={{ 
                 minWidth: "80px", 
                 minHeight: "36px", 
-                cursor: "pointer", 
+                cursor: loading ? "not-allowed" : "pointer", 
                 backgroundColor: "#dfdfdf", 
                 color: "#333", 
                 border: "1px solid #b5b5b5",
-                fontSize: "12px"
+                fontSize: "12px",
+                opacity: loading ? 0.6 : 1
               }}
             >
               Cancel
