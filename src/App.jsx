@@ -340,7 +340,12 @@ export default function App() {
   }, []);
 
   // 1. App Startup: Load Device UUID, sign in anonymously, and fetch venues
+  const initStartedRef = useRef(false);
   useEffect(() => {
+    if (!currentUser) return;
+    if (initStartedRef.current) return;
+    initStartedRef.current = true;
+
     const initializeApp = async () => {
       try {
         // Retrieve Capacitor Device UUID or localstorage Web UUID fallback
@@ -394,7 +399,7 @@ export default function App() {
     };
 
     initializeApp();
-  }, []);
+  }, [currentUser]);
 
   // 2. Auth Listener and Firestore User Record binding
   useEffect(() => {
@@ -759,6 +764,7 @@ export default function App() {
 
   // Live statistics and dynamic homepage users subscriptions
   useEffect(() => {
+    if (!currentUser) return;
     // Total posts count
     const unsubPosts = dbOnSnapshot("posts", [], (snapshot) => {
       setAllPostsCount(snapshot.size);
@@ -767,10 +773,11 @@ export default function App() {
     return () => {
       unsubPosts();
     };
-  }, []);
+  }, [currentUser]);
 
   // One-time load: active buddy count + cool new people (targeted queries, not full scan)
   useEffect(() => {
+    if (!currentUser) return;
     const loadUserStats = async () => {
       try {
         const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -789,11 +796,12 @@ export default function App() {
       }
     };
     loadUserStats();
-  }, []);
+  }, [currentUser]);
 
   // Favorites feed: subscribe to all posts and filter by the logged-in user's favorited bars
   // 2. Subscribe to all active Posts globally
   useEffect(() => {
+    if (!currentUser) return;
     const unsub = dbOnSnapshot("posts", [], (snapshot) => {
       const posts = [];
       snapshot.docs.forEach(doc => {
@@ -806,7 +814,7 @@ export default function App() {
       setGlobalActivePosts(posts);
     });
     return () => unsub();
-  }, []);
+  }, [currentUser]);
 
   // 2a. Background sync for offline posts when network re-establishes
   useEffect(() => {
@@ -853,6 +861,7 @@ export default function App() {
 
   // 2c. Subscribe to users who recently favorited the selected venue
   useEffect(() => {
+    if (!currentUser) return;
     if (!selectedVenue) {
       setTimeout(() => setFavoriters([]), 0);
       return;
@@ -872,12 +881,13 @@ export default function App() {
     });
 
     return () => unsub();
-  }, [selectedVenue]);
+  }, [selectedVenue, currentUser]);
 
 
 
   // 3. Subscribe to Posts for the selected Venue
   useEffect(() => {
+    if (!currentUser) return;
     if (!selectedVenue) {
       setTimeout(() => setVenuePosts([]), 0);
       return;
@@ -903,7 +913,7 @@ export default function App() {
     );
 
     return () => unsubPosts();
-  }, [selectedVenue, userDoc]);
+  }, [selectedVenue, userDoc, currentUser]);
 
   // Caching connection profiles dynamically
   useEffect(() => {
