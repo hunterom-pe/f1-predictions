@@ -15,6 +15,16 @@ import {
   moderateChatMessage
 } from "../services/security";
 
+// Helper to safely extract milliseconds from various timestamp formats (Number, Firestore Timestamp, Date)
+const getTimestampMillis = (ts) => {
+  if (!ts) return 0;
+  if (typeof ts === "number") return ts;
+  if (typeof ts.toMillis === "function") return ts.toMillis();
+  if (ts.seconds !== undefined) return ts.seconds * 1000 + (ts.nanoseconds || 0) / 1000000;
+  if (ts instanceof Date) return ts.getTime();
+  return 0;
+};
+
 /**
  * AIM (AOL Instant Messenger) style Chat window.
  * @param {object} props
@@ -59,8 +69,8 @@ export default function AIMChat({ chatId, connection, currentUser, userDoc, onCl
         snapshot.docs.forEach(doc => {
           msgs.push({ id: doc.id, ...doc.data() });
         });
-        // Sort ascending by timestamp
-        msgs.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+        // Sort ascending by timestamp (oldest first, newest at the bottom)
+        msgs.sort((a, b) => getTimestampMillis(a.timestamp) - getTimestampMillis(b.timestamp));
         setMessages(msgs);
       }
     );
