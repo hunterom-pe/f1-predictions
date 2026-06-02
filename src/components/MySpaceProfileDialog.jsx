@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import TitleBar from "./TitleBar";
 import MySpaceMusicPlayer from "./MySpaceMusicPlayer";
-import { dbGetDoc, dbUpdateDoc, dbSubmitReport } from "../firebase";
+import { dbGetDoc, dbSubmitReport } from "../firebase";
 import { Share } from "@capacitor/share";
-import { isIAPSupported, fetchProductDetails, purchaseProduct, restorePurchases } from "../services/iap";
+import { fetchProductDetails, purchaseProduct, restorePurchases } from "../services/iap";
 
 const extractSpotifyTrackId = (input) => {
   const trimmed = input.trim();
@@ -66,7 +66,6 @@ export default function MySpaceProfileDialog({
   spotify_artist_name = "",
   headline = "Everyone's favorite dial-up partner",
   onClose,
-  onOpenChat,
   userId,
   currentUserId,
   currentUserDoc,
@@ -316,21 +315,6 @@ export default function MySpaceProfileDialog({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [acceptedConnections]);
-
-  const handleSendMessage = () => {
-    if (onOpenChat) {
-      onOpenChat(null, {
-        id: `connection_${userId}`,
-        senderId: userId,
-        receiverId: "me",
-        proofText: `Starting profile chat with ${username}...`,
-        status: "accepted",
-        venueName: "asl Profile Link",
-        postText: "Connecting from profile"
-      });
-      onClose();
-    }
-  };
 
   const handleReportUser = async () => {
     const confirmFlag = window.confirm(

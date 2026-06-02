@@ -4,7 +4,6 @@ import {
   dbOnSnapshot,
   dbAddDoc,
   dbUpdateDoc,
-  dbGetDoc,
   dbSetDoc,
   dbSubmitReport
 } from "../firebase";
