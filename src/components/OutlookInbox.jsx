@@ -67,8 +67,8 @@ export default function OutlookInbox({ currentUser, userDoc, onClose, onOpenChat
     if (!selectedConn) return;
 
     try {
-      // Fetch sender details to attach to the post
-      const senderDoc = await dbGetDoc("users", selectedConn.senderId);
+      // Fetch sender details to attach to the post (public profile mirror)
+      const senderDoc = await dbGetDoc("profiles", selectedConn.senderId);
       const senderUsername = senderDoc.exists() ? (senderDoc.data().username || "Anonymous") : "Anonymous";
 
       // 1. Upgrade connection status to accepted

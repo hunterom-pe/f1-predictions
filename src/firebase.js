@@ -1440,11 +1440,17 @@ export const firebaseOnAuthStateChanged = (cb) => {
   return onAuthStateChanged(realAuth, cb);
 };
 
+// In simulation mode there is no Cloud Function to maintain the public `profiles`
+// mirror, so any read of `profiles` transparently resolves to the `users` store.
+const resolveSimCollection = (collectionName) =>
+  collectionName === "profiles" ? "users" : collectionName;
+
 // Database operations wrapper
 export const dbGetDoc = async (collectionName, docId) => {
   if (isSimulated) {
     const store = simulatedStore.getDb();
-    const data = store[collectionName] ? store[collectionName][docId] : null;
+    const simColl = resolveSimCollection(collectionName);
+    const data = store[simColl] ? store[simColl][docId] : null;
     return {
       exists: () => !!data,
       data: () => data,
@@ -1513,23 +1519,23 @@ export const dbAddDoc = async (collectionName, data) => {
     simulatedStore.saveDb(store);
     return { id: newId };
   }
+  // Posts and connections are created exclusively through Cloud Functions so that
+  // moderation, throttles and field integrity are enforced server-side. We do NOT
+  // fall back to a direct Firestore write on error — that would silently bypass
+  // moderation (a deliberate "post rejected" would just be written anyway). Any
+  // error (rejection or outage) is surfaced to the caller.
   if (collectionName === "posts") {
-    try {
-      const { getFunctions, httpsCallable } = await import("firebase/functions");
-      const functions = getFunctions();
-      const createPostSecure = httpsCallable(functions, "createPostSecure");
-      const result = await createPostSecure(data);
-      return { id: result.data.id };
-    } catch (err) {
-      console.warn("Cloud Function 'createPostSecure' failed or is not deployed. Falling back to direct Firestore write:", err);
-      // Fallback: write directly to Firestore (client-side moderation already verified the content)
-      const colRef = collection(realDb, collectionName);
-      return await addDoc(colRef, { 
-        ...data, 
-        timestamp: serverTimestamp(),
-        status: "active"
-      });
-    }
+    const { getFunctions, httpsCallable } = await import("firebase/functions");
+    const createPostSecure = httpsCallable(getFunctions(), "createPostSecure");
+    const result = await createPostSecure(data);
+    return { id: result.data.id };
+  }
+
+  if (collectionName === "connections") {
+    const { getFunctions, httpsCallable } = await import("firebase/functions");
+    const createConnectionSecure = httpsCallable(getFunctions(), "createConnectionSecure");
+    const result = await createConnectionSecure(data);
+    return { id: result.data.id };
   }
 
   const colRef = collection(realDb, collectionName);
@@ -1621,7 +1627,7 @@ export const dbDeleteDoc = async (collectionName, docId) => {
 export const dbGetDocs = async (collectionName, queryConstraints = []) => {
   if (isSimulated) {
     const store = simulatedStore.getDb();
-    let source = store[collectionName] || [];
+    let source = store[resolveSimCollection(collectionName)] || [];
     let list = [];
     if (Array.isArray(source)) {
       list = source.map(item => ({
@@ -1705,7 +1711,7 @@ export const dbOnSnapshot = (collectionName, queryConstraints = [], callback) =>
   if (isSimulated) {
     const runQuery = () => {
       const store = simulatedStore.getDb();
-      let source = store[collectionName] || [];
+      let source = store[resolveSimCollection(collectionName)] || [];
       let list = [];
       if (Array.isArray(source)) {
         list = source.map(item => ({
@@ -1797,6 +1803,30 @@ export const dbOnSnapshot = (collectionName, queryConstraints = [], callback) =>
       size: snap.size,
       empty: snap.empty
     });
+  });
+};
+
+// Subscribe to a single document (used for the current user's own private doc,
+// which is owner-readable — a full-collection listener would be denied by rules).
+export const dbOnSnapshotDoc = (collectionName, docId, callback) => {
+  if (isSimulated) {
+    const run = () => {
+      const store = simulatedStore.getDb();
+      const coll = store[resolveSimCollection(collectionName)];
+      let item = null;
+      if (Array.isArray(coll)) {
+        item = coll.find(i => (i.id || i.uid) === docId) || null;
+      } else if (coll) {
+        item = coll[docId] || null;
+      }
+      callback({ id: docId, exists: () => !!item, data: () => item });
+    };
+    run();
+    return simulatedStore.subscribe(run);
+  }
+
+  return onSnapshot(doc(realDb, collectionName, docId), (snap) => {
+    callback({ id: snap.id, exists: () => snap.exists(), data: () => snap.data() });
   });
 };
 
