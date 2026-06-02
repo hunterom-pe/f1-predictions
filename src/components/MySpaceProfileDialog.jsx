@@ -306,7 +306,7 @@ export default function MySpaceProfileDialog({
       const friendId = conn.userId;
       if (friendProfiles[friendId]) return;
       try {
-        const snap = await dbGetDoc("users", friendId);
+        const snap = await dbGetDoc("profiles", friendId);
         if (snap.exists()) {
           setFriendProfiles(prev => ({ ...prev, [friendId]: snap.data() }));
         }

@@ -33,6 +33,18 @@ These are now in the codebase and are the reason the app is safe to ship:
   screen (no longer a simulated OS crash) to satisfy App Review.
 - **iOS**: added `PrivacyInfo.xcprivacy`, location usage string, and
   `ITSAppUsesNonExemptEncryption`.
+- **Moderation can no longer be bypassed.** Posts and connection proofs are
+  created only through Cloud Functions (`createPostSecure`, `createConnectionSecure`),
+  and the client no longer silently falls back to a direct Firestore write when a
+  function rejects content. The per-day claim throttle is enforced server-side in a
+  transaction. Untrusted text is passed to Gemini only as data, not concatenated
+  into the prompt (prompt-injection fix).
+- **Private/public profile split.** `users/{uid}` is now owner-only; a
+  `profiles/{uid}` mirror (maintained by the `syncProfile` Function) exposes only
+  non-sensitive fields. Email, device UUID, flag/ban state, and reporter IDs are no
+  longer readable by other users. **Requires a one-time backfill — see §3.5.**
+- **Foursquare key moved server-side**, proxied through `searchVenuesSecure`
+  (same pattern as Gemini). It is no longer shipped in the client bundle.
 
 ---
 
@@ -58,10 +70,14 @@ firebase login
 
 ```bash
 cp .env.example .env.local
-# fill in the VITE_FIREBASE_* values + VITE_FOURSQUARE_API_KEY
+# fill in the VITE_FIREBASE_* values
 ```
 
 Confirm `.env.local` is gitignored (it is) and never commit it.
+
+> **Note:** the Foursquare key is **no longer a client env var** — it's a server
+> secret set in step 3 (`FOURSQUARE_API_KEY`). Remove any `VITE_FOURSQUARE_API_KEY`
+> from `.env.local`; it is ignored by the client now.
 
 ---
 
@@ -75,9 +91,10 @@ cd functions
 npm install
 cd ..
 
-# Set the Gemini key as a function secret (NOT a client env var)
+# Set the API keys as function secrets (NOT client env vars)
 firebase functions:secrets:set GEMINI_API_KEY
-# paste your key when prompted
+firebase functions:secrets:set FOURSQUARE_API_KEY
+# paste each key when prompted
 ```
 
 `createPostSecure` already binds this secret (`{ secrets: ["GEMINI_API_KEY"] }`),
@@ -85,14 +102,65 @@ so set it **before** deploying. If you don't want AI moderation, the function
 falls back to the regex pass — in that case remove `GEMINI_API_KEY` from the
 `secrets` array in `functions/index.js` so the deploy doesn't require it.
 
-Then deploy:
+Then deploy the **functions first** (so the `profiles` mirror starts working
+before you lock down the rules — see §3.5 for why ordering matters):
 
 ```bash
-firebase deploy --only firestore:rules,functions
+firebase deploy --only functions
 ```
 
 Create the composite index if the console asks for one (the report/post
 queries are designed to avoid composite indexes, but verify in the console).
+
+---
+
+## 3.5 Public profiles & the privacy split (run after step 3)
+
+`users/{uid}` is now **owner-only**; other users read public fields from the
+`profiles/{uid}` mirror, which the `syncProfile` Function maintains automatically.
+But `syncProfile` only fires on *future* writes — existing users have no profile
+doc yet. If you deploy the locked-down rules before populating `profiles`, every
+existing user renders blank (no username/avatar) in the feed, the "cool new
+people" list, and connection inboxes.
+
+**So the order is: functions → backfill → rules + client.**
+
+1. Functions are already deployed (step 3).
+
+2. **Backfill existing users → profiles. Dev project first, always.** The script
+   uses the Admin SDK (same service-account key as `set_admin.js`) and supports a
+   `--dry-run` that prints what each profile will contain without writing:
+
+   ```bash
+   cd functions
+   # Dev: dry-run, eyeball the output, then write
+   GOOGLE_APPLICATION_CREDENTIALS=./serviceAccount-dev.json node backfill_profiles.js --dry-run
+   GOOGLE_APPLICATION_CREDENTIALS=./serviceAccount-dev.json node backfill_profiles.js
+   ```
+
+   Smoke-test the **dev** app: profiles open, the new-people list and venue
+   "favoriters" show names/avatars, and an accepted connection shows the sender's
+   name in the inbox. Confirm a `profiles` doc contains **no** `email`, `uuid`,
+   `flag_count`, `banned`, or `reporterIds`. Then run it against production:
+
+   ```bash
+   GOOGLE_APPLICATION_CREDENTIALS=./serviceAccount-prod.json node backfill_profiles.js
+   ```
+
+3. **Now deploy the rules:**
+
+   ```bash
+   firebase deploy --only firestore:rules
+   ```
+
+   The updated **client** (which reads from `profiles`) ships separately — the web
+   bundle in step 6 / hosting, and the iOS build. Just don't ship the new client
+   *before* the backfill, or existing users will look blank until it runs.
+
+The `profiles` queries (newest-by-`createdAt`, `lastLogin` window) are single-field
+and need no composite index. The allowlist of mirrored fields lives in both
+`functions/index.js` (`PUBLIC_PROFILE_FIELDS`) and `backfill_profiles.js` — **keep
+them in sync** if you add a public profile field.
 
 ---
 

@@ -18,8 +18,9 @@ import {
   firebaseOnAuthStateChanged, 
   firebaseSignOut,
   firebaseSignInWithEmailAndPassword,
-  dbOnSnapshot, 
-  dbSetDoc, 
+  dbOnSnapshot,
+  dbOnSnapshotDoc,
+  dbSetDoc,
   dbGetDoc,
   dbAddDoc,
   dbUpdateDoc,
@@ -513,10 +514,11 @@ export default function App() {
 
         injectReviewerMockData();
 
-        // Subscribe to user flags and ban status in real-time
-        const unsubUserDoc = dbOnSnapshot("users", [], (snapshot) => {
-          const userRecord = snapshot.docs.find(d => d.id === user.uid);
-          if (userRecord) {
+        // Subscribe to the current user's own (private) doc for flags / ban status.
+        // Owner-only read rules forbid scanning the whole collection, so listen to
+        // just this one document.
+        const unsubUserDoc = dbOnSnapshotDoc("users", user.uid, (userRecord) => {
+          if (userRecord.exists()) {
             const data = userRecord.data();
             setUserDoc(data);
             if (!data.homeCity) {
@@ -711,8 +713,8 @@ export default function App() {
       try {
         const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
         const [activeSnap, newSnap] = await Promise.all([
-          dbGetDocs("users", [queryWhere("lastLogin", ">", sevenDaysAgo)]),
-          dbGetDocs("users", [queryOrderBy("createdAt", "desc"), queryLimit(10)])
+          dbGetDocs("profiles", [queryWhere("lastLogin", ">", sevenDaysAgo)]),
+          dbGetDocs("profiles", [queryOrderBy("createdAt", "desc"), queryLimit(10)])
         ]);
         setActiveBuddiesCount(activeSnap.size);
         const list = newSnap.docs
@@ -811,7 +813,7 @@ export default function App() {
       return;
     }
 
-    const unsub = dbOnSnapshot("users", [], (snapshot) => {
+    const unsub = dbOnSnapshot("profiles", [], (snapshot) => {
       const list = [];
       snapshot.docs.forEach(doc => {
         const data = doc.data();
@@ -1201,7 +1203,7 @@ export default function App() {
   const handleOpenProfile = async (userId, fallbackData) => {
     setNavigationScreen("profile");
     try {
-      const userSnap = await dbGetDoc("users", userId);
+      const userSnap = await dbGetDoc("profiles", userId);
       if (userSnap.exists()) {
         const userData = userSnap.data();
         setSelectedProfileUser({
@@ -1401,11 +1403,9 @@ export default function App() {
         status: "pending"
       });
 
-      // Increment the user's daily claim counter
-      await dbSetDoc("users", currentUser.uid, {
-        dailyClaimCount: claimCount + 1,
-        dailyClaimDate: todayStr
-      }, true);
+      // Note: the daily claim counter is incremented server-side inside
+      // createConnectionSecure (atomically with the connection write), so we do
+      // not increment it here — doing so would double-count.
 
       setShowProofDialog(null);
       setNavigationScreen(selectedVenue ? "feed" : "home");

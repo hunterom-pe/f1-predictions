@@ -1,6 +1,9 @@
-// Foursquare Places API integration with offline fallback simulation
-
-const FOURSQUARE_API_KEY = import.meta.env.VITE_FOURSQUARE_API_KEY;
+// Foursquare Places API integration with offline fallback simulation.
+//
+// The Foursquare API key is NOT shipped in the client bundle. Live searches are
+// proxied through the `searchVenuesSecure` Cloud Function, which holds the key
+// as a server secret. If the proxy is unavailable or returns nothing, we fall
+// back to the offline venue catalog below.
 
 // Predefined local database of real venues for Phoenix and New York zones
 export const MOCK_VENUES = [
@@ -597,49 +600,26 @@ export const MOCK_VENUES = [
 export async function searchVenues(query, filterCity = "") {
   const cleanQuery = (query || "").trim().toLowerCase();
 
-  // If no API key or default dummy key, use simulated search
-  if (!FOURSQUARE_API_KEY || FOURSQUARE_API_KEY === "YOUR_FOURSQUARE_API_KEY") {
-    console.log(`[Foursquare API] Key not configured. Performing offline simulation search for: "${query}"`);
+  let results;
+  try {
+    // Proxy the search through the Cloud Function (which holds the API key).
+    const { getFunctions, httpsCallable } = await import("firebase/functions");
+    const fn = httpsCallable(getFunctions(), "searchVenuesSecure");
+    const res = await fn({ query, filterCity });
+    results = res.data?.results || [];
+  } catch (err) {
+    console.warn("[Foursquare] Proxy unavailable, using offline simulation:", err);
+    return getOfflineSearchResults(cleanQuery, filterCity);
+  }
+
+  // No live results (key not configured server-side, or empty) → offline catalog.
+  if (!results.length) {
     return getOfflineSearchResults(cleanQuery, filterCity);
   }
 
   try {
-    // Categories: Nightlife (10032), Dining and Drinking (13000)
-    let url = `https://api.foursquare.com/v3/places/search?query=${encodeURIComponent(query)}&categories=13000,10032&limit=10&fields=fsq_id,name,location,categories,price,rating,hours,features`;
-    if (filterCity) {
-      // Append region hints to help Foursquare resolve locations accurately
-      let nearHint = "New York, NY";
-      const lowerCity = filterCity.toLowerCase();
-      if (lowerCity === "phoenix") {
-        nearHint = "Phoenix, AZ";
-      } else if (lowerCity === "nashville") {
-        nearHint = "Nashville, TN";
-      } else if (lowerCity === "san francisco") {
-        nearHint = "San Francisco, CA";
-      } else if (lowerCity === "austin") {
-        nearHint = "Austin, TX";
-      } else if (lowerCity === "cupertino") {
-        nearHint = "Cupertino, CA";
-      }
-      url += `&near=${encodeURIComponent(nearHint)}`;
-    }
-    
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-        Authorization: FOURSQUARE_API_KEY
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`Foursquare API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    
     // Filter Foursquare results to make sure they reside in the requested city/metro zone
-    const targetResults = (data.results || []).filter(place => {
+    const targetResults = results.filter(place => {
       if (!filterCity) return true;
       const locality = (place.location?.locality || "").toLowerCase();
       const region = (place.location?.region || "").toLowerCase();

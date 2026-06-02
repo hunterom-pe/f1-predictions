@@ -25,9 +25,11 @@ service cloud.firestore {
              && !text.matches('.*\\[img\\].*');
     }
 
-    // Users Collection
+    // Users Collection — PRIVATE. Holds sensitive fields (email, device uuid,
+    // flag_count, reporterIds, ban state). Only the owner may read their own doc.
+    // Other users see public fields via the /profiles mirror below.
     match /users/{userId} {
-      allow read: if isAuthenticated();
+      allow read: if isUserOwned(userId);
       // Allow users to initialize/update their own document
       allow create: if isUserOwned(userId);
       // Clients may only update their own doc, homeCity is immutable once set,
@@ -41,6 +43,14 @@ service cloud.firestore {
                     && !request.resource.data.diff(resource.data).affectedKeys().hasAny(
                          ['isAdmin', 'banned', 'flag_count', 'reporterIds', 'isBanned']
                        );
+    }
+
+    // Public Profiles Collection — read-only mirror of non-sensitive user fields,
+    // maintained exclusively by the syncProfile Cloud Function (Admin SDK).
+    // Any authenticated user may read; no client may write.
+    match /profiles/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
     }
 
     // Blacklisted Devices Collection
@@ -75,16 +85,12 @@ service cloud.firestore {
         request.auth.uid == resource.data.receiverId
       );
       
-      // Must be a fully registered user to create a connection request
-      allow create: if isFullyAuthenticated()
-                    && request.resource.data.senderId == request.auth.uid
-                    && isStrictTextOnly(request.resource.data.proofText)
-                    && request.resource.data.receiverId is string
-                    && request.resource.data.postId is string
-                    && request.resource.data.venueName is string
-                    && request.resource.data.postText is string
-                    && request.resource.data.status == 'pending';
-                    
+      // Connections are created exclusively by the createConnectionSecure Cloud
+      // Function (via the Admin SDK, which bypasses these rules). Direct client
+      // creation is forbidden so that proof-text moderation and the per-day claim
+      // throttle cannot be skipped by a scripted client.
+      allow create: if false;
+
       allow update: if isAuthenticated() && (
         request.auth.uid == resource.data.receiverId &&
         request.resource.data.status in ['accepted', 'rejected'] &&
