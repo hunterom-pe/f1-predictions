@@ -208,7 +208,7 @@ export default function AIMChat({ chatId, connection, currentUser, userDoc, onCl
   return (
     <>
       <div className="window" style={{ height: "650px", display: "flex", flexDirection: "column", backgroundColor: "#f0f0f0" }}>
-        <TitleBar title={`💬 AIM - Instant Message with ${buddyProfile?.username || "Buddy"}`} onClose={onClose} />
+        <TitleBar title={`💬 ASL - Instant Message with ${buddyProfile?.username || "Buddy"}`} onClose={onClose} />
         
         {/* AIM Header Details */}
         <div className="aim-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 8px" }}>

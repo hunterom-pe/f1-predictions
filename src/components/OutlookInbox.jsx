@@ -260,7 +260,7 @@ export default function OutlookInbox({ currentUser, userDoc, onClose, onOpenChat
                   onClick={() => onOpenChat(null, selectedConn)}
                   style={{ backgroundColor: "#6699ff", color: "#fff", fontWeight: "bold", minHeight: "44px" }}
                 >
-                  ⚡ Open AIM Chat
+                  ⚡ Open ASL Chat
                 </button>
               )}
 
