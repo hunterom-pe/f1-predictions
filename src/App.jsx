@@ -56,6 +56,10 @@ export default function App() {
   // Device & Auth State
   const [deviceUuid, setDeviceUuid] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
+  const currentUserRef = useRef(currentUser);
+  useEffect(() => {
+    currentUserRef.current = currentUser;
+  }, [currentUser]);
   const [userDoc, setUserDoc] = useState(null);
   const [deviceBanned, setDeviceBanned] = useState(false);
   const [booting, setBooting] = useState(true);
@@ -1075,7 +1079,8 @@ export default function App() {
   };
 
   const handleThumbsUp = async (post) => {
-    if (post.userId === currentUser?.uid) {
+    const activeUser = currentUserRef.current;
+    if (post.userId === activeUser?.uid) {
       alert("Self-approvals aren't supported, bestie. You cannot thumbs up your own post!");
       return;
     }
@@ -1342,7 +1347,8 @@ export default function App() {
   };
 
   const handleToggleFavorite = async (venue) => {
-    if (!currentUser || currentUser.isAnonymous) {
+    const activeUser = currentUserRef.current;
+    if (!activeUser || activeUser.isAnonymous) {
       alert("Please log in to add venues to favorites.");
       return;
     }
