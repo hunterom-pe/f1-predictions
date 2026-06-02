@@ -258,6 +258,7 @@ export default function App() {
   const [showReportDialog, setShowReportDialog] = useState(null);
   const [reportReason, setReportReason] = useState("harassment");
   const [blockPoster, setBlockPoster] = useState(false);
+  const [isReporting, setIsReporting] = useState(false);
 
   // Safety / strike warning states
   const [hasShownStrike2, setHasShownStrike2] = useState(false);
@@ -1181,6 +1182,7 @@ export default function App() {
   const handleSubmitReport = async () => {
     if (!showReportDialog) return;
     const post = showReportDialog;
+    setIsReporting(true);
     try {
       await dbSubmitReport({ targetUserId: post.userId, postId: post.id, reason: reportReason });
 
@@ -1208,6 +1210,8 @@ export default function App() {
         alert("Failed to submit report. Please try again.");
       }
       setShowReportDialog(null);
+    } finally {
+      setIsReporting(false);
     }
   };
 
@@ -3587,32 +3591,41 @@ export default function App() {
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "4px" }}>
                   <button 
                     onClick={() => setShowReportDialog(null)} 
+                    disabled={isReporting}
                     style={{ 
-                      minWidth: "90px",
-                      minHeight: "36px",
-                      cursor: "pointer",
+                      minWidth: "80px", 
+                      minHeight: "36px", 
+                      cursor: isReporting ? "not-allowed" : "pointer", 
                       backgroundColor: "#dfdfdf", 
                       color: "#333", 
                       border: "1px solid #b5b5b5",
-                      fontSize: "12px"
+                      fontSize: "12px",
+                      opacity: isReporting ? 0.5 : 1
                     }}
                   >
                     Cancel
                   </button>
                   <button 
                     onClick={handleSubmitReport}
+                    disabled={isReporting}
                     style={{ 
                       minWidth: "130px", 
                       fontWeight: "bold",
-                      cursor: "pointer",
+                      cursor: isReporting ? "not-allowed" : "pointer",
                       backgroundColor: "#cc0052", 
                       color: "white", 
                       border: "1px solid #a30036",
                       fontSize: "12px",
-                      minHeight: "36px"
+                      minHeight: "36px",
+                      opacity: isReporting ? 0.7 : 1,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "6px"
                     }}
                   >
-                    ⚠️ Flag & Remove
+                    {isReporting && <span className="retro-spinner" style={{ borderTopColor: "#fff" }} />}
+                    {isReporting ? "Flagging..." : "⚠️ Flag & Remove"}
                   </button>
                 </div>
               </div>
