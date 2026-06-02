@@ -768,9 +768,22 @@ export default function App() {
   // Live statistics and dynamic homepage users subscriptions
   useEffect(() => {
     if (!currentUser) return;
+    const POST_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
     // Total posts count
     const unsubPosts = dbOnSnapshot("posts", [], (snapshot) => {
-      setAllPostsCount(snapshot.size);
+      const now = Date.now();
+      let count = 0;
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        const rawTs = data.timestamp || data.encounterTimestamp || 0;
+        const tsMillis = (rawTs && typeof rawTs.toMillis === "function")
+          ? rawTs.toMillis()
+          : ((rawTs && rawTs.seconds !== undefined) ? rawTs.seconds * 1000 : Number(rawTs || 0));
+        if (!tsMillis || (now - tsMillis) <= POST_TTL_MS) {
+          count++;
+        }
+      });
+      setAllPostsCount(count);
     });
 
     return () => {
@@ -805,12 +818,28 @@ export default function App() {
   // 2. Subscribe to all active Posts globally
   useEffect(() => {
     if (!currentUser) return;
+    const POST_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
     const unsub = dbOnSnapshot("posts", [], (snapshot) => {
       const posts = [];
+      const now = Date.now();
       snapshot.docs.forEach(doc => {
         const data = doc.data();
         if (data.status !== "suppressed") {
-          posts.push({ id: doc.id, ...data });
+          const rawTs = data.timestamp || data.encounterTimestamp || 0;
+          const tsMillis = (rawTs && typeof rawTs.toMillis === "function")
+            ? rawTs.toMillis()
+            : ((rawTs && rawTs.seconds !== undefined) ? rawTs.seconds * 1000 : Number(rawTs || 0));
+          
+          if (tsMillis && (now - tsMillis) > POST_TTL_MS) {
+            // Client-side TTL sweep: delete user's own expired post from Firestore
+            if (data.userId === currentUser.uid) {
+              dbDeleteDoc("posts", doc.id).catch(err =>
+                console.warn("TTL sweep: could not delete expired post", doc.id, err)
+              );
+            }
+          } else {
+            posts.push({ id: doc.id, ...data });
+          }
         }
       });
       posts.sort((a, b) => (b.timestamp || b.encounterTimestamp || 0) - (a.timestamp || a.encounterTimestamp || 0));
@@ -896,17 +925,26 @@ export default function App() {
       return;
     }
 
+    const POST_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
     const unsubPosts = dbOnSnapshot(
       "posts",
       [],
       (snapshot) => {
         const posts = [];
+        const now = Date.now();
         snapshot.docs.forEach(doc => {
           const data = doc.data();
           const isBlocked = userDoc?.blockedUsers?.includes(data.userId);
           const isReported = data.reported || data.status === "reported";
           if (data.venueId === selectedVenue.fsq_id && !isBlocked && !isReported) {
-            posts.push({ id: doc.id, ...data });
+            const rawTs = data.timestamp || data.encounterTimestamp || 0;
+            const tsMillis = (rawTs && typeof rawTs.toMillis === "function")
+              ? rawTs.toMillis()
+              : ((rawTs && rawTs.seconds !== undefined) ? rawTs.seconds * 1000 : Number(rawTs || 0));
+            
+            if (!tsMillis || (now - tsMillis) <= POST_TTL_MS) {
+              posts.push({ id: doc.id, ...data });
+            }
           }
         });
         // Sort descending by timestamp
@@ -1261,10 +1299,10 @@ export default function App() {
           userId: currentUser.uid,
           username: userData.username || "My Alias",
           mood: userData.mood || "Chillin' 😎",
-          bio: userData.bio || "Welcome to my profile!",
+          bio: userData.bio || "Welcome to my ASL profile!",
           profileTheme: userData.profileTheme || "classic",
           emoji_avatar: userData.emoji_avatar || "👥🥃💖",
-          spotify_track_uri: userData.spotify_track_uri || "spotify:track:4PTG3Z6ehGkBF3zI7YSp6g",
+          spotify_track_uri: userData.spotify_track_uri || "spotify:track:75z2YLg5Lkqf6qL9XOY8tV",
           spotify_song_title: userData.spotify_song_title || "",
           spotify_artist_name: userData.spotify_artist_name || "",
           favorited_bars: userData.favorited_bars || [],
@@ -1276,10 +1314,10 @@ export default function App() {
           userId: currentUser.uid,
           username: "My Alias",
           mood: "Chillin' 😎",
-          bio: "Welcome to my profile!",
+          bio: "Welcome to my ASL profile!",
           profileTheme: "classic",
           emoji_avatar: "👥🥃💖",
-          spotify_track_uri: "spotify:track:4PTG3Z6ehGkBF3zI7YSp6g",
+          spotify_track_uri: "spotify:track:75z2YLg5Lkqf6qL9XOY8tV",
           spotify_song_title: "",
           spotify_artist_name: "",
           favorited_bars: [],
@@ -1302,10 +1340,10 @@ export default function App() {
           userId: userId,
           username: userData.username || fallbackData.username || "Anonymous Connection",
           mood: userData.mood || fallbackData.mood || "Chillin' 😎",
-          bio: userData.bio || fallbackData.bio || "Just browsing the local spots.",
+          bio: userData.bio || fallbackData.bio || "Welcome to my ASL profile!",
           profileTheme: userData.profileTheme || fallbackData.profileTheme || "classic",
           emoji_avatar: userData.emoji_avatar || fallbackData.emoji_avatar || "👥🥃💖",
-          spotify_track_uri: userData.spotify_track_uri || fallbackData.spotify_track_uri || "spotify:track:4PTG3Z6ehGkBF3zI7YSp6g",
+          spotify_track_uri: userData.spotify_track_uri || fallbackData.spotify_track_uri || "spotify:track:75z2YLg5Lkqf6qL9XOY8tV",
           spotify_song_title: userData.spotify_song_title || fallbackData.spotify_song_title || "",
           spotify_artist_name: userData.spotify_artist_name || fallbackData.spotify_artist_name || "",
           favorited_bars: userData.favorited_bars || [],
@@ -1317,10 +1355,10 @@ export default function App() {
           userId: userId,
           username: fallbackData.username || "Anonymous Connection",
           mood: fallbackData.mood || "Chillin' 😎",
-          bio: fallbackData.bio || "Just browsing the local spots.",
+          bio: fallbackData.bio || "Welcome to my ASL profile!",
           profileTheme: fallbackData.profileTheme || fallbackData.profileTheme || "classic",
           emoji_avatar: fallbackData.emoji_avatar || "👥🥃💖",
-          spotify_track_uri: fallbackData.spotify_track_uri || "spotify:track:4PTG3Z6ehGkBF3zI7YSp6g",
+          spotify_track_uri: fallbackData.spotify_track_uri || "spotify:track:75z2YLg5Lkqf6qL9XOY8tV",
           spotify_song_title: fallbackData.spotify_song_title || "",
           spotify_artist_name: fallbackData.spotify_artist_name || "",
           favorited_bars: [],
@@ -1334,10 +1372,10 @@ export default function App() {
         userId: userId,
         username: fallbackData.username || "Anonymous Connection",
         mood: fallbackData.mood || "Chillin' 😎",
-        bio: fallbackData.bio || "Just browsing the local spots.",
+        bio: fallbackData.bio || "Welcome to my ASL profile!",
         profileTheme: fallbackData.profileTheme || fallbackData.profileTheme || "classic",
         emoji_avatar: fallbackData.emoji_avatar || "👥🥃💖",
-        spotify_track_uri: fallbackData.spotify_track_uri || "spotify:track:4PTG3Z6ehGkBF3zI7YSp6g",
+        spotify_track_uri: fallbackData.spotify_track_uri || "spotify:track:75z2YLg5Lkqf6qL9XOY8tV",
         spotify_song_title: fallbackData.spotify_song_title || "",
         spotify_artist_name: fallbackData.spotify_artist_name || "",
         favorited_bars: [],
@@ -2208,7 +2246,7 @@ export default function App() {
                                       handleOpenProfile(post.userId, {
                                         username: post.username || "Anonymous Connection",
                                         mood: post.mood || "Chillin' 😎",
-                                        bio: post.bio || "Just browsing the local spots.",
+                                        bio: post.bio || "Welcome to my ASL profile!",
                                         profileTheme: post.profileTheme || "classic",
                                         emoji_avatar: post.emoji_avatar || "👥🥃💖"
                                       });
@@ -2430,7 +2468,7 @@ export default function App() {
                                     handleOpenProfile(post.userId, {
                                       username: post.username || "Anonymous Connection",
                                       mood: post.mood || "Chillin' 😎",
-                                      bio: post.bio || "Just browsing the local spots.",
+                                      bio: post.bio || "Welcome to my ASL profile!",
                                       profileTheme: post.profileTheme || "classic",
                                       emoji_avatar: post.emoji_avatar || "👥🥃💖"
                                     });
@@ -3005,7 +3043,7 @@ export default function App() {
                             onClick={() => handleOpenProfile(post.userId, {
                               username: post.username || "Anonymous Connection",
                               mood: post.mood || "Chillin' 😎",
-                              bio: post.bio || "Just browsing the local spots.",
+                              bio: post.bio || "Welcome to my ASL profile!",
                               profileTheme: post.profileTheme || "classic",
                               emoji_avatar: post.emoji_avatar || "👥🥃💖"
                             })}
@@ -3018,7 +3056,7 @@ export default function App() {
                             onClick={() => handleOpenProfile(post.userId, {
                               username: post.username || "Anonymous Connection",
                               mood: post.mood || "Chillin' 😎",
-                              bio: post.bio || "Just browsing the local spots.",
+                              bio: post.bio || "Welcome to my ASL profile!",
                               profileTheme: post.profileTheme || "classic",
                               emoji_avatar: post.emoji_avatar || "👥🥃💖"
                             })}
@@ -3046,7 +3084,7 @@ export default function App() {
                                 onClick={() => handleOpenProfile(post.connectedWithId, {
                                   username: post.connectedWithUsername || connectedProfile.username || "Anonymous Connection",
                                   mood: connectedProfile.mood || "Chillin' 😎",
-                                  bio: connectedProfile.bio || "Just browsing the local spots.",
+                                  bio: connectedProfile.bio || "Welcome to my ASL profile!",
                                   profileTheme: connectedProfile.profileTheme || "classic",
                                   emoji_avatar: connectedProfile.emoji_avatar || "👥🥃💖"
                                 })}
@@ -3059,7 +3097,7 @@ export default function App() {
                                 onClick={() => handleOpenProfile(post.connectedWithId, {
                                   username: post.connectedWithUsername || connectedProfile.username || "Anonymous Connection",
                                   mood: connectedProfile.mood || "Chillin' 😎",
-                                  bio: connectedProfile.bio || "Just browsing the local spots.",
+                                  bio: connectedProfile.bio || "Welcome to my ASL profile!",
                                   profileTheme: connectedProfile.profileTheme || "classic",
                                   emoji_avatar: connectedProfile.emoji_avatar || "👥🥃💖"
                                 })}
@@ -3417,13 +3455,44 @@ export default function App() {
       {showReportDialog && (
         <div className="modal-overlay">
           <div className="modal-container" style={{ maxWidth: "420px" }}>
-            <div className="window">
-              <TitleBar title="Report Missed Connection" onClose={() => setShowReportDialog(null)} />
-              <div className="window-body" style={{ gap: "12px", padding: "12px" }}>
-                <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
+            <div style={{ 
+              width: "100%", 
+              display: "flex", 
+              flexDirection: "column", 
+              border: "1px solid #6699cc", 
+              backgroundColor: "#ffffff", 
+              boxShadow: "0px 4px 15px rgba(0,0,0,0.15)",
+              fontFamily: "Arial, sans-serif" 
+            }}>
+              <div style={{ 
+                backgroundColor: "#6699cc", 
+                color: "#ffffff", 
+                fontWeight: "bold", 
+                fontSize: "14px", 
+                padding: "8px 12px", 
+                display: "flex", 
+                justifyContent: "space-between", 
+                alignItems: "center" 
+              }}>
+                <span>Report Missed Connection</span>
+                <span 
+                  onClick={() => setShowReportDialog(null)} 
+                  style={{ 
+                    cursor: "pointer", 
+                    fontWeight: "bold", 
+                    fontSize: "16px",
+                    color: "#ffffff",
+                    padding: "0 4px"
+                  }}
+                >
+                  ✕
+                </span>
+              </div>
+              <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div style={{ display: "flex", gap: "12px", alignItems: "flex-start", border: "1px solid #ff99cc", padding: "12px", backgroundColor: "#fff5fa" }}>
                   <span style={{ fontSize: "32px" }}>🚨</span>
                   <div style={{ flex: 1 }}>
-                    <h4 style={{ margin: "0 0 6px 0", fontSize: "14px", fontWeight: "bold", color: "#cc0000" }}>
+                    <h4 style={{ margin: "0 0 6px 0", fontSize: "14px", fontWeight: "bold", color: "#cc0052" }}>
                       Report Safety or Policy Violation
                     </h4>
                     <p style={{ margin: 0, fontSize: "11px", color: "#555", lineHeight: "1.4" }}>
@@ -3434,9 +3503,9 @@ export default function App() {
 
                 <div style={{ 
                   backgroundColor: "#fff", 
-                  border: "1px inset #808080", 
+                  border: "1px solid #ff99cc", 
                   padding: "10px", 
-                  marginTop: "8px",
+                  marginTop: "4px",
                   display: "flex",
                   flexDirection: "column",
                   gap: "8px",
@@ -3500,7 +3569,7 @@ export default function App() {
                 </div>
 
                 {currentUser && !currentUser.isAnonymous && (
-                  <div style={{ marginTop: "8px", paddingLeft: "4px" }}>
+                  <div style={{ marginTop: "4px", paddingLeft: "4px" }}>
                     <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "11px", fontWeight: "bold" }}>
                       <input 
                         type="checkbox" 
@@ -3512,22 +3581,32 @@ export default function App() {
                   </div>
                 )}
 
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "12px" }}>
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "4px" }}>
                   <button 
                     onClick={() => setShowReportDialog(null)} 
-                    style={{ minWidth: "90px" }}
+                    style={{ 
+                      minWidth: "90px",
+                      minHeight: "36px",
+                      cursor: "pointer",
+                      backgroundColor: "#dfdfdf", 
+                      color: "#333", 
+                      border: "1px solid #b5b5b5",
+                      fontSize: "12px"
+                    }}
                   >
                     Cancel
                   </button>
                   <button 
-                    className="default"
                     onClick={handleSubmitReport}
                     style={{ 
-                      minWidth: "120px", 
+                      minWidth: "130px", 
                       fontWeight: "bold",
-                      backgroundColor: "#cc0000",
-                      color: "#fff",
-                      borderColor: "#cc0000"
+                      cursor: "pointer",
+                      backgroundColor: "#cc0052", 
+                      color: "white", 
+                      border: "1px solid #a30036",
+                      fontSize: "12px",
+                      minHeight: "36px"
                     }}
                   >
                     ⚠️ Flag & Remove
@@ -3543,22 +3622,62 @@ export default function App() {
       {showStrike2Warning && (
         <div className="modal-overlay">
           <div className="modal-container" style={{ maxWidth: "400px" }}>
-            <div className="window">
-              <TitleBar title="SYSTEM WARNING" onClose={() => setShowStrike2Warning(false)} />
-              <div className="window-body" style={{ gap: "12px", padding: "10px" }}>
-                <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            <div style={{ 
+              width: "100%", 
+              display: "flex", 
+              flexDirection: "column", 
+              border: "1px solid #6699cc", 
+              backgroundColor: "#ffffff", 
+              boxShadow: "0px 4px 15px rgba(0,0,0,0.15)",
+              fontFamily: "Arial, sans-serif" 
+            }}>
+              <div style={{ 
+                backgroundColor: "#6699cc", 
+                color: "#ffffff", 
+                fontWeight: "bold", 
+                fontSize: "14px", 
+                padding: "8px 12px", 
+                display: "flex", 
+                justifyContent: "space-between", 
+                alignItems: "center" 
+              }}>
+                <span>System Warning</span>
+                <span 
+                  onClick={() => setShowStrike2Warning(false)} 
+                  style={{ 
+                    cursor: "pointer", 
+                    fontWeight: "bold", 
+                    fontSize: "16px",
+                    color: "#ffffff",
+                    padding: "0 4px"
+                  }}
+                >
+                  ✕
+                </span>
+              </div>
+              <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div style={{ display: "flex", gap: "12px", alignItems: "center", border: "1px solid #ff99cc", padding: "12px", backgroundColor: "#fff5fa" }}>
                   <span style={{ fontSize: "36px" }}>⚠️</span>
                   <div>
-                    <h4 style={{ margin: "0 0 4px 0", fontSize: "13px", color: "red" }}>Warning</h4>
-                    <p style={{ margin: 0, fontSize: "12px", lineHeight: "1.4" }}>
+                    <h4 style={{ margin: "0 0 4px 0", fontSize: "13px", color: "#cc0052", fontWeight: "bold" }}>Warning</h4>
+                    <p style={{ margin: 0, fontSize: "11px", lineHeight: "1.4", color: "#555" }}>
                       SYSTEM WARNING: Your account has been flagged multiple times for text violations. Any further complaints will result in an immediate system crash and hardware lockout.
                     </p>
                   </div>
                 </div>
-                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "10px" }}>
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "4px" }}>
                   <button 
                     onClick={() => setShowStrike2Warning(false)} 
-                    style={{ minWidth: "80px", fontWeight: "bold", minHeight: "36px" }}
+                    style={{ 
+                      minWidth: "80px", 
+                      minHeight: "36px", 
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                      backgroundColor: "#6699cc", 
+                      color: "white", 
+                      border: "1px solid #4a7ebb",
+                      fontSize: "12px"
+                    }}
                   >
                     OK
                   </button>
@@ -3573,22 +3692,62 @@ export default function App() {
       {moderationError && (
         <div className="modal-overlay">
           <div className="modal-container" style={{ maxWidth: "360px" }}>
-            <div className="window">
-              <TitleBar title="System Warning" onClose={() => setModerationError("")} />
-              <div className="window-body" style={{ gap: "12px", padding: "10px" }}>
-                <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            <div style={{ 
+              width: "100%", 
+              display: "flex", 
+              flexDirection: "column", 
+              border: "1px solid #6699cc", 
+              backgroundColor: "#ffffff", 
+              boxShadow: "0px 4px 15px rgba(0,0,0,0.15)",
+              fontFamily: "Arial, sans-serif" 
+            }}>
+              <div style={{ 
+                backgroundColor: "#6699cc", 
+                color: "#ffffff", 
+                fontWeight: "bold", 
+                fontSize: "14px", 
+                padding: "8px 12px", 
+                display: "flex", 
+                justifyContent: "space-between", 
+                alignItems: "center" 
+              }}>
+                <span>System Warning</span>
+                <span 
+                  onClick={() => setModerationError("")} 
+                  style={{ 
+                    cursor: "pointer", 
+                    fontWeight: "bold", 
+                    fontSize: "16px",
+                    color: "#ffffff",
+                    padding: "0 4px"
+                  }}
+                >
+                  ✕
+                </span>
+              </div>
+              <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div style={{ display: "flex", gap: "12px", alignItems: "center", border: "1px solid #ff99cc", padding: "12px", backgroundColor: "#fff5fa" }}>
                   <span style={{ fontSize: "36px" }}>⚠️</span>
                   <div>
-                    <h4 style={{ margin: "0 0 4px 0", fontSize: "13px", color: "red" }}>Post Denied</h4>
-                    <p style={{ margin: 0, fontSize: "12px", lineHeight: "1.4" }}>
+                    <h4 style={{ margin: "0 0 4px 0", fontSize: "13px", color: "#cc0052", fontWeight: "bold" }}>Post Denied</h4>
+                    <p style={{ margin: 0, fontSize: "11px", lineHeight: "1.4", color: "#555" }}>
                       {moderationError}
                     </p>
                   </div>
                 </div>
-                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "10px" }}>
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "4px" }}>
                   <button 
                     onClick={() => setModerationError("")} 
-                    style={{ minWidth: "80px", fontWeight: "bold", minHeight: "36px" }}
+                    style={{ 
+                      minWidth: "80px", 
+                      minHeight: "36px", 
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                      backgroundColor: "#6699cc", 
+                      color: "white", 
+                      border: "1px solid #4a7ebb",
+                      fontSize: "12px"
+                    }}
                   >
                     OK
                   </button>
@@ -3602,22 +3761,62 @@ export default function App() {
       {showPostSuccess && (
         <div className="modal-overlay">
           <div className="modal-container" style={{ maxWidth: "320px" }}>
-            <div className="window">
-              <TitleBar title="System Message" onClose={handleSuccessThanks} />
-              <div className="window-body" style={{ gap: "12px", padding: "12px" }}>
-                <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            <div style={{ 
+              width: "100%", 
+              display: "flex", 
+              flexDirection: "column", 
+              border: "1px solid #6699cc", 
+              backgroundColor: "#ffffff", 
+              boxShadow: "0px 4px 15px rgba(0,0,0,0.15)",
+              fontFamily: "Arial, sans-serif" 
+            }}>
+              <div style={{ 
+                backgroundColor: "#6699cc", 
+                color: "#ffffff", 
+                fontWeight: "bold", 
+                fontSize: "14px", 
+                padding: "8px 12px", 
+                display: "flex", 
+                justifyContent: "space-between", 
+                alignItems: "center" 
+              }}>
+                <span>System Message</span>
+                <span 
+                  onClick={handleSuccessThanks} 
+                  style={{ 
+                    cursor: "pointer", 
+                    fontWeight: "bold", 
+                    fontSize: "16px",
+                    color: "#ffffff",
+                    padding: "0 4px"
+                  }}
+                >
+                  ✕
+                </span>
+              </div>
+              <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div style={{ display: "flex", gap: "12px", alignItems: "center", border: "1px solid #ff99cc", padding: "12px", backgroundColor: "#fff5fa" }}>
                   <span style={{ fontSize: "32px" }}>📬</span>
                   <div>
-                    <h4 style={{ margin: "0 0 4px 0", fontSize: "13px", color: "#003399" }}>Success</h4>
-                    <p style={{ margin: 0, fontSize: "12px", lineHeight: "1.4", fontWeight: "bold" }}>
+                    <h4 style={{ margin: "0 0 4px 0", fontSize: "13px", color: "#cc0052", fontWeight: "bold" }}>Success</h4>
+                    <p style={{ margin: 0, fontSize: "12px", lineHeight: "1.4", fontWeight: "bold", color: "#555" }}>
                       Posted! Good luck
                     </p>
                   </div>
                 </div>
-                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "12px" }}>
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "4px" }}>
                   <button 
                     onClick={handleSuccessThanks} 
-                    style={{ minWidth: "80px", fontWeight: "bold", minHeight: "36px", cursor: "pointer" }}
+                    style={{ 
+                      minWidth: "80px", 
+                      minHeight: "36px", 
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                      backgroundColor: "#6699cc", 
+                      color: "white", 
+                      border: "1px solid #4a7ebb",
+                      fontSize: "12px"
+                    }}
                   >
                     Thanks!
                   </button>

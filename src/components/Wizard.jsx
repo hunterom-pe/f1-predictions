@@ -34,13 +34,13 @@ export default function Wizard({ onClose, onSubmit, preselectedVenue = null, cur
   const [isSearching, setIsSearching] = useState(false);
   const [isModerating, setIsModerating] = useState(false);
 
-  // Step 2 Form States (36-Hour Scarcity)
+  // Step 2 Form States (7-Day Scarcity)
   const [datetimeVal, setDatetimeVal] = useState(() => {
     const now = new Date();
     const pad = (n) => String(n).padStart(2, '0');
     return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
   });
-  const [minDatetime] = useState(() => new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString().slice(0, 16));
+  const [minDatetime] = useState(() => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16));
   const [maxDatetime] = useState(() => new Date().toISOString().slice(0, 16));
 
   // Step 3 Form States (Mad Libs Matrix)
@@ -53,7 +53,7 @@ export default function Wizard({ onClose, onSubmit, preselectedVenue = null, cur
   // Step 4 Profile Customization States
   const username = currentUserProfile?.username || "";
   const mood = currentUserProfile?.mood || "Chillin' 😎";
-  const bio = currentUserProfile?.bio || "Just browsing the local nightlife spots.";
+  const bio = currentUserProfile?.bio || "Welcome to my ASL profile!";
   const profileTheme = currentUserProfile?.profileTheme || "classic";
   const emojiAvatar = currentUserProfile?.emoji_avatar || "👥🥃💖";
 
@@ -120,9 +120,9 @@ export default function Wizard({ onClose, onSubmit, preselectedVenue = null, cur
         return;
       }
       const selectedTime = new Date(datetimeVal).getTime();
-      const cutoffTime = Date.now() - 36 * 60 * 60 * 1000;
+      const cutoffTime = Date.now() - 7 * 24 * 60 * 60 * 1000;
       if (selectedTime < cutoffTime) {
-        setErrorMsg("Error: Encounter timestamp cannot be older than 36 hours. Connection expired.");
+        setErrorMsg("Error: Encounter timestamp cannot be older than 7 days. Connection expired.");
         return;
       }
       if (selectedTime > Date.now()) {
@@ -210,16 +210,57 @@ export default function Wizard({ onClose, onSubmit, preselectedVenue = null, cur
   };
 
   return (
-    <div className="window" style={{ width: "100%", flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
-      <TitleBar title="Add Missed Connection Wizard" onClose={onClose} />
+    <div style={{ 
+      width: "100%", 
+      flex: 1, 
+      display: "flex", 
+      flexDirection: "column", 
+      minHeight: 0,
+      border: "1px solid #6699cc",
+      backgroundColor: "#ffffff",
+      boxShadow: "0px 4px 15px rgba(0,0,0,0.15)",
+      fontFamily: "Arial, sans-serif"
+    }}>
+      {/* Title Bar */}
+      <div style={{ 
+        backgroundColor: "#6699cc", 
+        color: "#ffffff", 
+        fontWeight: "bold", 
+        fontSize: "14px", 
+        padding: "8px 12px", 
+        display: "flex", 
+        justifyContent: "space-between", 
+        alignItems: "center" 
+      }}>
+        <span>Add Missed Connection Wizard</span>
+        <span 
+          onClick={onClose} 
+          style={{ 
+            cursor: "pointer", 
+            fontWeight: "bold", 
+            fontSize: "16px",
+            color: "#ffffff",
+            padding: "0 4px"
+          }}
+        >
+          ✕
+        </span>
+      </div>
       
       {/* Wizard Header Banner */}
-      <div className="wizard-header-banner">
-        <h1>Create Missed Connection</h1>
-        <p>Step {step} of 4 - Post your encounter online</p>
+      <div style={{
+        background: "linear-gradient(90deg, #6699cc 0%, #ff99cc 100%)",
+        color: "white",
+        padding: "16px 20px",
+        textAlign: "left",
+        width: "100%",
+        boxSizing: "border-box"
+      }}>
+        <h1 style={{ margin: 0, fontSize: "20px", fontWeight: "bold", fontFamily: "Arial, sans-serif" }}>Create Missed Connection</h1>
+        <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#fff0f5", fontFamily: "Arial, sans-serif" }}>Step {step} of 4 - Post your encounter online</p>
       </div>
 
-      <div className="window-body" style={{ flex: 1, backgroundColor: "#fff", padding: "16px", display: "flex", flexDirection: "column", margin: 0, minHeight: 0 }}>
+      <div style={{ flex: 1, backgroundColor: "#fff", padding: "16px", display: "flex", flexDirection: "column", margin: 0, minHeight: 0 }}>
         
         {/* Step Content */}
         <div style={{ flex: 1, overflowY: "auto", minHeight: 0, paddingRight: "4px" }}>
@@ -237,14 +278,27 @@ export default function Wizard({ onClose, onSubmit, preselectedVenue = null, cur
                   placeholder="e.g. Cobra Arcade" 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  style={{ flex: 1, minHeight: "44px" }}
+                  style={{ flex: 1, minHeight: "44px", padding: "0 10px", border: "1px solid #ff99cc", borderRadius: "2px" }}
                 />
-                <button type="submit" disabled={isSearching} style={{ minHeight: "44px" }}>
+                <button 
+                  type="submit" 
+                  disabled={isSearching} 
+                  style={{ 
+                    minHeight: "44px", 
+                    cursor: isSearching ? "not-allowed" : "pointer", 
+                    backgroundColor: "#6699cc", 
+                    color: "white", 
+                    border: "1px solid #4a7ebb", 
+                    fontWeight: "bold",
+                    fontSize: "13px",
+                    padding: "0 16px"
+                  }}
+                >
                   {isSearching ? "Searching..." : "Search"}
                 </button>
               </form>
 
-              <div className="beveled-box" style={{ height: "180px", overflowY: "auto", padding: "0", border: "1px solid #ccc" }}>
+              <div style={{ height: "180px", overflowY: "auto", padding: "0", border: "1px solid #ff99cc" }}>
                 {venuesList.length === 0 ? (
                   <p style={{ margin: "20px 10px", fontSize: "13px", color: "#808080", fontStyle: "italic", textAlign: "center" }}>
                     Search for a venue above (try "Cobra", "Valley", "Casey", "Union")
@@ -260,7 +314,7 @@ export default function Wizard({ onClose, onSubmit, preselectedVenue = null, cur
                           fontSize: "13px",
                           cursor: "pointer",
                           borderBottom: "1px solid #eee",
-                          backgroundColor: selectedVenue?.fsq_id === v.fsq_id ? "#003399" : "transparent",
+                          backgroundColor: selectedVenue?.fsq_id === v.fsq_id ? "#6699cc" : "transparent",
                           color: selectedVenue?.fsq_id === v.fsq_id ? "white" : "black"
                         }}
                       >
@@ -271,7 +325,7 @@ export default function Wizard({ onClose, onSubmit, preselectedVenue = null, cur
                 )}
               </div>
               {selectedVenue && (
-                <div style={{ fontSize: "12px", marginTop: "8px", color: "#333", backgroundColor: "#f2f6ff", padding: "8px", border: "1px solid #6699ff", borderRadius: "4px" }}>
+                <div style={{ fontSize: "12px", marginTop: "8px", color: "#333", backgroundColor: "#f2f6ff", padding: "8px", border: "1px solid #6699cc", borderRadius: "4px" }}>
                   📍 Selected: <strong>{selectedVenue.name}</strong>, {selectedVenue.formatted_address}
                 </div>
               )}
@@ -282,11 +336,11 @@ export default function Wizard({ onClose, onSubmit, preselectedVenue = null, cur
             <div>
               <h3 style={{ margin: "0 0 8px 0", fontSize: "16px", color: "#003399" }}>Step 2: Choose Date & Time</h3>
               <p style={{ margin: "0 0 12px 0", fontSize: "13px", lineHeight: "1.4", color: "#555" }}>
-                Select the exact date and time when you crossed paths with the mystery connection. Encounters are strictly limited to the last 36 hours.
+                Select the exact date and time when you crossed paths with the mystery connection. Encounters are strictly limited to the last 7 days.
               </p>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                <div className="field-row-stacked" style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                   <label htmlFor="wizard-datetime" style={{ fontWeight: "bold", fontSize: "13px" }}>Date & Time of Encounter:</label>
                   <input 
                     id="wizard-datetime" 
@@ -295,7 +349,7 @@ export default function Wizard({ onClose, onSubmit, preselectedVenue = null, cur
                     onChange={(e) => setDatetimeVal(e.target.value)} 
                     min={minDatetime}
                     max={maxDatetime}
-                    style={{ width: "100%" }}
+                    style={{ width: "100%", minHeight: "44px", padding: "0 10px", border: "1px solid #ff99cc", borderRadius: "2px", boxSizing: "border-box" }}
                   />
                 </div>
               </div>
@@ -327,7 +381,7 @@ export default function Wizard({ onClose, onSubmit, preselectedVenue = null, cur
                     onChange={(e) => setFieldA(e.target.value)}
                     placeholder="e.g. Guy in vintage Galaga polaroid tee"
                     maxLength={50}
-                    style={{ width: "100%" }}
+                    style={{ width: "100%", minHeight: "40px", padding: "0 10px", border: "1px solid #ff99cc", borderRadius: "2px", boxSizing: "border-box" }}
                   />
                   <span style={{ fontSize: "10px", color: "#666", alignSelf: "flex-end" }}>{fieldA.length}/50</span>
                 </div>
@@ -341,7 +395,7 @@ export default function Wizard({ onClose, onSubmit, preselectedVenue = null, cur
                     onChange={(e) => setFieldB(e.target.value)}
                     placeholder="e.g. Girl beating Galaga high score"
                     maxLength={50}
-                    style={{ width: "100%" }}
+                    style={{ width: "100%", minHeight: "40px", padding: "0 10px", border: "1px solid #ff99cc", borderRadius: "2px", boxSizing: "border-box" }}
                   />
                   <span style={{ fontSize: "10px", color: "#666", alignSelf: "flex-end" }}>{fieldB.length}/50</span>
                 </div>
@@ -350,12 +404,12 @@ export default function Wizard({ onClose, onSubmit, preselectedVenue = null, cur
                   <label htmlFor="wizard-field-c" style={{ fontSize: "13px", fontWeight: "bold" }}>Field C: Context & Night Details (Max 140 chars):</label>
                   <textarea 
                     id="wizard-field-c"
-                    rows={showHelp ? "3" : "4"}
+                    rows={showHelp ? 3 : 4}
                     value={fieldC}
                     onChange={(e) => setFieldC(e.target.value)}
                     placeholder="e.g. Near Galaga machine around 11 PM. You played 'Love Will Tear Us Apart' twice. Drinks on me?"
                     maxLength={140}
-                    style={{ width: "100%", fontSize: "14px", fontFamily: "Arial, sans-serif" }}
+                    style={{ width: "100%", fontSize: "14px", fontFamily: "Arial, sans-serif", padding: "8px 10px", border: "1px solid #ff99cc", borderRadius: "2px", boxSizing: "border-box" }}
                   />
                   <span style={{ fontSize: "10px", color: "#666", alignSelf: "flex-end" }}>{fieldC.length}/140</span>
                 </div>
@@ -390,7 +444,7 @@ export default function Wizard({ onClose, onSubmit, preselectedVenue = null, cur
                 Your connection report is compiled and ready to write to the Firestore board. Review the properties below:
               </p>
 
-              <div className="beveled-box" style={{ height: "180px", overflowY: "auto", fontSize: "13px", gap: "6px", border: "1px solid #ccc", padding: "10px" }}>
+              <div style={{ height: "180px", overflowY: "auto", fontSize: "13px", display: "flex", flexDirection: "column", gap: "6px", border: "1px solid #ff99cc", padding: "10px" }}>
                 <div>📂 <strong>Target Venue:</strong> {selectedVenue?.name}</div>
                 <div>📍 <strong>Address:</strong> {selectedVenue?.formatted_address}</div>
                 <div>📅 <strong>Date/Time:</strong> {formatDatetime(datetimeVal).dateStr} @ {formatDatetime(datetimeVal).timeStr}</div>
@@ -408,7 +462,7 @@ export default function Wizard({ onClose, onSubmit, preselectedVenue = null, cur
 
         {/* Error notifications */}
         {errorMsg && (
-          <div style={{ color: "red", fontSize: "12px", fontWeight: "bold", padding: "8px", backgroundColor: "#fff", border: "1px solid red", borderRadius: "4px", marginBottom: "10px" }}>
+          <div style={{ color: "red", fontSize: "12px", fontWeight: "bold", padding: "8px", backgroundColor: "#fff5fa", border: "1px solid red", borderRadius: "4px", marginBottom: "10px" }}>
             {errorMsg}
           </div>
         )}
@@ -418,22 +472,67 @@ export default function Wizard({ onClose, onSubmit, preselectedVenue = null, cur
           <button 
             onClick={handleBack} 
             disabled={step === 1 || isModerating}
-            style={{ minHeight: "44px", cursor: "pointer" }}
+            style={{ 
+              minHeight: "44px", 
+              cursor: (step === 1 || isModerating) ? "not-allowed" : "pointer",
+              backgroundColor: "#dfdfdf",
+              color: "#333",
+              border: "1px solid #b5b5b5",
+              fontSize: "12px",
+              padding: "0 16px",
+              opacity: (step === 1 || isModerating) ? 0.5 : 1
+            }}
           >
             &lt; Back
           </button>
           
           {step < 4 ? (
-            <button onClick={handleNext} disabled={isModerating} style={{ minHeight: "44px", cursor: "pointer" }}>
+            <button 
+              onClick={handleNext} 
+              disabled={isModerating} 
+              style={{ 
+                minHeight: "44px", 
+                cursor: isModerating ? "not-allowed" : "pointer",
+                backgroundColor: "#6699cc",
+                color: "white",
+                border: "1px solid #4a7ebb",
+                fontSize: "12px",
+                padding: "0 16px",
+                fontWeight: "bold"
+              }}
+            >
               {isModerating ? "Checking..." : "Next >"}
             </button>
           ) : (
-            <button onClick={handleFinish} className="default" style={{ minHeight: "44px", cursor: "pointer", backgroundColor: "#ffcc99", color: "#cc6600", fontWeight: "bold" }}>
+            <button 
+              onClick={handleFinish} 
+              style={{ 
+                minHeight: "44px", 
+                cursor: "pointer", 
+                backgroundColor: "#ffcc99", 
+                color: "#cc6600", 
+                border: "1px solid #cc9966",
+                fontWeight: "bold",
+                fontSize: "12px",
+                padding: "0 16px"
+              }}
+            >
               Finish
             </button>
           )}
 
-          <button onClick={onClose} style={{ minHeight: "44px", cursor: "pointer" }}>
+          <button 
+            onClick={onClose} 
+            style={{ 
+              minHeight: "44px", 
+              cursor: "pointer",
+              backgroundColor: "#dfdfdf",
+              color: "#333",
+              border: "1px solid #b5b5b5",
+              fontSize: "12px",
+              padding: "0 16px"
+            }}
+          >
             Cancel
           </button>
         </div>

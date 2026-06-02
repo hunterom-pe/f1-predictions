@@ -9,6 +9,15 @@ import {
   queryWhere
 } from "../firebase";
 
+const getTimestampMillis = (ts) => {
+  if (!ts) return 0;
+  if (typeof ts === "number") return ts;
+  if (typeof ts.toMillis === "function") return ts.toMillis();
+  if (ts.seconds !== undefined) return ts.seconds * 1000 + (ts.nanoseconds || 0) / 1000000;
+  if (ts instanceof Date) return ts.getTime();
+  return 0;
+};
+
 /**
  * MySpace Mail themed message client for connection requests.
  * @param {object} props
@@ -219,7 +228,7 @@ export default function OutlookInbox({ currentUser, userDoc, onClose, onOpenChat
                 ⬅️ Back to List
               </button>
               <span style={{ fontSize: "12px", color: "#666" }}>
-                Received: {new Date(selectedConn.timestamp).toLocaleString()}
+                Received: {selectedConn.timestamp ? new Date(getTimestampMillis(selectedConn.timestamp)).toLocaleString() : "Pending Server Time..."}
               </span>
             </div>
 
@@ -283,7 +292,8 @@ export default function OutlookInbox({ currentUser, userDoc, onClose, onOpenChat
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {filteredConns.map(c => {
-                    const dateStr = new Date(c.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+                    const tsMillis = getTimestampMillis(c.timestamp);
+                    const dateStr = tsMillis ? new Date(tsMillis).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "Pending Server Time...";
                     return (
                       <div 
                         key={c.id} 

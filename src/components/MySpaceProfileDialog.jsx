@@ -61,7 +61,7 @@ export default function MySpaceProfileDialog({
   bio, 
   profileTheme = "classic", 
   emoji_avatar = "👥🥃💖",
-  spotify_track_uri = "spotify:track:4PTG3Z6ehGkBF3zI7YSp6g",
+  spotify_track_uri = "spotify:track:75z2YLg5Lkqf6qL9XOY8tV",
   spotify_song_title = "",
   spotify_artist_name = "",
   headline = "Everyone's favorite dial-up partner",
@@ -772,7 +772,7 @@ export default function MySpaceProfileDialog({
                         setEditSpotifyTrackUri(e.target.value);
                         if (profileError) setProfileError("");
                       }}
-                      placeholder="e.g. spotify:track:4PTG3Z6ehGkBF3zI7YSp6g"
+                      placeholder="e.g. spotify:track:75z2YLg5Lkqf6qL9XOY8tV"
                       style={{ width: "100%", fontSize: "12px", padding: "4px", minHeight: "28px", height: "28px" }}
                     />
                   </div>

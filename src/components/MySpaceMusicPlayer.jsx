@@ -7,6 +7,7 @@ const formatTime = (seconds) => {
 };
 
 const MOCK_TRACK_DATABASE = {
+  "75z2YLg5Lkqf6qL9XOY8tV": { title: "Such Great Heights", artist: "The Postal Service", duration: 266, durationStr: "04:26" },
   "4PTG3Z6ehGkBF3zI7YSp6g": { title: "Such Great Heights", artist: "The Postal Service", duration: 266, durationStr: "04:26" },
   "298gs9ATwr2rD9tGYJKlQR": { title: "Dance Our Tears Away", artist: "John de Sohn", duration: 180, durationStr: "03:00" },
   "0VjIjW4GlUZAMYd2vXMi6b": { title: "Blinding Lights", artist: "The Weeknd", duration: 200, durationStr: "03:20" },
@@ -26,7 +27,7 @@ const MOCK_TRACK_DATABASE = {
  * @param {string} props.spotifyTrackUri The unique spotify:track:URI to stream
  */
 export default function MySpaceMusicPlayer({ 
-  spotifyTrackUri = "spotify:track:4PTG3Z6ehGkBF3zI7YSp6g",
+  spotifyTrackUri = "spotify:track:75z2YLg5Lkqf6qL9XOY8tV",
   spotifySongTitle = "",
   spotifyArtistName = ""
 }) {
@@ -84,8 +85,8 @@ export default function MySpaceMusicPlayer({
           const data = await res.json();
           const rawTitle = data.title || "Unknown Song";
           
-          let parsedTitle = finalTitle || rawTitle;
-          let parsedArtist = finalArtist || "Spotify Artist";
+          let parsedTitle = finalTitle || (mockTrack ? mockTrack.title : rawTitle);
+          let parsedArtist = finalArtist || (mockTrack ? mockTrack.artist : "Spotify Artist");
           
           if (!finalArtist) {
             // Match "Song Title - Song by Artist Name" (case-insensitive)
@@ -101,12 +102,7 @@ export default function MySpaceMusicPlayer({
                 if (!isEditTag) {
                   if (!finalTitle) parsedTitle = parts[0];
                   parsedArtist = parts[1];
-                } else {
-                  if (!finalTitle) parsedTitle = rawTitle;
-                  parsedArtist = "Spotify Artist";
                 }
-              } else {
-                parsedArtist = "Spotify Artist";
               }
             }
           }
@@ -119,8 +115,8 @@ export default function MySpaceMusicPlayer({
           });
         } else {
           setTrackInfo({
-            title: finalTitle || "Spotify Track",
-            artist: finalArtist || "Spotify Artist",
+            title: finalTitle || (mockTrack ? mockTrack.title : "Spotify Track"),
+            artist: finalArtist || (mockTrack ? mockTrack.artist : "Spotify Artist"),
             duration: mockTrack?.duration || 240,
             durationStr: mockTrack?.durationStr || "04:00"
           });
@@ -128,8 +124,8 @@ export default function MySpaceMusicPlayer({
       } catch (err) {
         console.error("Failed to load Spotify oembed details:", err);
         setTrackInfo({
-          title: finalTitle || "Spotify Track",
-          artist: finalArtist || "Active Session",
+          title: finalTitle || (mockTrack ? mockTrack.title : "Spotify Track"),
+          artist: finalArtist || (mockTrack ? mockTrack.artist : "Spotify Artist"),
           duration: mockTrack?.duration || 240,
           durationStr: mockTrack?.durationStr || "04:00"
         });
@@ -152,7 +148,7 @@ export default function MySpaceMusicPlayer({
       containerRef.current.appendChild(tempDiv);
 
       const options = {
-        uri: spotifyTrackUri || "spotify:track:4PTG3Z6ehGkBF3zI7YSp6g",
+        uri: spotifyTrackUri || "spotify:track:75z2YLg5Lkqf6qL9XOY8tV",
         width: "100%",
         height: "80"
       };
