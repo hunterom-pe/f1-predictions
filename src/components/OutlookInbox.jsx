@@ -142,6 +142,20 @@ export default function OutlookInbox({ currentUser, userDoc, onClose, onOpenChat
           connectedWithUsername: senderUsername,
           connectedProofText: selectedConn.proofText
         });
+
+        // 1.6 Delete other obsolete pending connection requests for this post
+        const othersToDelete = connections.filter(c => 
+          c.postId === selectedConn.postId && 
+          c.id !== selectedConn.id && 
+          c.status === "pending"
+        );
+        for (const conn of othersToDelete) {
+          try {
+            await dbDeleteDoc("connections", conn.id);
+          } catch (e) {
+            console.warn("Could not delete obsolete connection request:", conn.id, e);
+          }
+        }
       }
 
       // 2. Create the associated AIM chat window
