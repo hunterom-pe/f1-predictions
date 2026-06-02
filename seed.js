@@ -1,6 +1,5 @@
 import { readFileSync } from 'fs';
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, setDoc, addDoc } from 'firebase/firestore';
+import admin from 'firebase-admin';
 
 // 1. Read config from .env.local
 const envFile = readFileSync('.env.local', 'utf-8');
@@ -12,18 +11,13 @@ envFile.split('\n').forEach(line => {
   }
 });
 
-const firebaseConfig = {
-  apiKey: envVars.VITE_FIREBASE_API_KEY,
-  authDomain: envVars.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: envVars.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: envVars.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: envVars.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: envVars.VITE_FIREBASE_APP_ID,
-};
-
-// 2. Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// 2. Initialize Firebase Admin
+if (!admin.apps.length) {
+  admin.initializeApp({
+    projectId: envVars.VITE_FIREBASE_PROJECT_ID
+  });
+}
+const db = admin.firestore();
 
 const PHOENIX_BARS_ONLY = [
   { id: "venue_cobra", name: "Cobra Arcade Bar", city: "Phoenix", address: "801 N 2nd St, Phoenix, AZ 85004", zone: "Downtown" },
@@ -81,7 +75,7 @@ async function seed() {
     const uid = 'seed_user_' + i;
     const favoriteBars = getRandomBars(1, 5).map(b => b.id);
     
-    await setDoc(doc(db, "users", uid), {
+    await db.collection("users").doc(uid).set({
       uid,
       username: userData.username,
       mood: userData.mood,
@@ -114,7 +108,7 @@ async function seed() {
     const bar = PHOENIX_BARS_ONLY[Math.floor(Math.random() * PHOENIX_BARS_ONLY.length)];
     const text = MOCK_POSTS[i];
     
-    await addDoc(collection(db, "posts"), {
+    await db.collection("posts").add({
       userId: user.uid,
       username: user.username,
       emoji_avatar: user.emoji_avatar,

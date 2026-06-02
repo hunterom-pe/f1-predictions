@@ -1,7 +1,5 @@
 import { readFileSync } from 'fs';
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, setDoc, addDoc } from 'firebase/firestore';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import admin from 'firebase-admin';
 
 // Read config
 const envFile = readFileSync('.env.local', 'utf-8');
@@ -13,18 +11,12 @@ envFile.split('\n').forEach(line => {
   }
 });
 
-const firebaseConfig = {
-  apiKey: envVars.VITE_FIREBASE_API_KEY,
-  authDomain: envVars.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: envVars.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: envVars.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: envVars.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: envVars.VITE_FIREBASE_APP_ID,
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+if (!admin.apps.length) {
+  admin.initializeApp({
+    projectId: envVars.VITE_FIREBASE_PROJECT_ID
+  });
+}
+const db = admin.firestore();
 
 const PHOENIX_BARS_ONLY = [
   { id: "venue_cobra", name: "Cobra Arcade Bar", city: "Phoenix", address: "801 N 2nd St, Phoenix, AZ 85004", zone: "Downtown" },
@@ -82,12 +74,27 @@ async function seedAuth() {
     const password = `password${i}123!`;
     
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const uid = userCredential.user.uid;
+      let uid;
+      try {
+        const userRecord = await admin.auth().createUser({
+          email,
+          password
+        });
+        uid = userRecord.uid;
+        console.log(`Created Auth account for ${email}`);
+      } catch (err) {
+        if (err.code === 'auth/email-already-in-use') {
+          console.log(`Email ${email} already exists. Retrieving existing UID...`);
+          const userRecord = await admin.auth().getUserByEmail(email);
+          uid = userRecord.uid;
+        } else {
+          throw err;
+        }
+      }
       
       const favoriteBars = getRandomBars(1, 5).map(b => b.id);
       
-      await setDoc(doc(db, "users", uid), {
+      await db.collection("users").doc(uid).set({
         uid,
         email: email,
         username: userData.username,
@@ -114,40 +121,18 @@ async function seedAuth() {
         emoji_avatar: userData.emoji_avatar,
         mood: userData.mood
       });
-      console.log(`Created Auth + DB for ${email}`);
     } catch (err) {
-      if (err.code === 'auth/email-already-in-use') {
-        console.log(`Email ${email} already exists. Logging in to retrieve UID...`);
-        try {
-          const userCredential = await signInWithEmailAndPassword(auth, email, password);
-          createdUsers.push({
-            uid: userCredential.user.uid,
-            email,
-            password,
-            username: userData.username,
-            emoji_avatar: userData.emoji_avatar,
-            mood: userData.mood
-          });
-        } catch (loginErr) {
-          console.error(`Failed to login for existing user ${email}:`, loginErr);
-        }
-      } else {
-        console.error(`Error creating auth for ${email}:`, err);
-      }
+      console.error(`Error creating auth for ${email}:`, err);
     }
   }
 
   // Create 10 posts for the first 10 auth users
   for (let i = 0; i < Math.min(10, createdUsers.length); i++) {
     const user = createdUsers[i];
-    
-    // Sign in to satisfy Firestore request.auth.uid == userId rules
-    await signInWithEmailAndPassword(auth, user.email, user.password);
-    
     const bar = PHOENIX_BARS_ONLY[Math.floor(Math.random() * PHOENIX_BARS_ONLY.length)];
     const text = MOCK_POSTS[i];
     
-    await addDoc(collection(db, "posts"), {
+    await db.collection("posts").add({
       userId: user.uid,
       username: user.username,
       emoji_avatar: user.emoji_avatar,
@@ -167,11 +152,11 @@ async function seedAuth() {
     console.log(`Created post by ${user.username} at ${bar.name}`);
   }
 
-  console.log('\\n--- CREDENTIALS LIST ---');
+  console.log('\n--- CREDENTIALS LIST ---');
   createdUsers.forEach(u => {
     console.log(`Username: ${u.username} | Email: ${u.email} | Password: ${u.password}`);
   });
-  console.log('------------------------\\n');
+  console.log('------------------------\n');
 
   process.exit(0);
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { dbAddDoc } from "../firebase";
+import { dbCallFunction } from "../firebase";
 
 /**
  * Full-screen Windows 98 Blue Screen of Death (BSOD) lockout component (Simplified & Mobile Optimized).
@@ -13,13 +13,11 @@ export default function BSOD({ currentUser, deviceUuid }) {
     e.preventDefault();
     if (!appealText.trim()) return;
     try {
-      await dbAddDoc("appeals", {
+      await dbCallFunction("submitAppealSecure", {
         userId: currentUser?.uid || "unknown",
         email: currentUser?.email || "anonymous",
         deviceUuid: deviceUuid || "",
-        reason: appealText.trim(),
-        timestamp: Date.now(),
-        status: "pending"
+        reason: appealText.trim()
       });
       setAppealSent(true);
       setAppealText("");

@@ -195,33 +195,67 @@ exports.createPostSecure = onCall({ secrets: [geminiKey] }, async (request) => {
     throw new HttpsError("failed-precondition", randomRoast());
   }
 
-  // Verify homeCity server-side so city restriction can't be bypassed via direct CF call
-  const userSnap = await admin.firestore().collection("users").doc(auth.uid).get();
-  if (!userSnap.exists) {
-    throw new HttpsError("not-found", "User profile not found.");
-  }
-  const userData = userSnap.data();
-  if (userData.homeCity && data.venueCity && data.venueCity !== userData.homeCity) {
-    throw new HttpsError("failed-precondition", `Nice try, traveler. You can only post for your home node in ${userData.homeCity}.`);
-  }
+  const db = admin.firestore();
+  const postId = await db.runTransaction(async (tx) => {
+    const userRef = db.collection("users").doc(auth.uid);
+    const userSnap = await tx.get(userRef);
+    if (!userSnap.exists) {
+      throw new HttpsError("not-found", "User profile not found.");
+    }
+    const userData = userSnap.data();
 
-  // Explicit allowlist — never spread raw client data into Firestore
-  const newPost = {
-    text: textToModerate,
-    venueId: typeof data.venueId === "string" ? data.venueId : "",
-    venueName: typeof data.venueName === "string" ? data.venueName : "",
-    venueAddress: typeof data.venueAddress === "string" ? data.venueAddress : "",
-    venueCity: typeof data.venueCity === "string" ? data.venueCity : "",
-    venueZone: typeof data.venueZone === "string" ? data.venueZone : "",
-    date: typeof data.date === "string" ? data.date : "",
-    timeRange: typeof data.timeRange === "string" ? data.timeRange : "",
-    userId: auth.uid,
-    status: "active",
-    timestamp: admin.firestore.FieldValue.serverTimestamp()
-  };
+    // 15-minute cooldown check
+    const COOLDOWN_MS = 15 * 60 * 1000;
+    const lastPostAt = userData.lastPostAt || 0;
+    const timeSinceLast = Date.now() - lastPostAt;
+    if (timeSinceLast < COOLDOWN_MS) {
+      const minutesLeft = Math.ceil((COOLDOWN_MS - timeSinceLast) / 60000);
+      throw new HttpsError(
+        "failed-precondition",
+        `Whoa, slow down. The server daemon is still processing your last post. Try again in ${minutesLeft} minute${minutesLeft > 1 ? "s" : ""}.`
+      );
+    }
 
-  const newPostRef = await admin.firestore().collection("posts").add(newPost);
-  return { id: newPostRef.id };
+    // Daily post limit check (max 3 posts per 24 hours)
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const postCount = userData.dailyPostDate === todayStr ? (userData.dailyPostCount || 0) : 0;
+    if (postCount >= 3) {
+      throw new HttpsError(
+        "resource-exhausted",
+        "Rate Limit: You have exceeded the daily limit of 3 posts per 24 hours. Keep the node clean!"
+      );
+    }
+
+    // Verify homeCity server-side so city restriction can't be bypassed via direct CF call
+    if (userData.homeCity && data.venueCity && data.venueCity !== userData.homeCity) {
+      throw new HttpsError("failed-precondition", `Nice try, traveler. You can only post for your home node in ${userData.homeCity}.`);
+    }
+
+    const postRef = db.collection("posts").doc();
+    tx.set(postRef, {
+      text: textToModerate,
+      venueId: typeof data.venueId === "string" ? data.venueId : "",
+      venueName: typeof data.venueName === "string" ? data.venueName : "",
+      venueAddress: typeof data.venueAddress === "string" ? data.venueAddress : "",
+      venueCity: typeof data.venueCity === "string" ? data.venueCity : "",
+      venueZone: typeof data.venueZone === "string" ? data.venueZone : "",
+      date: typeof data.date === "string" ? data.date : "",
+      timeRange: typeof data.timeRange === "string" ? data.timeRange : "",
+      userId: auth.uid,
+      status: "active",
+      timestamp: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    tx.update(userRef, {
+      lastPostAt: Date.now(),
+      dailyPostCount: postCount + 1,
+      dailyPostDate: todayStr
+    });
+
+    return postRef.id;
+  });
+
+  return { id: postId };
 });
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -254,6 +288,17 @@ exports.createConnectionSecure = onCall({ secrets: [geminiKey] }, async (request
 
   const db = admin.firestore();
   const senderId = auth.uid;
+
+  // Prevent duplicate connection requests for the same post from the same sender
+  const existingConnSnap = await db.collection("connections")
+    .where("postId", "==", postId)
+    .where("senderId", "==", senderId)
+    .limit(1)
+    .get();
+
+  if (!existingConnSnap.empty) {
+    throw new HttpsError("already-exists", "You have already claimed this missed connection.");
+  }
 
   const connectionId = await db.runTransaction(async (tx) => {
     const postRef = db.collection("posts").doc(postId);
@@ -528,4 +573,112 @@ exports.searchVenuesSecure = onCall({ secrets: [foursquareKey] }, async (request
     console.error("Foursquare proxy failed:", e);
     return { results: [] };
   }
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// Secure Appeal submission (handles disabled / banned users)
+// ──────────────────────────────────────────────────────────────────────────
+exports.submitAppealSecure = onCall(async (request) => {
+  const { data } = request;
+  const userId = typeof data.userId === "string" ? data.userId : "";
+  const email = typeof data.email === "string" ? data.email : "";
+  const deviceUuid = typeof data.deviceUuid === "string" ? data.deviceUuid : "";
+  const reason = typeof data.reason === "string" ? data.reason : "";
+
+  if (!reason.trim()) {
+    throw new HttpsError("invalid-argument", "Appeal statement cannot be empty.");
+  }
+  if (reason.length > 500) {
+    throw new HttpsError("invalid-argument", "Appeal statement is too long (max 500 chars).");
+  }
+
+  const db = admin.firestore();
+  let isBanned = false;
+
+  // 1. Verify if deviceUuid is blacklisted
+  if (deviceUuid) {
+    const devSnap = await db.collection("blacklisted_devices").doc(deviceUuid).get();
+    if (devSnap.exists && devSnap.data().banned) {
+      isBanned = true;
+    }
+  }
+
+  // 2. Or verify if the userId is marked banned in Firestore
+  if (!isBanned && userId && userId !== "unknown") {
+    const userSnap = await db.collection("users").doc(userId).get();
+    if (userSnap.exists && userSnap.data().banned) {
+      isBanned = true;
+    }
+  }
+
+  if (!isBanned) {
+    throw new HttpsError("failed-precondition", "This device/user is not locked out or is not eligible for appeal.");
+  }
+
+  // 3. Create appeal document
+  await db.collection("appeals").add({
+    userId: userId || "unknown",
+    email: email || "anonymous",
+    deviceUuid: deviceUuid || "",
+    reason: reason.trim(),
+    timestamp: Date.now(),
+    status: "pending"
+  });
+
+  return { success: true };
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// Secure account data wipe (runs server-side with Admin SDK to bypass rules)
+// ──────────────────────────────────────────────────────────────────────────
+exports.wipeUserDataSecure = onCall(async (request) => {
+  const { auth } = request;
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required.");
+  }
+  const uid = auth.uid;
+  const db = admin.firestore();
+
+  // 1. Get user posts and prepare delete
+  const postsQuery = await db.collection("posts").where("userId", "==", uid).get();
+  const batch = db.batch();
+  postsQuery.forEach((doc) => {
+    batch.delete(doc.ref);
+  });
+
+  // 2. Get connections where user is sender or receiver and delete
+  const connQuery1 = await db.collection("connections").where("senderId", "==", uid).get();
+  connQuery1.forEach((doc) => {
+    batch.delete(doc.ref);
+  });
+  const connQuery2 = await db.collection("connections").where("receiverId", "==", uid).get();
+  connQuery2.forEach((doc) => {
+    batch.delete(doc.ref);
+  });
+
+  // 3. Get chats user is in, delete nested messages first, then delete chats
+  const chatsQuery = await db.collection("chats").where("participants", "array-contains", uid).get();
+  for (const chatDoc of chatsQuery.docs) {
+    const messagesQuery = await chatDoc.ref.collection("messages").get();
+    messagesQuery.forEach((msgDoc) => {
+      batch.delete(msgDoc.ref);
+    });
+    batch.delete(chatDoc.ref);
+  }
+
+  // 4. Delete user document
+  const userRef = db.collection("users").doc(uid);
+  batch.delete(userRef);
+
+  await batch.commit();
+
+  // 5. Delete Auth user account
+  try {
+    await admin.auth().deleteUser(uid);
+    console.log(`Successfully deleted auth user: ${uid}`);
+  } catch (err) {
+    console.error(`Error deleting auth user ${uid}:`, err);
+  }
+
+  return { success: true };
 });

@@ -1545,6 +1545,115 @@ export const dbAddDoc = async (collectionName, data) => {
 export const dbCallFunction = async (name, data) => {
   if (isSimulated) {
     console.log(`[SimDB] callFunction (simulated): ${name}`, data);
+    
+    if (name === "submitAppealSecure") {
+      const store = simulatedStore.getDb();
+      if (!store.appeals) store.appeals = [];
+      const newId = "appeal_" + Math.random().toString(36).slice(2, 11);
+      const item = {
+        id: newId,
+        userId: data.userId || "unknown",
+        email: data.email || "anonymous",
+        deviceUuid: data.deviceUuid || "",
+        reason: data.reason || "",
+        timestamp: Date.now(),
+        status: "pending"
+      };
+      if (Array.isArray(store.appeals)) {
+        store.appeals.push(item);
+      } else {
+        store.appeals[newId] = item;
+      }
+      simulatedStore.saveDb(store);
+    }
+    
+    if (name === "wipeUserDataSecure") {
+      const uid = data.uid || (mockAuthInstance.currentUser ? mockAuthInstance.currentUser.uid : null);
+      if (uid) {
+        const store = simulatedStore.getDb();
+        if (store.users && store.users[uid]) delete store.users[uid];
+        if (store.posts) store.posts = store.posts.filter(p => p.userId !== uid);
+        if (store.connections) {
+          if (Array.isArray(store.connections)) {
+            store.connections = store.connections.filter(c => c.senderId !== uid && c.receiverId !== uid);
+          } else {
+            Object.keys(store.connections).forEach(id => {
+              if (store.connections[id].senderId === uid || store.connections[id].receiverId === uid) {
+                delete store.connections[id];
+              }
+            });
+          }
+        }
+        if (store.chats) {
+          if (Array.isArray(store.chats)) {
+            store.chats = store.chats.filter(c => !c.participants || !c.participants.includes(uid));
+          } else {
+            Object.keys(store.chats).forEach(id => {
+              if (store.chats[id].participants && store.chats[id].participants.includes(uid)) {
+                delete store.chats[id];
+              }
+            });
+          }
+        }
+        simulatedStore.saveDb(store);
+      }
+      if (mockAuthInstance.currentUser) {
+        const uid = mockAuthInstance.currentUser.uid;
+        const authPool = JSON.parse(localStorage.getItem("asl_auth_users") || "{}");
+        const oldEmail = Object.keys(authPool).find(k => authPool[k].uid === uid);
+        if (oldEmail) {
+          delete authPool[oldEmail];
+          localStorage.setItem("asl_auth_users", JSON.stringify(authPool));
+        }
+        mockAuthInstance.currentUser = null;
+        mockAuthInstance.saveSession();
+      }
+    }
+
+    if (name === "resolveAppeal") {
+      const store = simulatedStore.getDb();
+      const userId = data.userId;
+      if (store.users && store.users[userId]) {
+        store.users[userId].flag_count = 0;
+        store.users[userId].banned = false;
+        store.users[userId].isBanned = false;
+        store.users[userId].reporterIds = [];
+        
+        const uuid = store.users[userId].uuid;
+        if (uuid && store.blacklisted_devices && store.blacklisted_devices[uuid]) {
+          delete store.blacklisted_devices[uuid];
+        }
+      }
+      if (store.appeals) {
+        if (Array.isArray(store.appeals)) {
+          store.appeals = store.appeals.filter(a => a.id !== data.appealId && a.userId !== userId);
+        } else if (store.appeals[data.appealId]) {
+          delete store.appeals[data.appealId];
+        }
+      }
+      simulatedStore.saveDb(store);
+    }
+
+    if (name === "restorePost") {
+      const store = simulatedStore.getDb();
+      const postId = data.postId;
+      if (store.posts) {
+        if (Array.isArray(store.posts)) {
+          const post = store.posts.find(p => p.id === postId);
+          if (post) {
+            post.status = "active";
+            delete post.reported;
+            delete post.reportReason;
+          }
+        } else if (store.posts[postId]) {
+          store.posts[postId].status = "active";
+          delete store.posts[postId].reported;
+          delete store.posts[postId].reportReason;
+        }
+      }
+      simulatedStore.saveDb(store);
+    }
+
     return { success: true };
   }
   const { getFunctions, httpsCallable } = await import("firebase/functions");
@@ -1864,37 +1973,10 @@ export const firebaseWipeUserData = async (uid) => {
   }
 
   // Real Firebase Mode
-  const firestore = realDb;
-  // 1. Delete user doc
-  await deleteDoc(doc(firestore, "users", uid));
-
-  // 2. Delete user's posts
-  const postsQuery = query(collection(firestore, "posts"), where("userId", "==", uid));
-  const postsSnap = await getDocs(postsQuery);
-  for (const docObj of postsSnap.docs) {
-    await deleteDoc(docObj.ref);
-  }
-
-  // 3. Delete user's connections (as sender)
-  const connQuery1 = query(collection(firestore, "connections"), where("senderId", "==", uid));
-  const connSnap1 = await getDocs(connQuery1);
-  for (const docObj of connSnap1.docs) {
-    await deleteDoc(docObj.ref);
-  }
-
-  // 4. Delete user's connections (as receiver)
-  const connQuery2 = query(collection(firestore, "connections"), where("receiverId", "==", uid));
-  const connSnap2 = await getDocs(connQuery2);
-  for (const docObj of connSnap2.docs) {
-    await deleteDoc(docObj.ref);
-  }
-
-  // 5. Delete chats user is participating in
-  const chatsQuery = query(collection(firestore, "chats"), where("participants", "array-contains", uid));
-  const chatsSnap = await getDocs(chatsQuery);
-  for (const docObj of chatsSnap.docs) {
-    await deleteDoc(docObj.ref);
-  }
+  const { getFunctions, httpsCallable } = await import("firebase/functions");
+  const fns = getFunctions();
+  const fn = httpsCallable(fns, "wipeUserDataSecure");
+  await fn({ uid });
 };
 
 export const firebaseUpdateEmail = async (newEmail) => {

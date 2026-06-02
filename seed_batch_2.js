@@ -1,7 +1,5 @@
 import { readFileSync } from 'fs';
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, setDoc, addDoc, getDocs, query, where, updateDoc } from 'firebase/firestore';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import admin from 'firebase-admin';
 
 // Read config
 const envFile = readFileSync('.env.local', 'utf-8');
@@ -13,18 +11,12 @@ envFile.split('\n').forEach(line => {
   }
 });
 
-const firebaseConfig = {
-  apiKey: envVars.VITE_FIREBASE_API_KEY,
-  authDomain: envVars.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: envVars.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: envVars.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: envVars.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: envVars.VITE_FIREBASE_APP_ID,
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+if (!admin.apps.length) {
+  admin.initializeApp({
+    projectId: envVars.VITE_FIREBASE_PROJECT_ID
+  });
+}
+const db = admin.firestore();
 
 // ── All Phoenix venues ──
 const VENUES = {
@@ -155,14 +147,29 @@ async function seed() {
   // ── Step 1: Create or fetch Firebase Auth accounts + Firestore user docs for Batch 2 ──
   for (const user of BATCH_2_USERS) {
     try {
-      const cred = await createUserWithEmailAndPassword(auth, user.email, 'password123');
-      const uid = cred.user.uid;
+      let uid;
+      try {
+        const userRecord = await admin.auth().createUser({
+          email: user.email,
+          password: 'password123'
+        });
+        uid = userRecord.uid;
+        console.log(`Created Auth account: ${user.email} → uid: ${uid}`);
+      } catch (err) {
+        if (err.code === 'auth/email-already-in-use') {
+          const userRecord = await admin.auth().getUserByEmail(user.email);
+          uid = userRecord.uid;
+          console.log(`Auth account already exists: ${user.email} → uid: ${uid}`);
+        } else {
+          throw err;
+        }
+      }
       uidMap[user.key] = uid;
       emailToUidMap[user.email] = uid;
       emailToUsernameMap[user.email] = user.username;
       emailToAvatarMap[user.email] = user.emoji_avatar;
 
-      await setDoc(doc(db, "users", uid), {
+      await db.collection("users").doc(uid).set({
         uid,
         email: user.email,
         username: user.username,
@@ -181,22 +188,9 @@ async function seed() {
         createdAt: Date.now() - Math.floor(Math.random() * 3 * 24 * 60 * 60 * 1000)
       });
 
-      console.log(`✅ ${user.username} (${user.email}) → uid: ${uid}`);
+      console.log(`✅ ${user.username} user profile sync completed.`);
     } catch (err) {
-      if (err.code === 'auth/email-already-in-use') {
-        console.log(`⏭️  ${user.email} already exists, skipping auth creation...`);
-        const snap = await getDocs(query(collection(db, "users"), where("email", "==", user.email)));
-        if (!snap.empty) {
-          const uid = snap.docs[0].id;
-          uidMap[user.key] = uid;
-          emailToUidMap[user.email] = uid;
-          emailToUsernameMap[user.email] = snap.docs[0].data().username || user.username;
-          emailToAvatarMap[user.email] = snap.docs[0].data().emoji_avatar || user.emoji_avatar;
-          console.log(`   Found existing uid: ${uid}`);
-        }
-      } else {
-        console.error(`❌ Error creating ${user.email}:`, err.message);
-      }
+      console.error(`❌ Error creating ${user.email}:`, err.message);
     }
   }
 
@@ -210,7 +204,7 @@ async function seed() {
       };
     }
 
-    const snap = await getDocs(query(collection(db, "users"), where("email", "==", email)));
+    const snap = await db.collection("users").where("email", "==", email).get();
     if (!snap.empty) {
       const uDoc = snap.docs[0];
       const uData = uDoc.data();
@@ -250,7 +244,7 @@ async function seed() {
     const user = BATCH_2_USERS.find(u => u.key === post.userKey);
     const venue = VENUES[post.venueKey];
 
-    const postRef = await addDoc(collection(db, "posts"), {
+    const postRef = await db.collection("posts").add({
       userId: uid,
       username: user.username,
       emoji_avatar: user.emoji_avatar,
@@ -312,7 +306,7 @@ async function seed() {
     }
 
     // Create the connection
-    const connRef = await addDoc(collection(db, "connections"), {
+    const connRef = await db.collection("connections").add({
       postId: targetPost.id,
       postText: targetPost.text,
       venueName: targetPost.venueName,
@@ -326,14 +320,14 @@ async function seed() {
 
     // If accepted, update the post and create a chat room
     if (hs.status === "accepted") {
-      await updateDoc(doc(db, "posts", targetPost.id), {
+      await db.collection("posts").doc(targetPost.id).update({
         status: "connected",
         connectedWithId: senderDetails.uid,
         connectedWithUsername: senderDetails.username,
         connectedProofText: hs.proofText
       });
 
-      const chatRef = await addDoc(collection(db, "chats"), {
+      const chatRef = await db.collection("chats").add({
         connectionId: connRef.id,
         participants: [senderDetails.uid, targetPost.userId],
         lastMessage: "System: Connection accepted. Start chatting!",

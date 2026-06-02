@@ -32,23 +32,10 @@ import {
   queryLimit
 } from "./firebase";
 import { searchVenues } from "./services/foursquare";
-import { getDeviceUuid, moderateTextWithGemini } from "./services/security";
+import { getDeviceUuid } from "./services/security";
 import { parseBBCode } from "./services/bbcode";
 
-const SPAM_ROASTS = [
-  "You sure you want to post that, fam?",
-  "This ain't it, chief. The server admin caught you lacking.",
-  "Bestie, the validation check failed. Let’s try that again.",
-  "Cooked by the system daemon. Post discarded.",
-  "Who hurt you? Keep the bad vibes off the local node."
-];
 
-const DOXXING_ROASTS = [
-  "Bro tried to sneak a social handle in. We don’t do that here.",
-  "Unc, no phone numbers or real names allowed. Keep it anonymous.",
-  "Gatekeeping is a feature, not a bug. Remove the external links.",
-  "Not the @ link... Secure portal validation failed."
-];
 
 const RETRO_TAGLINES = [
   "because dating apps suck",
@@ -520,6 +507,11 @@ export default function App() {
           if (userRecord.exists()) {
             const data = userRecord.data();
             setUserDoc(data);
+            if (!data.createdAt) {
+              dbSetDoc("users", user.uid, {
+                createdAt: Date.now()
+              }, true);
+            }
             if (!data.homeCity) {
               dbSetDoc("users", user.uid, {
                 homeCity: data.selectedCity || selectedCity || "Phoenix",
@@ -532,10 +524,6 @@ export default function App() {
             }
             if (data.banned || data.flag_count >= 3) {
               setDeviceBanned(true);
-              if (deviceUuid) {
-                dbSetDoc("blacklisted_devices", deviceUuid, { banned: true, userId: user.uid, timestamp: Date.now() }, true);
-              }
-              firebaseSignOut();
             }
           }
         });
@@ -1373,13 +1361,6 @@ export default function App() {
   // Claim post ("That was me!") proof submit handler
   const handleProofSubmit = async (proofText) => {
     try {
-      const moderation = await moderateTextWithGemini(proofText, "proof");
-      if (!moderation.approved) {
-        const roasts = moderation.category === "doxxing" ? DOXXING_ROASTS : SPAM_ROASTS;
-        const randomRoast = roasts[Math.floor(Math.random() * roasts.length)];
-        throw new Error(randomRoast);
-      }
-
       // ── Daily Claim Throttle (max 3 signal claims per 24 hours) ──────────
       const todayStr = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
       const claimDate = userDoc?.dailyClaimDate || "";
@@ -3309,7 +3290,7 @@ export default function App() {
                 <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "10px" }}>
                   <button 
                     onClick={() => setShowStrike2Warning(false)} 
-                    style={{ width: "80px", fontWeight: "bold", minHeight: "36px" }}
+                    style={{ minWidth: "80px", fontWeight: "bold", minHeight: "36px" }}
                   >
                     OK
                   </button>
@@ -3339,7 +3320,7 @@ export default function App() {
                 <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "10px" }}>
                   <button 
                     onClick={() => setModerationError("")} 
-                    style={{ width: "80px", fontWeight: "bold", minHeight: "36px" }}
+                    style={{ minWidth: "80px", fontWeight: "bold", minHeight: "36px" }}
                   >
                     OK
                   </button>
@@ -3368,7 +3349,7 @@ export default function App() {
                 <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "12px" }}>
                   <button 
                     onClick={handleSuccessThanks} 
-                    style={{ width: "80px", fontWeight: "bold", minHeight: "36px", cursor: "pointer" }}
+                    style={{ minWidth: "80px", fontWeight: "bold", minHeight: "36px", cursor: "pointer" }}
                   >
                     Thanks!
                   </button>

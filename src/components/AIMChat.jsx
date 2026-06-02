@@ -330,7 +330,7 @@ export default function AIMChat({ chatId, connection, currentUser, userDoc, onCl
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "10px" }}>
                 <button 
                   onClick={() => setShowSecurityAlert(false)} 
-                  style={{ width: "80px", fontWeight: "bold", minHeight: "36px" }}
+                  style={{ minWidth: "80px", fontWeight: "bold", minHeight: "36px" }}
                 >
                   OK
                 </button>

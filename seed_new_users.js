@@ -1,7 +1,5 @@
 import { readFileSync } from 'fs';
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, setDoc, addDoc, getDocs, deleteDoc, updateDoc, query, where } from 'firebase/firestore';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import admin from 'firebase-admin';
 
 // Read config
 const envFile = readFileSync('.env.local', 'utf-8');
@@ -13,18 +11,12 @@ envFile.split('\n').forEach(line => {
   }
 });
 
-const firebaseConfig = {
-  apiKey: envVars.VITE_FIREBASE_API_KEY,
-  authDomain: envVars.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: envVars.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: envVars.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: envVars.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: envVars.VITE_FIREBASE_APP_ID,
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+if (!admin.apps.length) {
+  admin.initializeApp({
+    projectId: envVars.VITE_FIREBASE_PROJECT_ID
+  });
+}
+const db = admin.firestore();
 
 // ── All Phoenix venues ──
 const VENUES = {
@@ -156,16 +148,30 @@ const HANDSHAKES = [
 async function seed() {
   console.log('🌵 Starting Phoenix user seed...\n');
 
-  // ── Step 1: Create or fetch Firebase Auth accounts + Firestore user docs ──
   const uidMap = {}; // key -> real firebase uid
 
   for (const user of NEW_USERS) {
     try {
-      const cred = await createUserWithEmailAndPassword(auth, user.email, 'password123');
-      const uid = cred.user.uid;
+      let uid;
+      try {
+        const userRecord = await admin.auth().createUser({
+          email: user.email,
+          password: 'password123'
+        });
+        uid = userRecord.uid;
+        console.log(`Created Auth account: ${user.email} → uid: ${uid}`);
+      } catch (err) {
+        if (err.code === 'auth/email-already-in-use') {
+          const userRecord = await admin.auth().getUserByEmail(user.email);
+          uid = userRecord.uid;
+          console.log(`Auth account already exists: ${user.email} → uid: ${uid}`);
+        } else {
+          throw err;
+        }
+      }
       uidMap[user.key] = uid;
 
-      await setDoc(doc(db, "users", uid), {
+      await db.collection("users").doc(uid).set({
         uid,
         email: user.email,
         username: user.username,
@@ -184,39 +190,9 @@ async function seed() {
         createdAt: Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000)
       });
 
-      console.log(`✅ ${user.username} (${user.email}) → uid: ${uid}`);
+      console.log(`✅ ${user.username} user profile sync completed.`);
     } catch (err) {
-      if (err.code === 'auth/email-already-in-use') {
-        console.log(`⏭️  ${user.email} already exists, skipping auth creation...`);
-        // Find the existing uid from Firestore by querying email
-        const snap = await getDocs(query(collection(db, "users"), where("email", "==", user.email)));
-        if (!snap.empty) {
-          uidMap[user.key] = snap.docs[0].id;
-          console.log(`   Found existing uid: ${uidMap[user.key]}`);
-          
-          // Re-write user profile just in case fields need refreshing
-          await setDoc(doc(db, "users", uidMap[user.key]), {
-            uid: uidMap[user.key],
-            email: user.email,
-            username: user.username,
-            mood: user.mood,
-            bio: user.bio,
-            emoji_avatar: user.emoji_avatar,
-            profileTheme: user.theme,
-            unlockedThemes: ["classic", "glitter", "cyberpunk", "sunset"],
-            favorited_bars: user.bars,
-            homeCity: "Phoenix",
-            selectedCity: "Phoenix",
-            isAnonymous: false,
-            flag_count: 0,
-            banned: false,
-            uuid: "seed_" + user.key,
-            createdAt: snap.docs[0].data().createdAt || (Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000))
-          }, { merge: true });
-        }
-      } else {
-        console.error(`❌ Error creating ${user.email}:`, err.message);
-      }
+      console.error(`❌ Error creating ${user.email}:`, err.message);
     }
   }
 
@@ -224,17 +200,17 @@ async function seed() {
   console.log('\n🧹 Cleaning up old posts, connections, and chats...\n');
   
   // Clean posts created by our 15 new UIDs in previous runs
-  const postsSnap = await getDocs(collection(db, "posts"));
+  const postsSnap = await db.collection("posts").get();
   const newUids = Object.values(uidMap);
   for (const postDoc of postsSnap.docs) {
     const postData = postDoc.data();
     if (newUids.includes(postData.userId)) {
       console.log(`🗑️ Deleting old post: ${postDoc.id} by ${postData.username}`);
-      await deleteDoc(doc(db, "posts", postDoc.id));
+      await db.collection("posts").doc(postDoc.id).delete();
     } else if (postData.status === "connected") {
       // Reset original posts back to active (clearing connected status/info)
       console.log(`🔄 Resetting post status: ${postDoc.id} by ${postData.username}`);
-      await updateDoc(doc(db, "posts", postDoc.id), {
+      await db.collection("posts").doc(postDoc.id).update({
         status: "active",
         connectedWithId: null,
         connectedWithUsername: null,
@@ -244,17 +220,17 @@ async function seed() {
   }
 
   // Delete all connections
-  const connectionsSnap = await getDocs(collection(db, "connections"));
+  const connectionsSnap = await db.collection("connections").get();
   for (const connDoc of connectionsSnap.docs) {
     console.log(`🗑️ Deleting connection: ${connDoc.id}`);
-    await deleteDoc(doc(db, "connections", connDoc.id));
+    await db.collection("connections").doc(connDoc.id).delete();
   }
 
   // Delete all chats
-  const chatsSnap = await getDocs(collection(db, "chats"));
+  const chatsSnap = await db.collection("chats").get();
   for (const chatDoc of chatsSnap.docs) {
     console.log(`🗑️ Deleting chat: ${chatDoc.id}`);
-    await deleteDoc(doc(db, "chats", chatDoc.id));
+    await db.collection("chats").doc(chatDoc.id).delete();
   }
 
   // ── Step 3: Create fresh posts for the 15 new users ──
@@ -271,7 +247,7 @@ async function seed() {
     const user = NEW_USERS.find(u => u.key === post.userKey);
     const venue = VENUES[post.venueKey];
 
-    const postRef = await addDoc(collection(db, "posts"), {
+    const postRef = await db.collection("posts").add({
       userId: uid,
       username: user.username,
       emoji_avatar: user.emoji_avatar,
@@ -298,7 +274,7 @@ async function seed() {
   console.log('\n🤝 Creating handshake connections against original posts...\n');
 
   // Reload all remaining posts (the original ones) to match by text snippet
-  const remainingPostsSnap = await getDocs(collection(db, "posts"));
+  const remainingPostsSnap = await db.collection("posts").get();
   const allPosts = [];
   remainingPostsSnap.docs.forEach(d => {
     allPosts.push({ id: d.id, ...d.data() });
@@ -321,7 +297,7 @@ async function seed() {
     const senderUser = NEW_USERS.find(u => u.key === hs.senderKey);
 
     // Create the connection
-    const connRef = await addDoc(collection(db, "connections"), {
+    const connRef = await db.collection("connections").add({
       postId: targetPost.id,
       postText: targetPost.text,
       venueName: targetPost.venueName,
@@ -336,7 +312,7 @@ async function seed() {
     // If accepted, update the post to "connected" and create a chat
     if (hs.status === "accepted") {
       // Update post status
-      await updateDoc(doc(db, "posts", targetPost.id), {
+      await db.collection("posts").doc(targetPost.id).update({
         status: "connected",
         connectedWithId: senderUid,
         connectedWithUsername: senderUser.username,
@@ -344,7 +320,7 @@ async function seed() {
       });
 
       // Create AIM chat
-      const chatRef = await addDoc(collection(db, "chats"), {
+      const chatRef = await db.collection("chats").add({
         connectionId: connRef.id,
         participants: [senderUid, targetPost.userId],
         lastMessage: "System: Connection accepted. Start chatting!",
