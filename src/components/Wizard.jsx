@@ -444,7 +444,7 @@ export default function Wizard({ onClose, onSubmit, preselectedVenue = null, cur
                 Your connection report is compiled and ready to write to the Firestore board. Review the properties below:
               </p>
 
-              <div style={{ height: "180px", overflowY: "auto", fontSize: "13px", display: "flex", flexDirection: "column", gap: "6px", border: "1px solid #ff99cc", padding: "10px" }}>
+              <div style={{ minHeight: "180px", height: "auto", fontSize: "13px", display: "flex", flexDirection: "column", gap: "6px", border: "1px solid #ff99cc", padding: "10px" }}>
                 <div>📂 <strong>Target Venue:</strong> {selectedVenue?.name}</div>
                 <div>📍 <strong>Address:</strong> {selectedVenue?.formatted_address}</div>
                 <div>📅 <strong>Date/Time:</strong> {formatDatetime(datetimeVal).dateStr} @ {formatDatetime(datetimeVal).timeStr}</div>
