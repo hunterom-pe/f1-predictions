@@ -1418,6 +1418,7 @@ export default function App() {
     if (chatId) {
       setActiveChatId(chatId);
       setActiveChatConnection(normalizedConnection);
+      setNavigationScreen("chat");
       return;
     }
 
@@ -1427,6 +1428,7 @@ export default function App() {
       const chat = snapshot.docs.find(d => d.data().connectionId === normalizedConnection.id);
       if (chat) {
         setActiveChatId(chat.id);
+        setNavigationScreen("chat");
       } else {
         try {
           const chatRef = await dbAddDoc("chats", {
@@ -1437,6 +1439,7 @@ export default function App() {
             venueName: normalizedConnection.venueName || "Profile Link"
           });
           setActiveChatId(chatRef.id);
+          setNavigationScreen("chat");
         } catch (err) {
           console.error("Error creating profile chat:", err);
         }
@@ -2116,14 +2119,37 @@ export default function App() {
                                 {parseBBCode(post.text)}
                               </div>
 
+                              {/* Connected indicator and proof response */}
+                              {post.status === "connected" && (
+                                <div style={{ 
+                                  marginTop: "6px", 
+                                  padding: "6px", 
+                                  backgroundColor: "#e2fbe2", 
+                                  borderLeft: "4px solid green", 
+                                  fontSize: "11px", 
+                                  color: "#222",
+                                  marginBottom: "6px"
+                                }}>
+                                  <strong>🤝 Connected with {post.connectedWithUsername || "Anonymous"}:</strong>
+                                  <p style={{ margin: "4px 0 0 0", fontStyle: "italic" }}>
+                                    "{post.connectedProofText || ""}"
+                                  </p>
+                                </div>
+                              )}
+
                               {/* Footer details: Venue name & timestamp */}
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "10px", color: "#888" }}>
                                 <span style={{ color: "#003399", fontWeight: "bold" }}>
                                   📍 {post.venueName} ({post.venueZone})
                                 </span>
-                                <span>
-                                  🕐 {post.date} · {post.timeRange}
-                                </span>
+                                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                                  {post.thumbsUpCount > 0 && (
+                                    <span style={{ color: "#ff0055", fontWeight: "bold" }}>👍 {post.thumbsUpCount}</span>
+                                  )}
+                                  <span>
+                                    🕐 {post.date} · {post.timeRange}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           );
