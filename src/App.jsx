@@ -10,7 +10,6 @@ import MySpaceProfileDialog from "./components/MySpaceProfileDialog";
 import SettingsPanel from "./components/SettingsPanel";
 import { Geolocation } from "@capacitor/geolocation";
 import { App as CapApp } from "@capacitor/app";
-import { Capacitor } from "@capacitor/core";
 
 
 import { 
@@ -2845,7 +2844,7 @@ export default function App() {
                 <span style={{ color: "#ff007f", fontWeight: "bold", fontSize: "11px", whiteSpace: "nowrap", fontFamily: "monospace" }}>📟 SIGNAL TICKER:</span>
                 <marquee style={{ color: "#39ff14", fontFamily: "monospace", fontSize: "11px", margin: 0, padding: 0 }} scrollamount="3">
                   {venuePosts.length > 0 
-                    ? venuePosts.map((p, idx) => `• [${p.username || 'Anon'}]: "${p.text.slice(0, 70)}${p.text.length > 70 ? '...' : ''}"`).join("      ") 
+                    ? venuePosts.map((p) => `• [${p.username || 'Anon'}]: "${p.text.slice(0, 70)}${p.text.length > 70 ? '...' : ''}"`).join("      ")
                     : "No reports yet on the wall... Be the first to post a missed connection signal! •"}
                 </marquee>
               </div>
