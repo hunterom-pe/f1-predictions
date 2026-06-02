@@ -29,6 +29,7 @@ export default function OutlookInbox({ currentUser, userDoc, onClose, onOpenChat
   const [activeFolder, setActiveFolder] = useState("inbox"); // inbox, sent, active
   const [connections, setConnections] = useState([]);
   const [selectedConn, setSelectedConn] = useState(null);
+  const [profileCache, setProfileCache] = useState({});
 
   // Subscribe to connections involving current user using rules-compliant filters
   useEffect(() => {
@@ -67,6 +68,41 @@ export default function OutlookInbox({ currentUser, userDoc, onClose, onOpenChat
       unsubReceiver();
     };
   }, [currentUser]);
+
+  // Fetch usernames for connections that lack them
+  useEffect(() => {
+    const missingUids = [];
+    connections.forEach(c => {
+      if (c.senderId && !profileCache[c.senderId]) {
+        missingUids.push(c.senderId);
+      }
+      if (c.receiverId && !profileCache[c.receiverId]) {
+        missingUids.push(c.receiverId);
+      }
+    });
+
+    if (missingUids.length === 0) return;
+
+    Promise.all(
+      missingUids.map(async (uid) => {
+        try {
+          const docSnap = await dbGetDoc("profiles", uid);
+          return { uid, data: docSnap.exists() ? docSnap.data() : { username: "Anonymous" } };
+        } catch (err) {
+          console.error(err);
+          return { uid, data: { username: "Anonymous" } };
+        }
+      })
+    ).then((results) => {
+      setProfileCache(prev => {
+        const next = { ...prev };
+        results.forEach(({ uid, data }) => {
+          next[uid] = data;
+        });
+        return next;
+      });
+    });
+  }, [connections]);
 
   // Filter connections by active folder and block list
   const filteredConns = connections.filter(c => {
@@ -234,7 +270,16 @@ export default function OutlookInbox({ currentUser, userDoc, onClose, onOpenChat
 
             <div style={{ border: "1px solid #6699ff", backgroundColor: "#f2f6ff", padding: "12px", borderRadius: "4px" }}>
               <div style={{ marginBottom: "6px", fontSize: "14px" }}>
-                <strong>From:</strong> {selectedConn.senderId === currentUser.uid ? "You" : "Anonymous Connection"}
+                <strong>From:</strong> {selectedConn.senderId === currentUser.uid 
+                  ? "You" 
+                  : (selectedConn.senderUsername || profileCache[selectedConn.senderId]?.username || "Anonymous Connection")
+                }
+              </div>
+              <div style={{ marginBottom: "6px", fontSize: "14px" }}>
+                <strong>To:</strong> {selectedConn.senderId === currentUser.uid 
+                  ? (selectedConn.receiverUsername || profileCache[selectedConn.receiverId]?.username || "Anonymous Poster")
+                  : "You"
+                }
               </div>
               <div style={{ marginBottom: "6px", fontSize: "14px" }}>
                 <strong>Location:</strong> 📍 {selectedConn.venueName}
@@ -312,7 +357,10 @@ export default function OutlookInbox({ currentUser, userDoc, onClose, onOpenChat
                         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                           <span style={{ fontWeight: "bold", color: "#003399", fontSize: "14px" }}>📍 {c.venueName}</span>
                           <span style={{ fontSize: "12px", color: "#666" }}>
-                            {c.senderId === currentUser.uid ? "To: Anonymous Poster" : "From: Anonymous Connection"}
+                            {c.senderId === currentUser.uid 
+                              ? `To: ${c.receiverUsername || profileCache[c.receiverId]?.username || "Anonymous Poster"}` 
+                              : `From: ${c.senderUsername || profileCache[c.senderId]?.username || "Anonymous Connection"}`
+                            }
                           </span>
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px" }}>

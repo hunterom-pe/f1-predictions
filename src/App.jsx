@@ -1522,7 +1522,9 @@ export default function App() {
         postText: showProofDialog.text,
         venueName: showProofDialog.venueName,
         senderId: currentUser.uid,
+        senderUsername: userDoc?.username || "Anonymous",
         receiverId: showProofDialog.userId,
+        receiverUsername: showProofDialog.username || "Anonymous",
         proofText,
         status: "pending"
       });
