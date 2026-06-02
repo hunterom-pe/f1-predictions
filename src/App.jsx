@@ -70,6 +70,7 @@ export default function App() {
   const [venues, setVenues] = useState([]);
   const [selectedVenue, setSelectedVenue] = useState(null);
   const [venuePosts, setVenuePosts] = useState([]);
+  const [profileCache, setProfileCache] = useState({});
   const [vibeVotes, setVibeVotes] = useState({});
   const [hasVotedVenue, setHasVotedVenue] = useState({});
   const [activeChatId, setActiveChatId] = useState(null);
@@ -250,6 +251,7 @@ export default function App() {
   const [showCertaintyModal, setShowCertaintyModal] = useState(null);
   const [certaintyCountdown, setCertaintyCountdown] = useState(3);
   const [acceptedConnections, setAcceptedConnections] = useState([]);
+  const [userConnections, setUserConnections] = useState([]);
 
   // Report post states
   const [showReportDialog, setShowReportDialog] = useState(null);
@@ -628,29 +630,63 @@ export default function App() {
     return () => clearInterval(interval);
   }, [showCertaintyModal]);
 
-  // Subscribe to accepted connections for the Friend Space
+  // Consolidated subscription for all connection states involving current user (double-query to comply with security rules)
   useEffect(() => {
     if (!currentUser || currentUser.isAnonymous) {
-      setTimeout(() => setAcceptedConnections([]), 0);
+      setTimeout(() => {
+        setUserConnections([]);
+        setAcceptedConnections([]);
+        setInboundClaimsCount(0);
+      }, 0);
       return;
     }
-    const unsub = dbOnSnapshot("connections", [], (snapshot) => {
+
+    let senderConns = [];
+    let receiverConns = [];
+
+    const updateConnections = () => {
+      const mergedMap = new Map();
+      senderConns.forEach(c => mergedMap.set(c.id, c));
+      receiverConns.forEach(c => mergedMap.set(c.id, c));
+      
+      const allConns = Array.from(mergedMap.values());
       const accepted = [];
-      snapshot.docs.forEach(doc => {
-        const d = doc.data();
-        if (
-          d.status === "accepted" &&
-          (d.senderId === currentUser.uid || d.receiverId === currentUser.uid)
-        ) {
+      let count = 0;
+
+      allConns.forEach(d => {
+        if (d.status === "accepted") {
           const friendId = d.senderId === currentUser.uid ? d.receiverId : d.senderId;
           if (!accepted.find(a => a.userId === friendId)) {
-            accepted.push({ userId: friendId, connectionId: doc.id, ...d });
+            accepted.push({ userId: friendId, connectionId: d.id, ...d });
           }
+        } else if (d.status === "pending" && d.receiverId === currentUser.uid) {
+          count++;
         }
       });
+
+      setUserConnections(allConns);
       setAcceptedConnections(accepted);
+      setInboundClaimsCount(count);
+    };
+
+    const unsubSender = dbOnSnapshot("connections", [
+      queryWhere("senderId", "==", currentUser.uid)
+    ], (snapshot) => {
+      senderConns = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      updateConnections();
     });
-    return () => unsub();
+
+    const unsubReceiver = dbOnSnapshot("connections", [
+      queryWhere("receiverId", "==", currentUser.uid)
+    ], (snapshot) => {
+      receiverConns = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      updateConnections();
+    });
+
+    return () => {
+      unsubSender();
+      unsubReceiver();
+    };
   }, [currentUser]);
 
   // Detect /sysop developer backdoor path
@@ -778,24 +814,7 @@ export default function App() {
     return () => window.removeEventListener("online", handleOnline);
   }, [currentUser]);
 
-  // 2b. Subscribe to inbound connection claims (pending mail)
-  useEffect(() => {
-    if (!currentUser || currentUser.isAnonymous) {
-      setTimeout(() => setInboundClaimsCount(0), 0);
-      return;
-    }
-    const unsub = dbOnSnapshot("connections", [], (snapshot) => {
-      let count = 0;
-      snapshot.docs.forEach(doc => {
-        const data = doc.data();
-        if (data.receiverId === currentUser.uid && data.status === "pending") {
-          count++;
-        }
-      });
-      setInboundClaimsCount(count);
-    });
-    return () => unsub();
-  }, [currentUser]);
+  // 2b. Subscription consolidated above.
 
   // 2c. Subscribe to users who recently favorited the selected venue
   useEffect(() => {
@@ -850,6 +869,33 @@ export default function App() {
 
     return () => unsubPosts();
   }, [selectedVenue, userDoc]);
+
+  // Caching connection profiles dynamically
+  useEffect(() => {
+    const neededIds = new Set();
+    
+    globalActivePosts.forEach(p => {
+      if (p.status === "connected" && p.connectedWithId) {
+        neededIds.add(p.connectedWithId);
+      }
+    });
+
+    venuePosts.forEach(p => {
+      if (p.status === "connected" && p.connectedWithId) {
+        neededIds.add(p.connectedWithId);
+      }
+    });
+
+    neededIds.forEach(id => {
+      if (!profileCache[id]) {
+        dbGetDoc("profiles", id).then(snap => {
+          if (snap.exists()) {
+            setProfileCache(prev => ({ ...prev, [id]: { uid: id, ...snap.data() } }));
+          }
+        }).catch(err => console.error("Error caching profile:", id, err));
+      }
+    });
+  }, [globalActivePosts, venuePosts, profileCache]);
 
 
 
@@ -1422,31 +1468,42 @@ export default function App() {
       return;
     }
 
-    // Find or create chat for connection
-    const unsub = dbOnSnapshot("chats", [], async (snapshot) => {
-      unsub();
-      const chat = snapshot.docs.find(d => d.data().connectionId === normalizedConnection.id);
-      if (chat) {
-        setActiveChatId(chat.id);
-        setNavigationScreen("chat");
-      } else {
-        try {
-          const chatRef = await dbAddDoc("chats", {
-            connectionId: normalizedConnection.id,
-            participants: [normalizedConnection.senderId, normalizedConnection.receiverId],
-            lastMessage: "System: Profile chat started.",
-            lastTimestamp: Date.now(),
-            venueName: normalizedConnection.venueName || "Profile Link"
-          });
-          setActiveChatId(chatRef.id);
+    if (!currentUser?.uid) return;
+
+    // Find or create chat — query by participants (Firestore-rule-safe) then match connectionId
+    setActiveChatConnection(normalizedConnection);
+    const unsub = dbOnSnapshot(
+      "chats",
+      [queryWhere("participants", "array-contains", currentUser.uid)],
+      async (snapshot) => {
+        unsub();
+        // Find the chat that corresponds to this specific connection
+        const matchingDoc = snapshot.docs.find(d => {
+          const data = d.data ? d.data() : d;
+          return data.connectionId === normalizedConnection.id;
+        });
+
+        if (matchingDoc) {
+          setActiveChatId(matchingDoc.id);
           setNavigationScreen("chat");
-        } catch (err) {
-          console.error("Error creating profile chat:", err);
+        } else {
+          try {
+            const chatRef = await dbAddDoc("chats", {
+              connectionId: normalizedConnection.id,
+              participants: [normalizedConnection.senderId, normalizedConnection.receiverId],
+              lastMessage: "System: Connection chat started.",
+              lastTimestamp: Date.now(),
+              venueName: normalizedConnection.venueName || "Direct Message"
+            });
+            setActiveChatId(chatRef.id);
+            setNavigationScreen("chat");
+          } catch (err) {
+            console.error("Error creating chat:", err);
+            alert("Could not open chat. Please try again.");
+          }
         }
       }
-    });
-
-    setActiveChatConnection(normalizedConnection);
+    );
   };
 
   const handleLogout = async () => {
@@ -2095,7 +2152,19 @@ export default function App() {
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                                   <span style={{ fontSize: "16px" }}>{post.emoji_avatar || "👥"}</span>
-                                  <span style={{ fontWeight: "bold", fontSize: "12px", color: "#003399", textDecoration: "underline" }}>
+                                  <span 
+                                    style={{ fontWeight: "bold", fontSize: "12px", color: "#003399", textDecoration: "underline", cursor: "pointer" }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleOpenProfile(post.userId, {
+                                        username: post.username || "Anonymous Connection",
+                                        mood: post.mood || "Chillin' 😎",
+                                        bio: post.bio || "Just browsing the local spots.",
+                                        profileTheme: post.profileTheme || "classic",
+                                        emoji_avatar: post.emoji_avatar || "👥🥃💖"
+                                      });
+                                    }}
+                                  >
                                     {post.username || "Anonymous"}
                                   </span>
                                   <span style={{ fontSize: "10px", color: "#b30059", backgroundColor: "#ffccd8", padding: "1px 5px", borderRadius: "8px", fontWeight: "bold" }}>
@@ -2880,35 +2949,80 @@ export default function App() {
                 ) : (
                   venuePosts.map(post => (
                     <div key={post.id} className="myspace-comment-card">
-                      <div className="myspace-comment-left">
-                        <div 
-                          className="myspace-comment-author-avatar"
-                          onClick={() => handleOpenProfile(post.userId, {
-                            username: post.username || "Anonymous Connection",
-                            mood: post.mood || "Chillin' 😎",
-                            bio: post.bio || "Just browsing the local spots.",
-                            profileTheme: post.profileTheme || "classic",
-                            emoji_avatar: post.emoji_avatar || "👥🥃💖"
-                          })}
-                          style={{ display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px" }}
-                        >
-                          {post.emoji_avatar || "👥🥃💖"}
+                      <div className="myspace-comment-left-group" style={{ display: "flex", flexDirection: "row", flexShrink: 0 }}>
+                        <div className="myspace-comment-left">
+                          <div 
+                            className="myspace-comment-author-avatar"
+                            onClick={() => handleOpenProfile(post.userId, {
+                              username: post.username || "Anonymous Connection",
+                              mood: post.mood || "Chillin' 😎",
+                              bio: post.bio || "Just browsing the local spots.",
+                              profileTheme: post.profileTheme || "classic",
+                              emoji_avatar: post.emoji_avatar || "👥🥃💖"
+                            })}
+                            style={{ display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px" }}
+                          >
+                            {post.emoji_avatar || "👥🥃💖"}
+                          </div>
+                          <span 
+                            className="myspace-comment-author-name"
+                            onClick={() => handleOpenProfile(post.userId, {
+                              username: post.username || "Anonymous Connection",
+                              mood: post.mood || "Chillin' 😎",
+                              bio: post.bio || "Just browsing the local spots.",
+                              profileTheme: post.profileTheme || "classic",
+                              emoji_avatar: post.emoji_avatar || "👥🥃💖"
+                            })}
+                          >
+                            {post.username || "Anonymous"}
+                          </span>
+                          <div style={{ fontSize: "10px", color: "#666", marginTop: "4px" }}>
+                            Mood: <strong>{post.mood ? post.mood.split(" ").slice(-1)[0] : "😎"}</strong>
+                          </div>
                         </div>
-                        <span 
-                          className="myspace-comment-author-name"
-                          onClick={() => handleOpenProfile(post.userId, {
-                            username: post.username || "Anonymous Connection",
-                            mood: post.mood || "Chillin' 😎",
-                            bio: post.bio || "Just browsing the local spots.",
-                            profileTheme: post.profileTheme || "classic",
-                            emoji_avatar: post.emoji_avatar || "👥🥃💖"
-                          })}
-                        >
-                          {post.username || "Anonymous"}
-                        </span>
-                        <div style={{ fontSize: "10px", color: "#666", marginTop: "4px" }}>
-                          Mood: <strong>{post.mood ? post.mood.split(" ").slice(-1)[0] : "😎"}</strong>
-                        </div>
+
+                        {post.status === "connected" && post.connectedWithId && (() => {
+                          const connectedProfile = profileCache[post.connectedWithId];
+                          if (!connectedProfile) {
+                            return (
+                              <div className="myspace-comment-left" style={{ borderLeft: "none", justifyContent: "center", alignSelf: "stretch" }}>
+                                <span style={{ fontSize: "10px", color: "#888", fontStyle: "italic" }}>Loading...</span>
+                              </div>
+                            );
+                          }
+                          return (
+                            <div className="myspace-comment-left" style={{ borderLeft: "none", alignSelf: "stretch" }}>
+                              <div 
+                                className="myspace-comment-author-avatar"
+                                onClick={() => handleOpenProfile(post.connectedWithId, {
+                                  username: post.connectedWithUsername || connectedProfile.username || "Anonymous Connection",
+                                  mood: connectedProfile.mood || "Chillin' 😎",
+                                  bio: connectedProfile.bio || "Just browsing the local spots.",
+                                  profileTheme: connectedProfile.profileTheme || "classic",
+                                  emoji_avatar: connectedProfile.emoji_avatar || "👥🥃💖"
+                                })}
+                                style={{ display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px" }}
+                              >
+                                {connectedProfile.emoji_avatar || "👥🥃💖"}
+                              </div>
+                              <span 
+                                className="myspace-comment-author-name"
+                                onClick={() => handleOpenProfile(post.connectedWithId, {
+                                  username: post.connectedWithUsername || connectedProfile.username || "Anonymous Connection",
+                                  mood: connectedProfile.mood || "Chillin' 😎",
+                                  bio: connectedProfile.bio || "Just browsing the local spots.",
+                                  profileTheme: connectedProfile.profileTheme || "classic",
+                                  emoji_avatar: connectedProfile.emoji_avatar || "👥🥃💖"
+                                })}
+                              >
+                                {post.connectedWithUsername || connectedProfile.username || "Anonymous"}
+                              </span>
+                              <div style={{ fontSize: "10px", color: "#666", marginTop: "4px" }}>
+                                Mood: <strong>{connectedProfile.mood ? connectedProfile.mood.split(" ").slice(-1)[0] : "😎"}</strong>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       <div className="myspace-comment-right">
@@ -3032,6 +3146,10 @@ export default function App() {
               setNavigationScreen("home");
             }}
             onOpenChat={handleOpenChat}
+            onNavigate={(screen) => {
+              setSelectedProfileUser(null);
+              setNavigationScreen(screen);
+            }}
 
             currentUserId={currentUser?.uid}
             currentUserDoc={userDoc}
@@ -3048,6 +3166,7 @@ export default function App() {
             }
             venues={venues}
             acceptedConnections={acceptedConnections}
+            connections={userConnections}
             onOpenProfile={handleOpenProfile}
             onSelectVenue={(venueId) => {
               const matchedVenue = venues.find(v => v.fsq_id === venueId);

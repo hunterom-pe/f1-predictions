@@ -75,7 +75,10 @@ export default function MySpaceProfileDialog({
   venues = [],
   onSelectVenue,
   acceptedConnections = [],
+  connections = [],
   onOpenProfile,
+  onOpenChat,
+  onNavigate,
   lastActiveAt
 }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -822,12 +825,122 @@ export default function MySpaceProfileDialog({
               <div className="contact-box">
                 <div className="contact-box-header">Contacting {username}</div>
                 <div className="contact-box-grid">
+                  {/* Share and Report Actions */}
                   <div className="contact-action" onClick={handleShareProfile}>
                     🔗 Share Profile
                   </div>
                   <div className="contact-action" onClick={handleReportUser}>
                     ⚠️ Report User
                   </div>
+
+                  {/* Messaging & Handshake Actions */}
+                  {(() => {
+                    if (!currentUserId) {
+                      return (
+                        <div 
+                          style={{ 
+                            gridColumn: "span 2", 
+                            fontSize: "11px", 
+                            color: "#ff007f", 
+                            textAlign: "center", 
+                            padding: "4px",
+                            borderTop: "1px dashed #ff99cc",
+                            marginTop: "4px",
+                            fontWeight: "bold"
+                          }}
+                        >
+                          🔒 Log in to message or handshake!
+                        </div>
+                      );
+                    }
+
+                    const matchedConnection = (connections || []).find(
+                      conn => conn.senderId === userId || conn.receiverId === userId
+                    );
+
+                    if (matchedConnection) {
+                      if (matchedConnection.status === "accepted") {
+                        return (
+                          <div 
+                            className="contact-action highlight-action" 
+                            style={{ 
+                              gridColumn: "span 2", 
+                              backgroundColor: "#ffeb3b", 
+                              color: "#000", 
+                              fontWeight: "bold",
+                              border: "2px outset #ffeb3b",
+                              textAlign: "center"
+                            }}
+                            onClick={() => {
+                              if (onOpenChat) {
+                                onOpenChat(null, matchedConnection);
+                                onClose();
+                              }
+                            }}
+                          >
+                            💬 Send AIM Message
+                          </div>
+                        );
+                      } else if (matchedConnection.status === "pending") {
+                        if (matchedConnection.receiverId === currentUserId) {
+                          return (
+                            <div 
+                              className="contact-action highlight-action" 
+                              style={{ 
+                                gridColumn: "span 2", 
+                                backgroundColor: "#ff9800", 
+                                color: "#fff", 
+                                fontWeight: "bold",
+                                border: "2px outset #ff9800",
+                                textAlign: "center"
+                              }}
+                              onClick={() => {
+                                if (onNavigate) {
+                                  onNavigate("mail");
+                                }
+                              }}
+                            >
+                              📬 Respond to Handshake Request
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <div 
+                              className="contact-action" 
+                              style={{ 
+                                gridColumn: "span 2", 
+                                backgroundColor: "#e0e0e0", 
+                                color: "#777", 
+                                cursor: "default",
+                                border: "2px inset #e0e0e0",
+                                textAlign: "center"
+                              }}
+                            >
+                              ⏳ Handshake Request Sent (Pending)
+                            </div>
+                          );
+                        }
+                      }
+                    }
+
+                    // No connection at all
+                    return (
+                      <div 
+                        style={{ 
+                          gridColumn: "span 2", 
+                          fontSize: "11px", 
+                          color: "#666", 
+                          textAlign: "center", 
+                          padding: "6px 4px 4px 4px",
+                          borderTop: "1px dashed #ccc",
+                          marginTop: "4px",
+                          lineHeight: "1.3"
+                        }}
+                      >
+                        ⚡ To chat on AIM, reply to one of their missed connection posts on a bar page to establish a handshake!
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             )}

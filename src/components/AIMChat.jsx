@@ -5,12 +5,14 @@ import {
   dbAddDoc,
   dbUpdateDoc,
   dbSetDoc,
-  dbSubmitReport
+  dbSubmitReport,
+  dbGetDoc
 } from "../firebase";
 import { 
   enableScreenshotBlocking, 
   disableScreenshotBlocking, 
-  setupWebScreenshotDetector 
+  setupWebScreenshotDetector,
+  moderateChatMessage
 } from "../services/security";
 
 /**
@@ -27,10 +29,23 @@ export default function AIMChat({ chatId, connection, currentUser, userDoc, onCl
   const [inputText, setInputText] = useState("");
   const [showSecurityAlert, setShowSecurityAlert] = useState(false);
   const [alertReason, setAlertReason] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [sendError, setSendError] = useState(""); // inline moderation error
   
   const chatLogEndRef = useRef(null);
 
   const otherUserId = connection.senderId === currentUser.uid ? connection.receiverId : connection.senderId;
+
+  const [buddyProfile, setBuddyProfile] = useState(null);
+
+  useEffect(() => {
+    if (!otherUserId) return;
+    dbGetDoc("profiles", otherUserId).then(snap => {
+      if (snap.exists()) {
+        setBuddyProfile(snap.data());
+      }
+    }).catch(err => console.error("Error loading buddy profile in chat:", err));
+  }, [otherUserId]);
 
   // 1. Subscribe to Chat Messages
   useEffect(() => {
@@ -79,9 +94,9 @@ export default function AIMChat({ chatId, connection, currentUser, userDoc, onCl
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
+    if (!inputText.trim() || isSending) return;
 
-    // Strict text check: No base64 images, no HTML/markdown image tags
+    // Hard client-side checks: no images or URLs (mirrors Firestore rule)
     const cleanText = inputText.trim();
     const hasBase64Image = /data:image\//i.test(cleanText);
     const hasHtmlImage = /<img/i.test(cleanText);
@@ -89,11 +104,30 @@ export default function AIMChat({ chatId, connection, currentUser, userDoc, onCl
     const hasImageExtensions = /\.(jpg|jpeg|png|gif|webp|svg)/i.test(cleanText);
 
     if (hasBase64Image || hasHtmlImage || hasMarkdownImage || hasImageExtensions) {
-      alert("System Error: Images, attachments, and URLs are prohibited in private chat text.");
+      setSendError("System: Images and attachments are not allowed in chat.");
       return;
     }
 
+    setSendError("");
+    setIsSending(true);
+
     try {
+      // Light-touch Gemini moderation for chat (blocks hate speech, threats, doxxing;
+      // allows mild profanity between consenting adults)
+      const modResult = await moderateChatMessage(cleanText);
+      if (!modResult.approved) {
+        const categoryMessages = {
+          doxxing: "System: Personal info, links, and social handles are not allowed in chat.",
+          hate: "System: That message was flagged for hate speech or threats and was not sent.",
+          threat: "System: That message was flagged as a threat and was not sent.",
+          explicit: "System: Explicit content is not allowed in chat.",
+          spam: "System: That message looks like spam and was not sent."
+        };
+        setSendError(categoryMessages[modResult.category] || "System: Message blocked by safety filter.");
+        setIsSending(false);
+        return;
+      }
+
       // Add message to subcollection
       await dbAddDoc(`chats/${chatId}/messages`, {
         senderId: currentUser.uid,
@@ -108,8 +142,12 @@ export default function AIMChat({ chatId, connection, currentUser, userDoc, onCl
       });
 
       setInputText("");
+      setSendError("");
     } catch (err) {
       console.error("Error sending message:", err);
+      setSendError("System: Failed to send message. Please try again.");
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -170,7 +208,7 @@ export default function AIMChat({ chatId, connection, currentUser, userDoc, onCl
   return (
     <>
       <div className="window" style={{ height: "500px", display: "flex", flexDirection: "column", backgroundColor: "#f0f0f0" }}>
-        <TitleBar title={`💬 AIM - Instant Message with Buddy`} onClose={onClose} />
+        <TitleBar title={`💬 AIM - Instant Message with ${buddyProfile?.username || "Buddy"}`} onClose={onClose} />
         
         {/* AIM Header Details */}
         <div className="aim-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 8px" }}>
@@ -181,9 +219,9 @@ export default function AIMChat({ chatId, connection, currentUser, userDoc, onCl
         {/* AIM Subheader / Actions Bar */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "#c0c0c0", padding: "6px 8px", borderBottom: "1px solid #808080", gap: "10px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ fontSize: "20px" }}>🤖</span>
+            <span style={{ fontSize: "20px" }}>{buddyProfile?.emoji_avatar || "🤖"}</span>
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={{ fontSize: "12px", fontWeight: "bold" }}>Buddy</span>
+              <span style={{ fontSize: "12px", fontWeight: "bold" }}>{buddyProfile?.username || "Buddy"}</span>
               <span style={{ fontSize: "10px", color: "green" }}>Online</span>
             </div>
           </div>
@@ -239,7 +277,7 @@ export default function AIMChat({ chatId, connection, currentUser, userDoc, onCl
               
               {messages.map((m) => {
                 const isSelf = m.senderId === currentUser.uid;
-                const senderLabel = isSelf ? "You" : "Buddy";
+                const senderLabel = isSelf ? "You" : (buddyProfile?.username || "Buddy");
                 const senderClass = isSelf ? "aim-msg-self" : "aim-msg-buddy";
                 
                 return (
@@ -279,22 +317,45 @@ export default function AIMChat({ chatId, connection, currentUser, userDoc, onCl
             </div>
 
             {/* Send Input Area */}
-            <form onSubmit={handleSendMessage} className="aim-input-area" style={{ display: "flex", padding: "4px", gap: "6px", backgroundColor: "#f0f0f0", borderTop: "1px solid #808080", minHeight: "54px" }}>
-              <textarea 
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                placeholder="Type message here..."
-                style={{ flex: 1, resize: "none", fontSize: "14px", fontFamily: "Arial, sans-serif", padding: "6px", minHeight: "44px" }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage(e);
-                  }
-                }}
-              />
-              <button type="submit" style={{ padding: "2px 12px", fontSize: "14px", fontWeight: "bold", minHeight: "44px", cursor: "pointer" }}>
-                Send
-              </button>
+            <form onSubmit={handleSendMessage} style={{ display: "flex", flexDirection: "column", backgroundColor: "#f0f0f0", borderTop: "1px solid #808080" }}>
+              {sendError && (
+                <div style={{
+                  padding: "4px 8px",
+                  fontSize: "11px",
+                  color: "#990000",
+                  backgroundColor: "#fff0f0",
+                  borderBottom: "1px solid #ffcccc",
+                  fontFamily: "Arial, sans-serif",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px"
+                }}>
+                  <span>⚠️</span>
+                  <span>{sendError}</span>
+                </div>
+              )}
+              <div className="aim-input-area" style={{ display: "flex", padding: "4px", gap: "6px", minHeight: "54px" }}>
+                <textarea 
+                  value={inputText}
+                  onChange={(e) => { setInputText(e.target.value); if (sendError) setSendError(""); }}
+                  placeholder="Type message here..."
+                  disabled={isSending}
+                  style={{ flex: 1, resize: "none", fontSize: "14px", fontFamily: "Arial, sans-serif", padding: "6px", minHeight: "44px", opacity: isSending ? 0.6 : 1 }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage(e);
+                    }
+                  }}
+                />
+                <button 
+                  type="submit" 
+                  disabled={isSending || !inputText.trim()}
+                  style={{ padding: "2px 12px", fontSize: "14px", fontWeight: "bold", minHeight: "44px", cursor: isSending ? "wait" : "pointer", opacity: isSending ? 0.7 : 1 }}
+                >
+                  {isSending ? "..." : "Send"}
+                </button>
+              </div>
             </form>
           </div>
         </div>

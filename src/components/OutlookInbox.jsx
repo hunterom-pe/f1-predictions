@@ -5,7 +5,8 @@ import {
   dbUpdateDoc, 
   dbDeleteDoc, 
   dbAddDoc,
-  dbGetDoc
+  dbGetDoc,
+  queryWhere
 } from "../firebase";
 
 /**
@@ -20,28 +21,42 @@ export default function OutlookInbox({ currentUser, userDoc, onClose, onOpenChat
   const [connections, setConnections] = useState([]);
   const [selectedConn, setSelectedConn] = useState(null);
 
-  // Subscribe to connections involving current user
+  // Subscribe to connections involving current user using rules-compliant filters
   useEffect(() => {
     if (!currentUser) return;
 
-    // We fetch all connections where current user is sender or receiver
-    const unsub = dbOnSnapshot(
+    let senderConns = [];
+    let receiverConns = [];
+
+    const updateConnections = () => {
+      const mergedMap = new Map();
+      senderConns.forEach(c => mergedMap.set(c.id, c));
+      receiverConns.forEach(c => mergedMap.set(c.id, c));
+      setConnections(Array.from(mergedMap.values()));
+    };
+
+    const unsubSender = dbOnSnapshot(
       "connections",
-      [],
+      [queryWhere("senderId", "==", currentUser.uid)],
       (snapshot) => {
-        const conns = [];
-        snapshot.docs.forEach(doc => {
-          const data = doc.data();
-          // Filter client-side to simplify index requirements
-          if (data.senderId === currentUser.uid || data.receiverId === currentUser.uid) {
-            conns.push({ id: doc.id, ...data });
-          }
-        });
-        setConnections(conns);
+        senderConns = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        updateConnections();
       }
     );
 
-    return () => unsub();
+    const unsubReceiver = dbOnSnapshot(
+      "connections",
+      [queryWhere("receiverId", "==", currentUser.uid)],
+      (snapshot) => {
+        receiverConns = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        updateConnections();
+      }
+    );
+
+    return () => {
+      unsubSender();
+      unsubReceiver();
+    };
   }, [currentUser]);
 
   // Filter connections by active folder and block list

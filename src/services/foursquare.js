@@ -161,6 +161,36 @@ export const MOCK_VENUES = [
     hours_display: "Open Daily 10 AM - 2 AM",
     amenities: ["Christmas Lights Year-Round", "Historic Vibe", "Outdoor Patio", "Cheap Drinks"]
   },
+  {
+    fsq_id: "venue_theodore",
+    name: "The Theodore",
+    address: "110 E Roosevelt St",
+    city: "Phoenix",
+    zone: "Downtown",
+    formatted_address: "110 E Roosevelt St, Phoenix, AZ 85004",
+    price: 2,
+    rating: 8.8,
+    categories: ["Cocktail Bar", "Neighborhood Pub"],
+    open_start: 16,
+    open_end: 2,
+    hours_display: "Open Daily 4 PM - 2 AM",
+    amenities: ["Roosevelt Row Art District", "Craft Cocktails", "Outdoor Patio", "Live Music"]
+  },
+  {
+    fsq_id: "venue_thunderbird",
+    name: "Thunderbird Lounge",
+    address: "710 W Montecito Ave",
+    city: "Phoenix",
+    zone: "Midtown",
+    formatted_address: "710 W Montecito Ave, Phoenix, AZ 85013",
+    price: 1,
+    rating: 8.3,
+    categories: ["Dive Bar", "Neighborhood Spot"],
+    open_start: 14,
+    open_end: 2,
+    hours_display: "Open Daily 2 PM - 2 AM",
+    amenities: ["Retro Jukebox", "Cheap Drinks", "Chill Patio", "Neighborhood Regulars"]
+  },
   // New York - Manhattan
   {
     fsq_id: "venue_pdt",
@@ -301,22 +331,38 @@ export const MOCK_VENUES = [
     hours_display: "Open Daily 9 AM - 6 PM",
     amenities: ["Scenic Terrace", "Apple Merchandise Shop", "Pour-Over Coffee", "iPads for AR Campus Tour"]
   },
-  // Nashville
+  // Nashville - Lower Broadway
   {
-    fsq_id: "venue_santas",
-    name: "Santa's Pub",
-    address: "2225 Bransford Ave",
+    fsq_id: "venue_tootsies",
+    name: "Tootsie's Orchid Lounge",
+    address: "422 Broadway",
     city: "Nashville",
-    zone: "South Nashville",
-    formatted_address: "2225 Bransford Ave, Nashville, TN 37204",
+    zone: "Lower Broadway",
+    formatted_address: "422 Broadway, Nashville, TN 37203",
     price: 1,
-    rating: 8.8,
-    categories: ["Dive Bar", "Karaoke"],
-    open_start: 16,
-    open_end: 2,
-    hours_display: "Open Daily 4 PM - 2 AM",
-    amenities: ["Cash Only", "Cold Beer", "Karaoke Stage", "Double-wide Trailer"]
+    rating: 9.2,
+    categories: ["Honky Tonk", "Live Music Venue", "Iconic Bar"],
+    open_start: 10,
+    open_end: 3,
+    hours_display: "Open Daily 10 AM - 3 AM",
+    amenities: ["3 Floors of Live Music", "No Cover Charge", "Cash Bar", "Nashville Landmark Since 1960"]
   },
+  {
+    fsq_id: "venue_roberts",
+    name: "Robert's Western World",
+    address: "416 Broadway",
+    city: "Nashville",
+    zone: "Lower Broadway",
+    formatted_address: "416 Broadway, Nashville, TN 37203",
+    price: 1,
+    rating: 9.4,
+    categories: ["Honky Tonk", "Western Wear Store", "Live Music Bar"],
+    open_start: 11,
+    open_end: 3,
+    hours_display: "Open Daily 11 AM - 3 AM",
+    amenities: ["Brazilians & Beer Special", "Boot Shopping + Bourbon", "Best Traditional Country on Broadway", "No Cover"]
+  },
+  // Nashville - East Nashville
   {
     fsq_id: "venue_dinos",
     name: "Dino's Bar",
@@ -345,7 +391,38 @@ export const MOCK_VENUES = [
     open_start: 17,
     open_end: 2,
     hours_display: "Open Daily 5 PM - 2 AM",
-    amenities: ["Live Stage", "Dance Floor", "Keepin' It Weird Retro Vibe"]
+    amenities: ["Live Stage", "Dance Floor", "Keepin' It Weird Retro Vibe", "Local Acts Every Night"]
+  },
+  // Nashville - The Gulch
+  {
+    fsq_id: "venue_pinewood",
+    name: "Pinewood Social",
+    address: "33 Peabody St",
+    city: "Nashville",
+    zone: "The Gulch",
+    formatted_address: "33 Peabody St NE, Nashville, TN 37210",
+    price: 2,
+    rating: 9.1,
+    categories: ["Cocktail Bar", "Bowling Alley", "Coffee Shop"],
+    open_start: 7,
+    open_end: 0,
+    hours_display: "Open Daily 7 AM - Midnight",
+    amenities: ["Vintage Bowling Lanes", "Craft Cocktails", "Pool", "All-Day Brunch", "Fire Pit"]
+  },
+  {
+    fsq_id: "venue_virago",
+    name: "Virago",
+    address: "1 Cannery Row",
+    city: "Nashville",
+    zone: "The Gulch",
+    formatted_address: "1 Cannery Row, Nashville, TN 37203",
+    price: 3,
+    rating: 9.0,
+    categories: ["Rooftop Bar", "Japanese Cocktail Bar", "Sushi Lounge"],
+    open_start: 17,
+    open_end: 2,
+    hours_display: "Open Daily 5 PM - 2 AM",
+    amenities: ["Rooftop Terrace", "Japanese-Inspired Cocktails", "Omakase Menu", "City Skyline Views"]
   },
   // San Francisco
   {

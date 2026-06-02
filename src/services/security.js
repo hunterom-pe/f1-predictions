@@ -140,10 +140,21 @@ export async function moderateTextWithGemini(text, contentType = "post") {
   }
 }
 
+/**
+ * Light-touch moderation for private AIM chat messages.
+ * Blocks: doxxing, hate speech, threats, explicit content, links/handles.
+ * Allows: mild profanity (bitch, damn, shit, etc.)
+ * @param {string} text The chat message to check
+ * @returns {Promise<{ approved: boolean, category: string }>}
+ */
+export async function moderateChatMessage(text) {
+  return moderateTextWithGemini(text, "chat");
+}
+
 function runLocalModerationFallback(text, contentType) {
   const normalized = text.toLowerCase().trim();
   
-  const hasPhone = /\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b|\b\d{7}\b|\b\d{10}\b/.test(text);
+  const hasPhone = /\b\d{3}[-.\\s]?\d{3}[-.\\s]?\d{4}\b|\b\d{7}\b|\b\d{10}\b/.test(text);
   const hasEmail = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/.test(text);
   const hasHandle = /@\w+/.test(text) || /\b(instagram|twitter|facebook|tiktok|snapchat)\.com\b/i.test(text);
   const hasUrl = /\b(https?:\/\/|www\.)\S+\b/i.test(text);
@@ -153,6 +164,17 @@ function runLocalModerationFallback(text, contentType) {
       approved: false,
       category: "doxxing"
     };
+  }
+
+  // For chat: stop here, mild profanity is allowed
+  if (contentType === "chat") {
+    // Still catch blatant slurs/threats via a hard list
+    const hardViolations = ["nigger", "nigga", "kike", "spic", "chink", "faggot", "i will kill you", "go kill yourself", "i'm going to kill"];
+    const hasHardViolation = hardViolations.some(phrase => normalized.includes(phrase));
+    if (hasHardViolation) {
+      return { approved: false, category: "hate" };
+    }
+    return { approved: true, category: "" };
   }
 
   if (normalized.length < 10) {
