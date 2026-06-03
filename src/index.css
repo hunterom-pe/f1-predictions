@@ -4666,3 +4666,209 @@ select.retro-select {
   to { transform: rotate(360deg); }
 }
 
+/* MySpace ASL IM Redesign */
+.myspace-im-container {
+  height: 650px;
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  border: 1px solid #6699cc;
+  border-radius: 6px;
+  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+  font-family: Arial, sans-serif;
+  overflow: hidden;
+  transition: box-shadow 0.3s ease;
+}
+.myspace-im-container:hover {
+  box-shadow: 0px 6px 25px rgba(0, 0, 0, 0.15);
+}
+
+.myspace-im-header {
+  background-color: #6699cc;
+  color: #ffffff;
+  font-weight: bold;
+  font-size: 14px;
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.myspace-im-close-btn {
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 16px;
+  color: #ffffff;
+  padding: 0 4px;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.myspace-im-close-btn:hover {
+  opacity: 0.8;
+  transform: scale(1.1);
+}
+
+.myspace-im-location-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #eef2f7;
+  font-size: 12px;
+  color: #444;
+}
+
+.myspace-im-subheader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #fff5fa;
+  padding: 10px 14px;
+  border-bottom: 1px solid #ff99cc;
+  gap: 10px;
+}
+
+.myspace-im-btn {
+  min-height: 34px;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.myspace-im-btn-flag {
+  color: #b30000;
+  background-color: #ffe6e6;
+  border: 1px solid #ffb3b3;
+}
+.myspace-im-btn-flag:hover {
+  background-color: #ffd4d4;
+  border-color: #ff8080;
+  transform: translateY(-1px);
+}
+.myspace-im-btn-flag:active {
+  background-color: #ffb3b3;
+  transform: translateY(0);
+}
+
+.myspace-im-btn-block {
+  color: #333;
+  background-color: #f2f2f2;
+  border: 1px solid #cccccc;
+}
+.myspace-im-btn-block:hover {
+  background-color: #e5e5e5;
+  border-color: #999999;
+  transform: translateY(-1px);
+}
+.myspace-im-btn-block:active {
+  background-color: #d8d8d8;
+  transform: translateY(0);
+}
+
+.myspace-im-btn-close {
+  color: #333;
+  background-color: #f2f2f2;
+  border: 1px solid #cccccc;
+}
+.myspace-im-btn-close:hover {
+  background-color: #e5e5e5;
+  border-color: #999999;
+  transform: translateY(-1px);
+}
+.myspace-im-btn-close:active {
+  background-color: #d8d8d8;
+  transform: translateY(0);
+}
+
+.myspace-im-chat-area {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.myspace-im-toolbar {
+  height: 28px;
+  background-color: #fcfcfc;
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 12px;
+  font-size: 12px;
+  color: #666;
+}
+.myspace-im-toolbar span {
+  transition: opacity 0.2s ease;
+}
+.myspace-im-toolbar span:hover {
+  opacity: 0.7;
+}
+
+.myspace-im-input-form {
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  border-top: 1px solid #ddd;
+}
+
+.myspace-im-textarea {
+  flex: 1;
+  resize: none;
+  font-size: 13px;
+  font-family: Arial, sans-serif;
+  padding: 8px 12px;
+  min-height: 40px;
+  max-height: 80px;
+  border: 1px solid #ff99cc;
+  border-radius: 4px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+.myspace-im-textarea:focus {
+  border-color: #ff4d94;
+  box-shadow: 0 0 0 2px rgba(255, 77, 148, 0.1);
+}
+
+.myspace-im-send-btn {
+  padding: 0 20px;
+  font-size: 13px;
+  font-weight: bold;
+  min-height: 40px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+.myspace-im-send-btn:not(:disabled) {
+  cursor: pointer;
+  background-color: #ff4d94;
+  color: #fff;
+  border: 1px solid #cc0052;
+}
+.myspace-im-send-btn:not(:disabled):hover {
+  background-color: #ff3385;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(255, 77, 148, 0.25);
+}
+.myspace-im-send-btn:not(:disabled):active {
+  background-color: #e6005c;
+  transform: translateY(0);
+}
+.myspace-im-send-btn:disabled {
+  cursor: not-allowed;
+  background-color: #dfdfdf;
+  color: #888;
+  border: 1px solid #b5b5b5;
+}

@@ -217,70 +217,60 @@ export default function AIMChat({ chatId, connection, currentUser, userDoc, onCl
 
   return (
     <>
-      <div className="window" style={{ height: "650px", display: "flex", flexDirection: "column", backgroundColor: "#f0f0f0" }}>
-        <TitleBar title={`💬 ASL - Instant Message with ${buddyProfile?.username || "Buddy"}`} onClose={onClose} />
+      <div className="myspace-im-container">
+        {/* Flat MySpace Header */}
+        <div className="myspace-im-header">
+          <span>💬 ASL - Instant Message with {buddyProfile?.username || "Buddy"}</span>
+          <span onClick={onClose} className="myspace-im-close-btn">
+            ✕
+          </span>
+        </div>
         
-        {/* AIM Header Details */}
-        <div className="aim-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 8px" }}>
-          <span>⚡ Location: {connection.venueName}</span>
-          <span style={{ fontSize: "11px", color: "green", fontWeight: "bold" }}>🔒 Encrypted</span>
+        {/* Location & Encryption Row */}
+        <div className="myspace-im-location-bar">
+          <span>⚡ Location: <strong>{connection.venueName}</strong></span>
+          <span style={{ color: "green", fontWeight: "bold" }}>🔒 Encrypted</span>
         </div>
 
         {/* AIM Subheader / Actions Bar */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "#c0c0c0", padding: "6px 8px", borderBottom: "1px solid #808080", gap: "10px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ fontSize: "20px" }}>{buddyProfile?.emoji_avatar || "🤖"}</span>
+        <div className="myspace-im-subheader">
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontSize: "24px" }}>{buddyProfile?.emoji_avatar || "🤖"}</span>
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={{ fontSize: "12px", fontWeight: "bold" }}>{buddyProfile?.username || "Buddy"}</span>
-              <span style={{ fontSize: "10px", color: "green" }}>Online</span>
+              <span style={{ fontSize: "13px", fontWeight: "bold", color: "#003399" }}>{buddyProfile?.username || "Buddy"}</span>
+              <span style={{ fontSize: "11px", color: "green", display: "flex", alignItems: "center", gap: "4px" }}>
+                <span style={{ width: "6px", height: "6px", backgroundColor: "green", borderRadius: "50%", display: "inline-block" }}></span> Online
+              </span>
             </div>
           </div>
           <div style={{ display: "flex", gap: "6px" }}>
             <button 
               onClick={handleWarnUser}
-              style={{ 
-                minHeight: "34px", 
-                padding: "2px 8px", 
-                fontSize: "12px", 
-                color: "#b22222", 
-                fontWeight: "bold",
-                backgroundColor: "#ffcccc",
-                border: "1px solid #b22222",
-                cursor: "pointer"
-              }}
+              className="myspace-im-btn myspace-im-btn-flag"
             >
               ⚠️ Flag
             </button>
             <button 
               onClick={handleBlockUser}
-              style={{ 
-                minHeight: "34px", 
-                padding: "2px 8px", 
-                fontSize: "12px", 
-                color: "#000000", 
-                fontWeight: "bold",
-                backgroundColor: "#dfdfdf",
-                border: "1px solid #808080",
-                cursor: "pointer"
-              }}
+              className="myspace-im-btn myspace-im-btn-block"
             >
               🚫 Block
             </button>
             <button 
               onClick={onClose}
-              style={{ minHeight: "34px", padding: "2px 8px", fontSize: "12px", cursor: "pointer" }}
+              className="myspace-im-btn myspace-im-btn-close"
             >
               Close
             </button>
           </div>
         </div>
 
-        <div style={{ display: "flex", flex: 1, overflow: "hidden", flexDirection: "column", padding: "4px" }}>
-          {/* AIM Chat Log Box */}
-          <div className="aim-layout" style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-            <div className="aim-chat-log" style={{ flex: 1, overflowY: "auto", padding: "8px" }}>
+        <div style={{ display: "flex", flex: 1, overflow: "hidden", flexDirection: "column", padding: "8px" }}>
+          {/* Flat Chat Area */}
+          <div className="myspace-im-chat-area">
+            <div className="aim-chat-log" style={{ flex: 1, overflowY: "auto", padding: "12px", backgroundColor: "#ffffff" }}>
               <div className="aim-message" style={{ marginBottom: "8px" }}>
-                <span className="aim-msg-system">
+                <span className="aim-msg-system" style={{ fontSize: "11px", color: "#888" }}>
                   System: Conversing anonymously on asl. Screenshots are strictly blocked.
                 </span>
               </div>
@@ -288,14 +278,14 @@ export default function AIMChat({ chatId, connection, currentUser, userDoc, onCl
               {messages.map((m) => {
                 const isSelf = m.senderId === currentUser.uid;
                 const senderLabel = isSelf ? "You" : (buddyProfile?.username || "Buddy");
-                const senderClass = isSelf ? "aim-msg-self" : "aim-msg-buddy";
+                const senderColor = isSelf ? "#003399" : "#ff007f";
                 
                 return (
-                  <div key={m.id} className="aim-message" style={{ marginBottom: "6px" }}>
-                    <span className={`aim-msg-sender ${senderClass}`} style={{ fontWeight: "bold" }}>
+                  <div key={m.id} className="aim-message" style={{ marginBottom: "8px", fontSize: "13px", lineHeight: "1.4" }}>
+                    <span style={{ color: senderColor, fontWeight: "bold" }}>
                       {senderLabel}:
                     </span>{" "}
-                    <span style={{ fontFamily: "Arial, sans-serif", fontSize: "14px" }}>
+                    <span style={{ color: "#333" }}>
                       {m.text}
                     </span>
                   </div>
@@ -305,32 +295,20 @@ export default function AIMChat({ chatId, connection, currentUser, userDoc, onCl
             </div>
 
             {/* Text Formatting Toolbar (Visual/Retro only) */}
-            <div 
-              style={{ 
-                height: "24px", 
-                backgroundColor: "#c0c0c0", 
-                borderTop: "1px solid #808080", 
-                borderBottom: "1px solid #808080",
-                display: "flex",
-                alignItems: "center",
-                padding: "0 6px",
-                gap: "8px",
-                fontSize: "12px"
-              }}
-            >
+            <div className="myspace-im-toolbar">
               <span style={{ fontWeight: "bold", cursor: "pointer", padding: "0 2px" }}>A</span>
               <span style={{ fontStyle: "italic", cursor: "pointer", padding: "0 2px" }}>A</span>
               <span style={{ textDecoration: "underline", cursor: "pointer", padding: "0 2px" }}>A</span>
-              <span style={{ borderLeft: "1px solid #808080", height: "12px", margin: "0 2px" }} />
-              <span style={{ color: "red", cursor: "pointer" }}>🎨</span>
-              <span style={{ fontSize: "11px" }}>Tahoma</span>
+              <span style={{ borderLeft: "1px solid #ddd", height: "12px", margin: "0 2px" }} />
+              <span style={{ cursor: "pointer" }}>🎨</span>
+              <span style={{ fontSize: "11px" }}>Arial</span>
             </div>
 
             {/* Send Input Area */}
-            <form onSubmit={handleSendMessage} style={{ display: "flex", flexDirection: "column", backgroundColor: "#f0f0f0", borderTop: "1px solid #808080" }}>
+            <form onSubmit={handleSendMessage} className="myspace-im-input-form">
               {sendError && (
                 <div style={{
-                  padding: "4px 8px",
+                  padding: "6px 10px",
                   fontSize: "11px",
                   color: "#990000",
                   backgroundColor: "#fff0f0",
@@ -344,13 +322,14 @@ export default function AIMChat({ chatId, connection, currentUser, userDoc, onCl
                   <span>{sendError}</span>
                 </div>
               )}
-              <div className="aim-input-area" style={{ display: "flex", padding: "4px", gap: "6px", minHeight: "54px" }}>
+              <div style={{ display: "flex", padding: "8px", gap: "8px", alignItems: "flex-end" }}>
                 <textarea 
                   value={inputText}
                   onChange={(e) => { setInputText(e.target.value); if (sendError) setSendError(""); }}
                   placeholder="Type message here..."
                   disabled={isSending}
-                  style={{ flex: 1, resize: "none", fontSize: "14px", fontFamily: "Arial, sans-serif", padding: "6px", minHeight: "44px", opacity: isSending ? 0.6 : 1 }}
+                  className="myspace-im-textarea"
+                  style={{ opacity: isSending ? 0.6 : 1 }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
@@ -361,7 +340,7 @@ export default function AIMChat({ chatId, connection, currentUser, userDoc, onCl
                 <button 
                   type="submit" 
                   disabled={isSending || !inputText.trim()}
-                  style={{ padding: "2px 12px", fontSize: "14px", fontWeight: "bold", minHeight: "44px", cursor: isSending ? "wait" : "pointer", opacity: isSending ? 0.7 : 1 }}
+                  className="myspace-im-send-btn"
                 >
                   {isSending ? "..." : "Send"}
                 </button>
