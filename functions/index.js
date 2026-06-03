@@ -131,8 +131,7 @@ const PUBLIC_PROFILE_FIELDS = [
   "favorited_bars",
   "createdAt",
   "lastLogin",
-  "lastActiveAt",
-  "isAdmin"
+  "lastActiveAt"
 ];
 
 exports.syncProfile = onDocumentWritten("users/{userId}", async (event) => {
@@ -384,6 +383,72 @@ exports.createConnectionSecure = onCall({ secrets: [geminiKey] }, async (request
 });
 
 // ──────────────────────────────────────────────────────────────────────────
+// Secure chat message send
+//
+// Chat messages were previously written directly by the client, which meant the
+// Gemini moderation in the UI was advisory only — a scripted client could write
+// straight to chats/{id}/messages and bypass it (doxxing, hate, threats). The
+// Firestore rules now forbid client message creation, so this is the only path.
+// Moderation, participant membership, and field integrity are enforced here.
+// ──────────────────────────────────────────────────────────────────────────
+exports.sendMessageSecure = onCall({ secrets: [geminiKey] }, async (request) => {
+  const { data, auth } = request;
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required.");
+  }
+  if (auth.token.firebase?.sign_in_provider === "anonymous") {
+    throw new HttpsError("permission-denied", "You must have a registered account to chat.");
+  }
+
+  const chatId = typeof data.chatId === "string" ? data.chatId : "";
+  const text = typeof data.text === "string" ? data.text.trim() : "";
+  if (!chatId) {
+    throw new HttpsError("invalid-argument", "A valid chatId is required.");
+  }
+  if (!text) {
+    throw new HttpsError("invalid-argument", "Message cannot be empty.");
+  }
+  if (text.length > 2000) {
+    throw new HttpsError("invalid-argument", "Message is too long (max 2000 characters).");
+  }
+
+  // Reject embedded images / attachments (defense in depth — also blocked by rules).
+  if (/data:image\/|<img|!\[.*\]\(.*\)/i.test(text)) {
+    throw new HttpsError("failed-precondition", "Images and attachments are not allowed in chat.", { category: "doxxing" });
+  }
+
+  // Authoritative content moderation (light-touch chat policy).
+  const { approved, category } = await moderateContent(text, "chat", process.env.GEMINI_API_KEY);
+  if (!approved) {
+    throw new HttpsError("failed-precondition", "Message blocked by safety filter.", { category: category || "spam" });
+  }
+
+  const db = admin.firestore();
+  const chatRef = db.collection("chats").doc(chatId);
+  const chatSnap = await chatRef.get();
+  if (!chatSnap.exists) {
+    throw new HttpsError("not-found", "That conversation no longer exists.");
+  }
+  const participants = Array.isArray(chatSnap.data().participants) ? chatSnap.data().participants : [];
+  if (!participants.includes(auth.uid)) {
+    throw new HttpsError("permission-denied", "You are not a participant in this conversation.");
+  }
+
+  const msgRef = chatRef.collection("messages").doc();
+  await msgRef.set({
+    senderId: auth.uid,
+    text,
+    timestamp: admin.firestore.FieldValue.serverTimestamp()
+  });
+  await chatRef.update({
+    lastMessage: text,
+    lastTimestamp: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  return { id: msgRef.id };
+});
+
+// ──────────────────────────────────────────────────────────────────────────
 // Reporting
 // ──────────────────────────────────────────────────────────────────────────
 exports.submitReport = onCall(async (request) => {
@@ -550,6 +615,12 @@ exports.moderateText = onCall({ secrets: [geminiKey] }, async (request) => {
   const { data, auth } = request;
   if (!auth) {
     throw new HttpsError("unauthenticated", "Authentication required.");
+  }
+  // Advisory moderation is only useful to users who can actually post/claim/chat
+  // (all of which require a registered account). Blocking anonymous callers here
+  // limits abuse of the paid Gemini endpoint by un-registered/scripted clients.
+  if (auth.token.firebase?.sign_in_provider === "anonymous") {
+    throw new HttpsError("permission-denied", "A registered account is required.");
   }
   const text = typeof data.text === "string" ? data.text : "";
   const validTypes = ["post", "proof", "chat"];

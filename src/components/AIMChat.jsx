@@ -1,18 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import TitleBar from "./TitleBar";
-import { 
+import {
   dbOnSnapshot,
-  dbAddDoc,
-  dbUpdateDoc,
   dbSetDoc,
   dbSubmitReport,
-  dbGetDoc
+  dbGetDoc,
+  dbCallFunction
 } from "../firebase";
-import { 
-  enableScreenshotBlocking, 
-  disableScreenshotBlocking, 
-  setupWebScreenshotDetector,
-  moderateChatMessage
+import {
+  enableScreenshotBlocking,
+  disableScreenshotBlocking,
+  setupWebScreenshotDetector
 } from "../services/security";
 
 // Helper to safely extract milliseconds from various timestamp formats (Number, Firestore Timestamp, Date)
@@ -122,40 +120,32 @@ export default function AIMChat({ chatId, connection, currentUser, userDoc, onCl
     setIsSending(true);
 
     try {
-      // Light-touch Gemini moderation for chat (blocks hate speech, threats, doxxing;
-      // allows mild profanity between consenting adults)
-      const modResult = await moderateChatMessage(cleanText);
-      if (!modResult.approved) {
-        const categoryMessages = {
-          doxxing: "System: Personal info, links, and social handles are not allowed in chat.",
-          hate: "System: That message was flagged for hate speech or threats and was not sent.",
-          threat: "System: That message was flagged as a threat and was not sent.",
-          explicit: "System: Explicit content is not allowed in chat.",
-          spam: "System: That message looks like spam and was not sent."
-        };
-        setSendError(categoryMessages[modResult.category] || "System: Message blocked by safety filter.");
-        setIsSending(false);
-        return;
-      }
-
-      // Add message to subcollection
-      await dbAddDoc(`chats/${chatId}/messages`, {
-        senderId: currentUser.uid,
-        text: cleanText,
-        timestamp: Date.now()
-      });
-
-      // Update parent chat document
-      await dbUpdateDoc("chats", chatId, {
-        lastMessage: cleanText,
-        lastTimestamp: Date.now()
-      });
+      // Send via the secure Cloud Function. It performs authoritative content
+      // moderation (hate / threats / doxxing), verifies chat membership, and
+      // writes the message + updates the parent chat preview server-side. The
+      // Firestore rules forbid direct client message writes, so this is the only
+      // sanctioned path.
+      await dbCallFunction("sendMessageSecure", { chatId, text: cleanText });
 
       setInputText("");
       setSendError("");
     } catch (err) {
-      console.error("Error sending message:", err);
-      setSendError("System: Failed to send message. Please try again.");
+      const category = err?.details?.category || "";
+      const categoryMessages = {
+        doxxing: "System: Personal info, links, images, and social handles are not allowed in chat.",
+        hate: "System: That message was flagged for hate speech or threats and was not sent.",
+        threat: "System: That message was flagged as a threat and was not sent.",
+        explicit: "System: Explicit content is not allowed in chat.",
+        spam: "System: That message looks like spam and was not sent."
+      };
+      if (category && categoryMessages[category]) {
+        setSendError(categoryMessages[category]);
+      } else if (err?.code === "functions/failed-precondition") {
+        setSendError("System: Message blocked by safety filter.");
+      } else {
+        console.error("Error sending message:", err);
+        setSendError("System: Failed to send message. Please try again.");
+      }
     } finally {
       setIsSending(false);
     }

@@ -133,10 +133,11 @@ service cloud.firestore {
       // Messages Subcollection
       match /messages/{messageId} {
         allow read: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
-        allow create: if isAuthenticated() 
-                      && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
-                      && request.resource.data.senderId == request.auth.uid
-                      && isStrictTextOnly(request.resource.data.text);
+        // Messages are created exclusively by the sendMessageSecure Cloud Function
+        // (via the Admin SDK). Direct client writes are forbidden so that chat
+        // moderation (doxxing / hate / threats) cannot be bypassed by a scripted
+        // client writing straight to this subcollection.
+        allow create: if false;
         allow update, delete: if false; // Messages are immutable once sent
       }
     }

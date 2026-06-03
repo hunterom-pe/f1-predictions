@@ -49,10 +49,22 @@ const firebaseConfig = {
 };
 
 // Check if we have complete configurations to run real Firebase
-const isRealFirebaseConfigured = 
-  firebaseConfig.apiKey && 
+const isRealFirebaseConfigured =
+  firebaseConfig.apiKey &&
   firebaseConfig.apiKey !== "YOUR_FIREBASE_API_KEY" &&
   firebaseConfig.projectId;
+
+// SECURITY: the simulated/mock backend (local mock auth pool with hardcoded
+// test credentials, localStorage "database") is a development convenience only.
+// It must NEVER run in a production build — doing so would ship a known
+// "adminpassword" backdoor and bypass all server-side rules. Fail loudly
+// instead of silently degrading to mock mode in a shipped build.
+if (import.meta.env.PROD && !isRealFirebaseConfigured) {
+  throw new Error(
+    "[asl] Firebase is not configured for this production build. " +
+    "Set the VITE_FIREBASE_* environment variables before building for release."
+  );
+}
 
 let realAuth = null;
 let realDb = null;
@@ -1633,6 +1645,38 @@ export const dbCallFunction = async (name, data) => {
         }
       }
       simulatedStore.saveDb(store);
+    }
+
+    if (name === "sendMessageSecure") {
+      const store = simulatedStore.getDb();
+      const chatId = data.chatId;
+      const text = (data.text || "").trim();
+      const msgPath = `chats/${chatId}/messages`;
+      if (!store[msgPath]) store[msgPath] = [];
+      const newId = "msg_" + Math.random().toString(36).slice(2, 11);
+      const item = {
+        id: newId,
+        senderId: mockAuthInstance.currentUser ? mockAuthInstance.currentUser.uid : "unknown",
+        text,
+        timestamp: Date.now()
+      };
+      if (Array.isArray(store[msgPath])) {
+        store[msgPath].push(item);
+      } else {
+        store[msgPath][newId] = item;
+      }
+      // Mirror the parent chat's last-message preview.
+      if (store.chats) {
+        if (Array.isArray(store.chats)) {
+          const chat = store.chats.find(c => c.id === chatId);
+          if (chat) { chat.lastMessage = text; chat.lastTimestamp = Date.now(); }
+        } else if (store.chats[chatId]) {
+          store.chats[chatId].lastMessage = text;
+          store.chats[chatId].lastTimestamp = Date.now();
+        }
+      }
+      simulatedStore.saveDb(store);
+      return { id: newId };
     }
 
     if (name === "restorePost") {
