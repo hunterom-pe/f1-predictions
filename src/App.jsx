@@ -23,6 +23,7 @@ import {
   dbGetDoc,
   dbAddDoc,
   dbUpdateDoc,
+  dbIncrementField,
   dbDeleteDoc,
   dbGetDocs,
   dbSubmitReport,
@@ -1224,18 +1225,20 @@ export default function App() {
     try {
       const likedStr = localStorage.getItem("asl_liked_posts") || "[]";
       let likedArray = JSON.parse(likedStr);
-      let newCount = post.thumbsUpCount || 0;
 
-      if (likedArray.includes(post.id)) {
-        newCount = Math.max(0, newCount - 1);
+      // Determine the direction first so we can apply an atomic server-side
+      // increment (avoids lost updates when multiple users like concurrently).
+      const alreadyLiked = likedArray.includes(post.id);
+      const delta = alreadyLiked ? -1 : 1;
+
+      if (alreadyLiked) {
         likedArray = likedArray.filter(id => id !== post.id);
       } else {
-        newCount = newCount + 1;
         likedArray.push(post.id);
       }
 
       localStorage.setItem("asl_liked_posts", JSON.stringify(likedArray));
-      await dbUpdateDoc("posts", post.id, { thumbsUpCount: newCount });
+      await dbIncrementField("posts", post.id, "thumbsUpCount", delta);
     } catch (err) {
       console.error("Error liking/unliking post:", err);
     }

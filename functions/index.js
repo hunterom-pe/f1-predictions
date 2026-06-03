@@ -314,22 +314,26 @@ exports.createConnectionSecure = onCall({ secrets: [geminiKey] }, async (request
   const db = admin.firestore();
   const senderId = auth.uid;
 
-  // Prevent duplicate connection requests for the same post from the same sender
-  const existingConnSnap = await db.collection("connections")
-    .where("postId", "==", postId)
-    .where("senderId", "==", senderId)
-    .limit(1)
-    .get();
-
-  if (!existingConnSnap.empty) {
-    throw new HttpsError("already-exists", "You have already claimed this missed connection.");
-  }
-
   const connectionId = await db.runTransaction(async (tx) => {
     const postRef = db.collection("posts").doc(postId);
     const senderRef = db.collection("users").doc(senderId);
-    const [postSnap, senderSnap] = await Promise.all([tx.get(postRef), tx.get(senderRef)]);
+    const dupQuery = db.collection("connections")
+      .where("postId", "==", postId)
+      .where("senderId", "==", senderId)
+      .limit(1);
 
+    // All reads must happen before any writes inside a transaction. Checking the
+    // duplicate query here (rather than before the transaction) closes the race
+    // where two concurrent claims both pass the check and create duplicates.
+    const [postSnap, senderSnap, existingConnSnap] = await Promise.all([
+      tx.get(postRef),
+      tx.get(senderRef),
+      tx.get(dupQuery)
+    ]);
+
+    if (!existingConnSnap.empty) {
+      throw new HttpsError("already-exists", "You have already claimed this missed connection.");
+    }
     if (!postSnap.exists) {
       throw new HttpsError("not-found", "That post no longer exists.");
     }
@@ -641,6 +645,30 @@ exports.submitAppealSecure = onCall(async (request) => {
     throw new HttpsError("failed-precondition", "This device/user is not locked out or is not eligible for appeal.");
   }
 
+  // 2b. This endpoint is intentionally unauthenticated (banned users can't sign
+  // in), so guard against spam: reject if a pending appeal already exists for
+  // this user or device.
+  if (userId && userId !== "unknown") {
+    const existingByUser = await db.collection("appeals")
+      .where("userId", "==", userId)
+      .where("status", "==", "pending")
+      .limit(1)
+      .get();
+    if (!existingByUser.empty) {
+      throw new HttpsError("already-exists", "An appeal for this account is already pending review.");
+    }
+  }
+  if (deviceUuid) {
+    const existingByDevice = await db.collection("appeals")
+      .where("deviceUuid", "==", deviceUuid)
+      .where("status", "==", "pending")
+      .limit(1)
+      .get();
+    if (!existingByDevice.empty) {
+      throw new HttpsError("already-exists", "An appeal for this device is already pending review.");
+    }
+  }
+
   // 3. Create appeal document
   await db.collection("appeals").add({
     userId: userId || "unknown",
@@ -665,38 +693,43 @@ exports.wipeUserDataSecure = onCall(async (request) => {
   const uid = auth.uid;
   const db = admin.firestore();
 
-  // 1. Get user posts and prepare delete
+  // Collect every document ref to delete, then flush in chunks. A single
+  // Firestore batch is capped at 500 writes, so an active user (posts +
+  // connections + chats + messages) could exceed it and leave the account
+  // only partially wiped. Chunking keeps the deletion complete and atomic
+  // per-chunk.
+  const refsToDelete = [];
+
+  // 1. User's posts
   const postsQuery = await db.collection("posts").where("userId", "==", uid).get();
-  const batch = db.batch();
-  postsQuery.forEach((doc) => {
-    batch.delete(doc.ref);
-  });
+  postsQuery.forEach((doc) => refsToDelete.push(doc.ref));
 
-  // 2. Get connections where user is sender or receiver and delete
+  // 2. Connections where user is sender or receiver
   const connQuery1 = await db.collection("connections").where("senderId", "==", uid).get();
-  connQuery1.forEach((doc) => {
-    batch.delete(doc.ref);
-  });
+  connQuery1.forEach((doc) => refsToDelete.push(doc.ref));
   const connQuery2 = await db.collection("connections").where("receiverId", "==", uid).get();
-  connQuery2.forEach((doc) => {
-    batch.delete(doc.ref);
-  });
+  connQuery2.forEach((doc) => refsToDelete.push(doc.ref));
 
-  // 3. Get chats user is in, delete nested messages first, then delete chats
+  // 3. Chats user is in — delete nested messages first, then the chat doc
   const chatsQuery = await db.collection("chats").where("participants", "array-contains", uid).get();
   for (const chatDoc of chatsQuery.docs) {
     const messagesQuery = await chatDoc.ref.collection("messages").get();
-    messagesQuery.forEach((msgDoc) => {
-      batch.delete(msgDoc.ref);
-    });
-    batch.delete(chatDoc.ref);
+    messagesQuery.forEach((msgDoc) => refsToDelete.push(msgDoc.ref));
+    refsToDelete.push(chatDoc.ref);
   }
 
-  // 4. Delete user document
-  const userRef = db.collection("users").doc(uid);
-  batch.delete(userRef);
+  // 4. User document
+  refsToDelete.push(db.collection("users").doc(uid));
 
-  await batch.commit();
+  // Flush in chunks of 450 (under the 500-write batch limit).
+  const CHUNK_SIZE = 450;
+  for (let i = 0; i < refsToDelete.length; i += CHUNK_SIZE) {
+    const batch = db.batch();
+    for (const ref of refsToDelete.slice(i, i + CHUNK_SIZE)) {
+      batch.delete(ref);
+    }
+    await batch.commit();
+  }
 
   // 5. Delete Auth user account
   try {

@@ -65,7 +65,16 @@ service cloud.firestore {
       // Posts are created exclusively via the createPostSecure Cloud Function (via Admin SDK).
       allow create: if false;
       allow update: if isAuthenticated() && (
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['thumbsUpCount']) ||
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['thumbsUpCount'])
+          && request.resource.data.thumbsUpCount is int
+          && request.resource.data.thumbsUpCount >= 0
+          // Only allow a single +1 / -1 vote per write — no arbitrary count injection.
+          && (
+            request.resource.data.thumbsUpCount == (('thumbsUpCount' in resource.data) ? resource.data.thumbsUpCount : 0) + 1 ||
+            request.resource.data.thumbsUpCount == (('thumbsUpCount' in resource.data) ? resource.data.thumbsUpCount : 0) - 1
+          )
+        ) ||
         (request.auth.uid == resource.data.userId && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'connectedWithId', 'connectedWithUsername', 'connectedProofText'])) ||
         request.auth.token.admin == true
       );

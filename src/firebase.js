@@ -31,10 +31,11 @@ import {
   onSnapshot, 
   query, 
   where, 
-  orderBy, 
-  limit, 
+  orderBy,
+  limit,
   serverTimestamp,
-  getDocs
+  getDocs,
+  increment
 } from "firebase/firestore";
 
 // Read Firebase configurations from Vite environment variables
@@ -1714,6 +1715,30 @@ export const dbUpdateDoc = async (collectionName, docId, data) => {
   }
   const docRef = doc(realDb, collectionName, docId);
   await updateDoc(docRef, data);
+  return docId;
+};
+
+// Atomically adjust a single numeric field by `delta` (e.g. +1 / -1 for likes).
+// Uses a Firestore server-side increment so concurrent writers don't clobber
+// each other, and clamps the result to >= 0 in the simulated store.
+export const dbIncrementField = async (collectionName, docId, field, delta) => {
+  if (isSimulated) {
+    const store = simulatedStore.getDb();
+    const applyDelta = (obj) => {
+      const current = typeof obj[field] === "number" ? obj[field] : 0;
+      obj[field] = Math.max(0, current + delta);
+    };
+    if (store[collectionName] && store[collectionName][docId]) {
+      applyDelta(store[collectionName][docId]);
+    } else if (Array.isArray(store[collectionName])) {
+      const idx = store[collectionName].findIndex(item => item.id === docId);
+      if (idx !== -1) applyDelta(store[collectionName][idx]);
+    }
+    simulatedStore.saveDb(store);
+    return docId;
+  }
+  const docRef = doc(realDb, collectionName, docId);
+  await updateDoc(docRef, { [field]: increment(delta) });
   return docId;
 };
 
