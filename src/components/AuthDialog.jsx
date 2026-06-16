@@ -12,8 +12,8 @@ import {
  * @param {Function} props.onClose Close handler
  * @param {Function} props.onSuccess Callback on successful authentication/link
  */
-export default function AuthDialog({ onClose, onSuccess }) {
-  const [activeTab, setActiveTab] = useState("register"); // Default to Register to encourage upgrading
+export default function AuthDialog({ defaultTab = "register", onClose, onSuccess }) {
+  const [activeTab, setActiveTab] = useState(defaultTab); // Default to register or login depending on navigation flow
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -197,58 +197,7 @@ export default function AuthDialog({ onClose, onSuccess }) {
                 )}
               </fieldset>
 
-              <div style={{ display: "flex", alignItems: "center", margin: "10px 0", gap: "8px" }}>
-                <div style={{ flex: 1, borderBottom: "1px dashed #808080" }}></div>
-                <span style={{ fontSize: "10px", color: "#666", fontWeight: "bold" }}>OR CONNECT WITH</span>
-                <div style={{ flex: 1, borderBottom: "1px dashed #808080" }}></div>
-              </div>
-              
-              <div style={{ display: "flex", gap: "8px", width: "100%", marginBottom: "6px" }}>
-                <button
-                  type="button"
-                  onClick={() => handleOAuthSignIn("google")}
-                  disabled={loading}
-                  style={{
-                    flex: 1,
-                    minHeight: "36px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "6px",
-                    fontSize: "11px",
-                    fontWeight: "bold",
-                    cursor: "pointer",
-                    borderRadius: 0,
-                    border: "1px solid #000",
-                    boxShadow: "inset -1px -1px #808080, inset 1px 1px #fff, 1px 1px 0px #000",
-                    backgroundColor: "#dfdfdf"
-                  }}
-                >
-                  🌐 Google
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleOAuthSignIn("apple")}
-                  disabled={loading}
-                  style={{
-                    flex: 1,
-                    minHeight: "36px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "6px",
-                    fontSize: "11px",
-                    fontWeight: "bold",
-                    cursor: "pointer",
-                    borderRadius: 0,
-                    border: "1px solid #000",
-                    boxShadow: "inset -1px -1px #808080, inset 1px 1px #fff, 1px 1px 0px #000",
-                    backgroundColor: "#dfdfdf"
-                  }}
-                >
-                   Apple
-                </button>
-              </div>
+
 
               <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "4px" }}>
                 <button 

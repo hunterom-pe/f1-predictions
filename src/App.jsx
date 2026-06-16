@@ -54,6 +54,26 @@ const RETRO_TAGLINES = [
   "keep the bad vibes off the local node"
 ];
 
+const SUPPORTED_CITIES = [
+  { name: "Phoenix", lat: 33.4484, lng: -112.0740 },
+  { name: "Austin", lat: 30.2672, lng: -97.7431 },
+  { name: "Cupertino", lat: 37.3230, lng: -122.0322 },
+  { name: "New York", lat: 40.7128, lng: -74.0060 },
+  { name: "Nashville", lat: 36.1627, lng: -86.7816 }
+];
+
+function getDistanceInMiles(lat1, lon1, lat2, lon2) {
+  const R = 3958.8; // Earth radius in miles
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
 export default function App() {
   // Device & Auth State
   const [deviceUuid, setDeviceUuid] = useState("");
@@ -64,6 +84,11 @@ export default function App() {
   }, [currentUser]);
   const [userDoc, setUserDoc] = useState(null);
   const [deviceBanned, setDeviceBanned] = useState(false);
+
+  // Geolocation Auto-Detection States
+  const [showLocationPrompt, setShowLocationPrompt] = useState(false);
+  const [detectingLocation, setDetectingLocation] = useState(false);
+  const [locationError, setLocationError] = useState("");
   const [booting, setBooting] = useState(true);
 
   const isLoggedIn = currentUser && !currentUser.isAnonymous;
@@ -78,6 +103,7 @@ export default function App() {
   const [activeChatId, setActiveChatId] = useState(null);
   const [activeChatConnection, setActiveChatConnection] = useState(null);
   const [navigationScreen, _setNavigationScreen] = useState("home");
+  const [authDialogDefaultTab, setAuthDialogDefaultTab] = useState("login");
   const [navigationHistory, setNavigationHistory] = useState(["home"]);
   const navigationHistoryRef = useRef(navigationHistory);
 
@@ -100,6 +126,76 @@ export default function App() {
       });
     }
     _setNavigationScreen(screen);
+  };
+
+  const handleAutoDetectLocation = async () => {
+    setDetectingLocation(true);
+    setLocationError("");
+    try {
+      let permissionGranted = false;
+      try {
+        const permission = await Geolocation.checkPermissions();
+        if (permission.location === "granted") {
+          permissionGranted = true;
+        } else {
+          const req = await Geolocation.requestPermissions();
+          if (req.location === "granted") {
+            permissionGranted = true;
+          }
+        }
+      } catch (errPermission) {
+        console.warn("Permission check failed:", errPermission);
+      }
+
+      if (!permissionGranted) {
+        throw new Error("Location permission denied. Please select your city manually.");
+      }
+
+      const coordinates = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: false,
+        timeout: 5000
+      });
+
+      const lat = coordinates.coords.latitude;
+      const lng = coordinates.coords.longitude;
+
+      let closestCity = null;
+      let minDistance = Infinity;
+
+      for (const city of SUPPORTED_CITIES) {
+        const distance = getDistanceInMiles(lat, lng, city.lat, city.lng);
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestCity = city;
+        }
+      }
+
+      if (closestCity && minDistance <= 80) {
+        setSelectedCity(closestCity.name);
+        if (currentUser) {
+          const updates = { 
+            selectedCity: closestCity.name,
+            homeCity: closestCity.name 
+          };
+          await dbSetDoc("users", currentUser.uid, updates, true);
+        }
+        setShowLocationPrompt(false);
+        setDetectingLocation(false);
+        setNavigationScreen("bar");
+      } else {
+        const distanceStr = closestCity ? `${Math.round(minDistance)} miles to ${closestCity.name}` : "any supported city";
+        throw new Error(`You are currently outside our supported regional nodes (closest: ${distanceStr}). Please select manually.`);
+      }
+    } catch (err) {
+      console.error("Auto detect failed:", err);
+      setLocationError(err.message || "Failed to retrieve location.");
+      setDetectingLocation(false);
+    }
+  };
+
+  const handleManualLocationSelect = () => {
+    setShowLocationPrompt(false);
+    setNavigationScreen("city");
   };
 
   const handleNavigateBack = () => {
@@ -470,10 +566,22 @@ export default function App() {
               }, true);
             }
             if (!data.homeCity) {
-              dbSetDoc("users", user.uid, {
-                homeCity: data.selectedCity || selectedCity || "Phoenix",
-                selectedCity: data.selectedCity || selectedCity || "Phoenix"
-              }, true);
+              if (data.selectedCity || selectedCity) {
+                dbSetDoc("users", user.uid, {
+                  homeCity: data.selectedCity || selectedCity,
+                  selectedCity: data.selectedCity || selectedCity
+                }, true);
+              } else {
+                const isReviewerMode = localStorage.getItem("asl_reviewer_mode") === "true" || localStorage.getItem("asl_dev_override") === "true";
+                if (isReviewerMode) {
+                  dbSetDoc("users", user.uid, {
+                    homeCity: "Cupertino",
+                    selectedCity: "Cupertino"
+                  }, true);
+                } else {
+                  setShowLocationPrompt(true);
+                }
+              }
             }
             if (data.selectedCity) {
               const isReviewer = localStorage.getItem("asl_reviewer_mode") === "true" || localStorage.getItem("asl_dev_override") === "true";
@@ -969,6 +1077,7 @@ export default function App() {
     if (!currentUser || currentUser.isAnonymous) {
       // User is guest/anonymous, launch Auth Wall
       authActionCallbackRef.current = action;
+      setAuthDialogDefaultTab("register");
       setNavigationScreen("login");
     } else {
       // User is already logged in, run action directly
@@ -1822,6 +1931,7 @@ export default function App() {
             <span 
               className={`myspace-nav-link ${navigationScreen === "login" ? "active" : ""}`} 
               onClick={() => {
+                setAuthDialogDefaultTab("login");
                 setNavigationScreen("login");
                 setSelectedProfileUser(null);
               }}
@@ -3294,6 +3404,7 @@ export default function App() {
         {/* LOGIN SCREEN */}
         {navigationScreen === "login" && (
           <AuthDialog 
+            defaultTab={authDialogDefaultTab}
             onClose={() => {
               handleNavigateBack();
               authActionCallbackRef.current = null;
@@ -3805,6 +3916,134 @@ export default function App() {
                     Thanks!
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Geolocation Auto-Detection Prompt Modal */}
+      {showLocationPrompt && (
+        <div className="modal-overlay">
+          <style>{`
+            @keyframes progress-retro {
+              0% { transform: translateX(-100%); }
+              100% { transform: translateX(100%); }
+            }
+          `}</style>
+          <div className="modal-container" style={{ maxWidth: "420px" }}>
+            <div style={{ 
+              width: "100%", 
+              display: "flex", 
+              flexDirection: "column", 
+              border: "2px outset #ff007f", 
+              backgroundColor: "#f5f5f5", 
+              boxShadow: "2px 2px 0px 0px #000000",
+              fontFamily: "Arial, sans-serif" 
+            }}>
+              {/* Header */}
+              <div style={{ 
+                backgroundColor: "#003399", 
+                color: "#ffffff", 
+                fontWeight: "bold", 
+                fontSize: "14px", 
+                padding: "8px 12px", 
+                display: "flex", 
+                justifyContent: "space-between", 
+                alignItems: "center",
+                borderBottom: "1px solid #000"
+              }}>
+                <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>📍 Regional Node Auto-Detect</span>
+                <span 
+                  onClick={handleManualLocationSelect} 
+                  style={{ 
+                    cursor: "pointer", 
+                    fontWeight: "bold", 
+                    fontSize: "16px",
+                    color: "#ffffff",
+                    padding: "0 4px"
+                  }}
+                >
+                  ✕
+                </span>
+              </div>
+
+              {/* Body */}
+              <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+                {detectingLocation ? (
+                  <div style={{ textAlign: "center", padding: "10px 0" }}>
+                    <div className="progress-bar-retro" style={{ border: "2px inset #fff", height: "20px", backgroundColor: "#dfdfdf", position: "relative", marginBottom: "12px", overflow: "hidden" }}>
+                      <div className="progress-bar-fill-retro" style={{ height: "100%", backgroundColor: "#000080", width: "100%", animation: "progress-retro 2s infinite linear" }}></div>
+                    </div>
+                    <p style={{ margin: 0, fontSize: "12px", fontWeight: "bold", color: "#333" }}>
+                      🛰️ Contacting GPS satellites...
+                    </p>
+                    <p style={{ margin: "4px 0 0 0", fontSize: "11px", color: "#666" }}>
+                      Locating closest regional dial-up node...
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
+                      <span style={{ fontSize: "36px" }}>📡</span>
+                      <div>
+                        <h4 style={{ margin: "0 0 6px 0", fontSize: "13px", color: "#003399", fontWeight: "bold" }}>
+                          Metropage Node Required
+                        </h4>
+                        <p style={{ margin: 0, fontSize: "11px", lineHeight: "1.4", color: "#333" }}>
+                          The ASL network daemon needs to identify your nearest regional node to configure your permanent home city dial-up board.
+                        </p>
+                      </div>
+                    </div>
+
+                    {locationError && (
+                      <div style={{ 
+                        border: "2px inset #ff007f", 
+                        backgroundColor: "#ffe6f2", 
+                        padding: "8px 12px", 
+                        fontSize: "11px", 
+                        color: "#cc0052", 
+                        fontWeight: "bold",
+                        lineHeight: "1.4"
+                      }}>
+                        ⚠️ {locationError}
+                      </div>
+                    )}
+
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "4px" }}>
+                      <button 
+                        onClick={handleManualLocationSelect} 
+                        style={{ 
+                          minWidth: "120px", 
+                          minHeight: "36px", 
+                          cursor: "pointer", 
+                          backgroundColor: "#dfdfdf", 
+                          color: "#333", 
+                          border: "2px outset #dfdfdf",
+                          fontSize: "12px",
+                          fontWeight: "bold"
+                        }}
+                      >
+                        [ CHOOSE MANUALLY ]
+                      </button>
+                      <button 
+                        onClick={handleAutoDetectLocation}
+                        style={{ 
+                          minWidth: "120px", 
+                          minHeight: "36px", 
+                          fontWeight: "bold",
+                          cursor: "pointer",
+                          backgroundColor: "#ff007f", 
+                          color: "white", 
+                          border: "2px outset #ff007f",
+                          fontSize: "12px"
+                        }}
+                      >
+                        [ AUTO-DETECT NODE ]
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
