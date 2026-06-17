@@ -352,8 +352,9 @@ export default function MySpaceProfileDialog({
       alert("Biography must be 500 characters or less.");
       return;
     }
-    if (Array.from(editEmojiAvatar).length !== 3) {
-      alert("Please select exactly 3 emojis for your avatar.");
+    const emojiCount = Array.from(editEmojiAvatar).length;
+    if (emojiCount < 1 || emojiCount > 3) {
+      alert("Please select between 1 and 3 emojis for your avatar.");
       return;
     }
 
@@ -457,8 +458,8 @@ export default function MySpaceProfileDialog({
 
             {/* Emoji Avatar Customizer — edit mode only */}
             {isEditing && (
-              <div className="profile-edit-card" style={{ marginBottom: "8px" }}>
-                <div style={{ fontSize: "11px", fontWeight: "bold", marginBottom: "6px", color: "inherit" }}>Customize Avatar (pick exactly 3):</div>
+               <div className="profile-edit-card" style={{ marginBottom: "8px" }}>
+                <div style={{ fontSize: "11px", fontWeight: "bold", marginBottom: "6px", color: "inherit" }}>Customize Avatar (pick 1 to 3 emojis):</div>
                 
                 {/* Currently selected emojis */}
                 <div style={{ display: "flex", gap: "6px", marginBottom: "8px", minHeight: "48px", alignItems: "center" }}>
@@ -476,8 +477,8 @@ export default function MySpaceProfileDialog({
                   {Array.from(editEmojiAvatar).length === 0 && (
                     <span style={{ fontSize: "12px", color: "#888", fontStyle: "italic" }}>Click emojis below to select up to 3</span>
                   )}
-                  {Array.from(editEmojiAvatar).length > 0 && Array.from(editEmojiAvatar).length < 3 && (
-                    <span style={{ fontSize: "12px", color: "#666" }}>({3 - Array.from(editEmojiAvatar).length} more needed)</span>
+                  {Array.from(editEmojiAvatar).length > 0 && (
+                    <span style={{ fontSize: "12px", color: "#666" }}>({Array.from(editEmojiAvatar).length} of 3 selected)</span>
                   )}
                 </div>
 
