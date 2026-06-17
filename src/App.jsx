@@ -57,7 +57,6 @@ const RETRO_TAGLINES = [
 const SUPPORTED_CITIES = [
   { name: "Phoenix", lat: 33.4484, lng: -112.0740 },
   { name: "Austin", lat: 30.2672, lng: -97.7431 },
-  { name: "Cupertino", lat: 37.3230, lng: -122.0322 },
   { name: "New York", lat: 40.7128, lng: -74.0060 },
   { name: "Nashville", lat: 36.1627, lng: -86.7816 }
 ];
@@ -344,33 +343,7 @@ export default function App() {
           return;
         }
 
-        // Check for App Store Reviewer Mode (Cupertino coordinates or developer override)
-        const isOverride = localStorage.getItem("asl_dev_override") === "true";
-        let isCupertino = false;
-        try {
-          const permission = await Geolocation.checkPermissions();
-          if (permission.location === "granted") {
-            const coordinates = await Geolocation.getCurrentPosition({
-              enableHighAccuracy: false,
-              timeout: 3000
-            });
-            const lat = coordinates.coords.latitude;
-            const lng = coordinates.coords.longitude;
-            if (lat >= 37.30 && lat <= 37.35 && lng >= -122.06 && lng <= -122.01) {
-              isCupertino = true;
-            }
-          }
-        } catch (e) {
-          console.warn("Cupertino geofence load check failed:", e);
-        }
 
-        if (isOverride || isCupertino) {
-          console.log("App Store Reviewer Mode Active! Setting city to Cupertino.");
-          localStorage.setItem("asl_reviewer_mode", "true");
-          setSelectedCity("Cupertino");
-        } else {
-          localStorage.removeItem("asl_reviewer_mode");
-        }
 
         // Load all venues for folder tree structure
         const allVenues = await searchVenues("");
@@ -418,26 +391,7 @@ export default function App() {
         };
         syncUserDoc();
 
-        // Reviewer Mode Mock Data Injection
-        const injectReviewerMockData = async () => {
-          const isReviewer = localStorage.getItem("asl_reviewer_mode") === "true" || localStorage.getItem("asl_dev_override") === "true";
-          if (isReviewer) {
-            // 1. Inject Cupertino into user's profile and selectedCity
-            await dbSetDoc("users", user.uid, {
-              selectedCity: "Cupertino",
-              homeCity: "Cupertino"
-            }, true);
 
-            // NOTE: demo post/connection seeding was removed here. It wrote
-            // directly to users/tom, posts, and connections, which the security
-            // rules and secure Cloud Functions reject in production — so it only
-            // ever did anything in the local mock backend. Seed Cupertino demo
-            // content into the production database directly instead (see
-            // PERFORMANCE.md → "App Store review data").
-          }
-        };
-
-        injectReviewerMockData();
 
         // Subscribe to the current user's own (private) doc for flags / ban status.
         // Owner-only read rules forbid scanning the whole collection, so listen to
@@ -458,20 +412,11 @@ export default function App() {
                   selectedCity: data.selectedCity || selectedCity
                 }, true);
               } else {
-                const isReviewerMode = localStorage.getItem("asl_reviewer_mode") === "true" || localStorage.getItem("asl_dev_override") === "true";
-                if (isReviewerMode) {
-                  dbSetDoc("users", user.uid, {
-                    homeCity: "Cupertino",
-                    selectedCity: "Cupertino"
-                  }, true);
-                } else {
-                  setShowLocationPrompt(true);
-                }
+                setShowLocationPrompt(true);
               }
             }
             if (data.selectedCity) {
-              const isReviewer = localStorage.getItem("asl_reviewer_mode") === "true" || localStorage.getItem("asl_dev_override") === "true";
-              setSelectedCity(isReviewer ? "Cupertino" : data.selectedCity);
+              setSelectedCity(data.selectedCity);
             }
             if (data.banned || data.flag_count >= 3) {
               setDeviceBanned(true);
@@ -1023,11 +968,10 @@ export default function App() {
         userDoc.homeCity = defaultCity;
       }
 
-      // Check metropolitan portal validation constraints (bypass if Reviewer Mode is active)
-      const isReviewerMode = localStorage.getItem("asl_reviewer_mode") === "true" || localStorage.getItem("asl_dev_override") === "true";
+      // Check metropolitan portal validation constraints
       const userHomeCity = userDoc?.homeCity || userDoc?.selectedCity || selectedCity || "Phoenix";
       const postCity = postData.venueCity || "Phoenix";
-      if (!isReviewerMode && postCity.toLowerCase() !== userHomeCity.toLowerCase()) {
+      if (postCity.toLowerCase() !== userHomeCity.toLowerCase()) {
         const funnyMessages = [
           `Wrong city, bro. Stick to your own turf in ${userHomeCity}!`,
           `Nice try, traveler. The server admin caught you trying to post in ${postCity} from your home node in ${userHomeCity}.`,
@@ -2657,30 +2601,6 @@ export default function App() {
                     <div className="city-portal-arrow">➡️</div>
                   </div>
 
-                  {/* Cupertino Area Option */}
-                  <div 
-                    className="city-portal-card"
-                    onClick={() => {
-                      setSelectedCity("Cupertino");
-                      setNavigationScreen("bar");
-                      if (currentUser) {
-                        const updates = { selectedCity: "Cupertino" };
-                        if (!userDoc?.homeCity) {
-                          updates.homeCity = "Cupertino";
-                        }
-                        dbSetDoc("users", currentUser.uid, updates, true);
-                      }
-                    }}
-                  >
-                    <div className="city-portal-icon">💻</div>
-                    <div style={{ flex: 1 }}>
-                      <div className="city-portal-title">Cupertino Area Node</div>
-                      <div className="city-portal-desc">Silicon Valley Hub — Infinite Loop cafes & campus hangouts</div>
-                      <div className="city-portal-status" style={{ color: "#d0a000" }}>📡 Network Status: ONLINE (BETA)</div>
-                    </div>
-                    <div className="city-portal-arrow">➡️</div>
-                  </div>
-
                   {/* Austin Area Option */}
                   <div 
                     className="city-portal-card"
@@ -2705,32 +2625,7 @@ export default function App() {
                     <div className="city-portal-arrow">➡️</div>
                   </div>
                   
-                  {/* Cupertino Area Option (App Store Reviewer Mode) */}
-                  {(localStorage.getItem("asl_reviewer_mode") === "true" || localStorage.getItem("asl_dev_override") === "true") && (
-                    <div 
-                      className="city-portal-card"
-                      style={{ border: "2px solid #003399", backgroundColor: "#e6f2ff" }}
-                      onClick={() => {
-                        setSelectedCity("Cupertino");
-                        setNavigationScreen("bar");
-                        if (currentUser) {
-                          const updates = { selectedCity: "Cupertino" };
-                          if (!userDoc?.homeCity) {
-                            updates.homeCity = "Cupertino";
-                          }
-                          dbSetDoc("users", currentUser.uid, updates, true);
-                        }
-                      }}
-                    >
-                      <div className="city-portal-icon">🍎</div>
-                      <div style={{ flex: 1 }}>
-                        <div className="city-portal-title" style={{ color: "#003399", fontWeight: "bold" }}>Cupertino Area Node</div>
-                        <div className="city-portal-desc">Silicon Valley Hub — Bypassed geofence & debug mode</div>
-                        <div className="city-portal-status" style={{ color: "#006600" }}>📡 Network Status: ACTIVE (REVIEWER OVERRIDE)</div>
-                      </div>
-                      <div className="city-portal-arrow">➡️</div>
-                    </div>
-                  )}
+
                 </div>
               </div>
             </div>
@@ -2898,8 +2793,7 @@ export default function App() {
                     onClick={() => {
                       const userHomeCity = userDoc?.homeCity || userDoc?.selectedCity || selectedCity || "Phoenix";
                       const venueCity = selectedVenue.city || "Phoenix";
-                      const isReviewerMode = localStorage.getItem("asl_reviewer_mode") === "true" || localStorage.getItem("asl_dev_override") === "true";
-                      if (!isReviewerMode && venueCity.toLowerCase() !== userHomeCity.toLowerCase()) {
+                      if (venueCity.toLowerCase() !== userHomeCity.toLowerCase()) {
                         const funnyMessages = [
                           `Wrong city, bro. Stick to your own turf in ${userHomeCity}!`,
                           `Nice try, traveler. The server admin caught you trying to post in ${venueCity} from your home node in ${userHomeCity}.`,

@@ -685,8 +685,7 @@ exports.searchVenuesSecure = onCall({ secrets: [foursquareKey] }, async (request
       phoenix: "Phoenix, AZ",
       nashville: "Nashville, TN",
       "san francisco": "San Francisco, CA",
-      austin: "Austin, TX",
-      cupertino: "Cupertino, CA"
+      austin: "Austin, TX"
     };
     const nearHint = hints[filterCity.toLowerCase()] || "New York, NY";
     url += `&near=${encodeURIComponent(nearHint)}`;

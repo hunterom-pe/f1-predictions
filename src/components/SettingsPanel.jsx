@@ -12,7 +12,6 @@ import { AppIcon } from "@capacitor-community/app-icon";
 const TAB_COLORS = {
   account: "#ff007f",      // Neon Pink
   appearance: "#00a86b",   // Emerald Green
-  diagnostics: "#ff8c00",  // Amber Orange
   legal: "#3366cc"         // Cobalt Blue
 };
 
@@ -29,20 +28,7 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
 
 
 
-  // Diagnostics State
-  const [geofenceStatus, setGeofenceStatus] = useState("Status: Offline / Standby");
-  const [devOverride, setDevOverride] = useState(() => localStorage.getItem("asl_dev_override") === "true");
 
-  const handleToggleDevOverride = (val) => {
-    setDevOverride(val);
-    if (val) {
-      localStorage.setItem("asl_dev_override", "true");
-      localStorage.setItem("asl_reviewer_mode", "true");
-    } else {
-      localStorage.removeItem("asl_dev_override");
-      localStorage.removeItem("asl_reviewer_mode");
-    }
-  };
 
   // Deletion Modal/Warning State
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -137,70 +123,7 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
 
 
 
-  // D. Node Diagnostics
-  const handlePingGeofence = async () => {
-    setGeofenceStatus("Locating local nodes...");
-    try {
-      const isOverride = localStorage.getItem("asl_dev_override") === "true";
-      let lat = 0;
-      let lng = 0;
-      let isCupertino = false;
-      let permissionGranted = false;
 
-      try {
-        const permission = await Geolocation.checkPermissions();
-        if (permission.location === "granted") {
-          permissionGranted = true;
-        } else {
-          const req = await Geolocation.requestPermissions();
-          if (req.location === "granted") {
-            permissionGranted = true;
-          }
-        }
-      } catch (errPermission) {
-        console.warn("Permission check failed, relying on override status:", errPermission);
-      }
-
-      if (permissionGranted) {
-        try {
-          const coordinates = await Geolocation.getCurrentPosition({
-            enableHighAccuracy: true,
-            timeout: 5000
-          });
-          lat = coordinates.coords.latitude;
-          lng = coordinates.coords.longitude;
-          if (lat >= 37.30 && lat <= 37.35 && lng >= -122.06 && lng <= -122.01) {
-            isCupertino = true;
-          }
-        } catch (errCoords) {
-          console.warn("Could not retrieve current position:", errCoords);
-        }
-      }
-
-      if (isOverride || isCupertino) {
-        localStorage.setItem("asl_reviewer_mode", "true");
-        setGeofenceStatus(`Status: Connected // Cupertino Node Active (lat: ${lat.toFixed(4)}, lng: ${lng.toFixed(4)}) - App Store Reviewer Mode`);
-      } else {
-        localStorage.removeItem("asl_reviewer_mode");
-        if (!permissionGranted && !isOverride) {
-          setGeofenceStatus("Status: Geolocation permission denied.");
-        } else if (lat === 0 && lng === 0) {
-          setGeofenceStatus("Status: Connection Lost // Check your settings");
-        } else {
-          setGeofenceStatus(`Status: Connected // Phoenix Node Active (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
-        }
-      }
-    } catch (err) {
-      console.error(err);
-      setGeofenceStatus("Status: Connection Lost // Check your settings");
-    }
-  };
-
-  const handleFlushCache = () => {
-    localStorage.clear();
-    sessionStorage.clear();
-    window.location.reload();
-  };
 
   // E. System Format (Wipe Account)
   const handleWipeAccount = async () => {
@@ -231,7 +154,6 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
   const TABS = [
     { id: "account", emoji: "👤", text: "Account" },
     { id: "appearance", emoji: "🎨", text: "Appearance" },
-    { id: "diagnostics", emoji: "⚡", text: "Diagnostics" },
     { id: "legal", emoji: "📜", text: "Legal" }
   ];
 
@@ -438,66 +360,7 @@ export default function SettingsPanel({ currentUser, userDoc, onNavigateBack }) 
               </div>
             )}
 
-            {activeTab === "diagnostics" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {/* D. Node Diagnostics */}
-                <fieldset style={{ border: "2px outset #ffffff", padding: "10px", margin: 0, backgroundColor: "#ffffff" }}>
-                  <legend style={{ fontWeight: "bold", color: "#003399" }}>connection diagnostic & test</legend>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                      <button 
-                        onClick={handlePingGeofence} 
-                        className="asl-btn asl-btn-blue"
-                        style={{ 
-                          alignSelf: "flex-start", 
-                          minHeight: "36px",
-                          padding: "6px 12px"
-                        }}
-                      >
-                        [ ping local area network ]
-                      </button>
-                      <div style={{ 
-                        backgroundColor: "#000000", 
-                        color: "#00ff00", 
-                        padding: "6px", 
-                        fontFamily: "monospace", 
-                        fontSize: "10px",
-                        border: "1px inset #808080",
-                        whiteSpace: "pre-wrap",
-                        lineHeight: "1.3",
-                        boxShadow: "inset 1px 1px #050505"
-                      }}>
-                        {geofenceStatus}
-                      </div>
-                      <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "11px", marginTop: "6px" }}>
-                        <input 
-                          type="checkbox" 
-                          checked={devOverride} 
-                          onChange={(e) => handleToggleDevOverride(e.target.checked)} 
-                        />
-                        Enable Cupertino Reviewer Mode Override
-                      </label>
-                    </div>
-                    <hr style={{ border: "1px inset #ffffff", margin: "4px 0" }} />
-                    <div>
-                      <button 
-                        onClick={handleFlushCache} 
-                        className="asl-btn asl-btn-orange"
-                        style={{ 
-                          minHeight: "36px",
-                          padding: "6px 12px"
-                        }}
-                      >
-                        [ clear browser cache / hard reset ]
-                      </button>
-                      <div style={{ color: "#666666", fontSize: "10px", marginTop: "3px" }}>
-                        Clears out stored files, logs you out, and does a fresh cold reload.
-                      </div>
-                    </div>
-                  </div>
-                </fieldset>
-              </div>
-            )}
+
 
             {activeTab === "legal" && (
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>

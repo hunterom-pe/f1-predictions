@@ -284,53 +284,7 @@ export const MOCK_VENUES = [
     hours_display: "Open Thu-Sun 10 PM - 4 AM",
     amenities: ["Aerial Performers", "Themed Costumes Required", "Outdoor Deck", "Vibrant Decor"]
   },
-  // Cupertino - App Store Reviewer Mode
-  {
-    fsq_id: "venue_cafemacs",
-    name: "Caffe Macs",
-    address: "1 Infinite Loop",
-    city: "Cupertino",
-    zone: "HQ",
-    formatted_address: "1 Infinite Loop, Cupertino, CA 95014",
-    price: 2,
-    rating: 8.9,
-    categories: ["Corporate Cafe", "Lounge"],
-    open_start: 8,
-    open_end: 17,
-    open_days: [1, 2, 3, 4, 5],
-    hours_display: "Open Mon-Fri 8 AM - 5 PM",
-    amenities: ["Apple Employees Only", "Scenic Seating", "Reviewer Mode", "Gourmet Foods"]
-  },
-  {
-    fsq_id: "venue_infiniteloop",
-    name: "Infinite Loop Lounge",
-    address: "2 Infinite Loop",
-    city: "Cupertino",
-    zone: "HQ",
-    formatted_address: "2 Infinite Loop, Cupertino, CA 95014",
-    price: 3,
-    rating: 9.0,
-    categories: ["Developer Hangout", "Cocktail Bar"],
-    open_start: 16,
-    open_end: 22,
-    hours_display: "Open Daily 4 PM - 10 PM",
-    amenities: ["Apple History Trivia", "Craft Beer on Tap", "Developer Network", "Outdoor Deck"]
-  },
-  {
-    fsq_id: "venue_applepark",
-    name: "Apple Park Visitor Center Cafe",
-    address: "10600 N Tantau Ave",
-    city: "Cupertino",
-    zone: "Campus",
-    formatted_address: "10600 N Tantau Ave, Cupertino, CA 95014",
-    price: 3,
-    rating: 9.2,
-    categories: ["Modern Cafe", "Sightseeing Spot"],
-    open_start: 9,
-    open_end: 18,
-    hours_display: "Open Daily 9 AM - 6 PM",
-    amenities: ["Scenic Terrace", "Apple Merchandise Shop", "Pour-Over Coffee", "iPads for AR Campus Tour"]
-  },
+
   // Nashville - Lower Broadway
   {
     fsq_id: "venue_tootsies",
