@@ -182,7 +182,7 @@ export default function App() {
         setNavigationScreen("bar");
       } else {
         const distanceStr = closestCity ? `${Math.round(minDistance)} miles to ${closestCity.name}` : "any supported city";
-        throw new Error(`You are currently outside our supported regional nodes (closest: ${distanceStr}). Please select manually.`);
+        throw new Error(`You are currently outside our supported cities (closest: ${distanceStr}). Please select manually.`);
       }
     } catch (err) {
       console.error("Auto detect failed:", err);
@@ -3730,24 +3730,26 @@ export default function App() {
               width: "100%", 
               display: "flex", 
               flexDirection: "column", 
-              border: "2px outset #ff007f", 
-              backgroundColor: "#f5f5f5", 
-              boxShadow: "2px 2px 0px 0px #000000",
-              fontFamily: "Arial, sans-serif" 
+              border: "1px solid #ff99cc", 
+              backgroundColor: "#ffffff", 
+              boxShadow: "0 8px 30px rgba(0,0,0,0.15)",
+              fontFamily: "Arial, sans-serif",
+              borderRadius: "4px",
+              overflow: "hidden"
             }}>
               {/* Header */}
               <div style={{ 
-                backgroundColor: "#003399", 
+                background: "linear-gradient(90deg, #6699cc 0%, #ff99cc 100%)", 
                 color: "#ffffff", 
                 fontWeight: "bold", 
                 fontSize: "14px", 
-                padding: "8px 12px", 
+                padding: "10px 14px", 
                 display: "flex", 
                 justifyContent: "space-between", 
                 alignItems: "center",
-                borderBottom: "1px solid #000"
+                borderBottom: "1px solid #ff99cc"
               }}>
-                <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>📍 Regional Node Auto-Detect</span>
+                <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>📍 Find Your City</span>
                 <span 
                   onClick={handleManualLocationSelect} 
                   style={{ 
@@ -3763,42 +3765,43 @@ export default function App() {
               </div>
 
               {/* Body */}
-              <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "14px" }}>
                 {detectingLocation ? (
                   <div style={{ textAlign: "center", padding: "10px 0" }}>
-                    <div className="progress-bar-retro" style={{ border: "2px inset #fff", height: "20px", backgroundColor: "#dfdfdf", position: "relative", marginBottom: "12px", overflow: "hidden" }}>
-                      <div className="progress-bar-fill-retro" style={{ height: "100%", backgroundColor: "#000080", width: "100%", animation: "progress-retro 2s infinite linear" }}></div>
+                    <div style={{ border: "1px solid #ff99cc", height: "14px", backgroundColor: "#ffe6f2", position: "relative", marginBottom: "12px", overflow: "hidden", borderRadius: "2px" }}>
+                      <div style={{ height: "100%", backgroundColor: "#ff007f", width: "100%", animation: "progress-retro 2s infinite linear" }}></div>
                     </div>
                     <p style={{ margin: 0, fontSize: "12px", fontWeight: "bold", color: "#333" }}>
-                      🛰️ Contacting GPS satellites...
+                      📡 Getting your location...
                     </p>
                     <p style={{ margin: "4px 0 0 0", fontSize: "11px", color: "#666" }}>
-                      Locating closest regional dial-up node...
+                      Determining your closest city...
                     </p>
                   </div>
                 ) : (
                   <>
                     <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
-                      <span style={{ fontSize: "36px" }}>📡</span>
+                      <span style={{ fontSize: "36px" }}>📍</span>
                       <div>
-                        <h4 style={{ margin: "0 0 6px 0", fontSize: "13px", color: "#003399", fontWeight: "bold" }}>
-                          Metropage Node Required
+                        <h4 style={{ margin: "0 0 6px 0", fontSize: "14px", color: "#003399", fontWeight: "bold" }}>
+                          Where are you located?
                         </h4>
-                        <p style={{ margin: 0, fontSize: "11px", lineHeight: "1.4", color: "#333" }}>
-                          The ASL network daemon needs to identify your nearest regional node to configure your permanent home city dial-up board.
+                        <p style={{ margin: 0, fontSize: "12px", lineHeight: "1.5", color: "#555" }}>
+                          We need to know your city so we can show you local missed connections and hangout spots nearby.
                         </p>
                       </div>
                     </div>
 
                     {locationError && (
                       <div style={{ 
-                        border: "2px inset #ff007f", 
+                        border: "1px solid #ff99cc", 
                         backgroundColor: "#ffe6f2", 
                         padding: "8px 12px", 
                         fontSize: "11px", 
                         color: "#cc0052", 
                         fontWeight: "bold",
-                        lineHeight: "1.4"
+                        lineHeight: "1.4",
+                        borderRadius: "2px"
                       }}>
                         ⚠️ {locationError}
                       </div>
@@ -3809,31 +3812,33 @@ export default function App() {
                         onClick={handleManualLocationSelect} 
                         style={{ 
                           minWidth: "120px", 
-                          minHeight: "36px", 
+                          minHeight: "38px", 
                           cursor: "pointer", 
                           backgroundColor: "#dfdfdf", 
                           color: "#333", 
-                          border: "2px outset #dfdfdf",
+                          border: "1px solid #b5b5b5",
                           fontSize: "12px",
-                          fontWeight: "bold"
+                          fontWeight: "bold",
+                          borderRadius: "2px"
                         }}
                       >
-                        [ CHOOSE MANUALLY ]
+                        Choose Manually
                       </button>
                       <button 
                         onClick={handleAutoDetectLocation}
                         style={{ 
                           minWidth: "120px", 
-                          minHeight: "36px", 
+                          minHeight: "38px", 
                           fontWeight: "bold",
                           cursor: "pointer",
                           backgroundColor: "#ff007f", 
                           color: "white", 
-                          border: "2px outset #ff007f",
-                          fontSize: "12px"
+                          border: "1px solid #d00068",
+                          fontSize: "12px",
+                          borderRadius: "2px"
                         }}
                       >
-                        [ AUTO-DETECT NODE ]
+                        Find My City
                       </button>
                     </div>
                   </>
