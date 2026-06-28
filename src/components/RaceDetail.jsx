@@ -281,17 +281,18 @@ export default function RaceDetail({ round, race, drivers, currentUser, results,
             {/* Right: SVG track map */}
             {circuitMeta?.svgPath && (
               <div className="w-full lg:w-64 h-40 flex items-center justify-center bg-neutral-950 rounded border border-neutral-900 p-4 relative">
-                <svg viewBox="0 0 200 100" className="w-full h-full stroke-neutral-700 stroke-[3px] fill-none">
+                <svg viewBox={circuitMeta.viewBox || "0 0 500 500"} className="w-full h-full stroke-neutral-700 stroke-[3px] fill-none">
                   {/* Dynamic outline with glow */}
                   <path 
                     d={circuitMeta.svgPath} 
                     className="stroke-[var(--accent-color)] transition-all duration-350"
+                    vectorEffect="non-scaling-stroke"
                     style={{
                       filter: `drop-shadow(0 0 4px ${circuitMeta.accent})`
                     }}
                   />
                   {/* Outline overlay */}
-                  <path d={circuitMeta.svgPath} className="stroke-white/45 stroke-[1.5px]" />
+                  <path d={circuitMeta.svgPath} className="stroke-white/45 stroke-[1.5px]" vectorEffect="non-scaling-stroke" />
                 </svg>
                 <div className="absolute bottom-2 right-2 text-[8px] font-mono text-neutral-600 uppercase tracking-widest">
                   Circuit Layout
