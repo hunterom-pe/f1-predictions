@@ -12,10 +12,8 @@ dist
 dist-ssr
 *.local
 .env
-.env.*
+.env.production
 
-# Firebase CLI cache
-.firebase/
 
 # Editor directories and files
 .vscode/*

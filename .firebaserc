@@ -1,6 +1,0 @@
-{
-  "projects": {
-    "default": "asl-app-prod",
-    "development": "asl-app-e297f"
-  }
-}

@@ -1,44 +1,31 @@
 {
-  "name": "asl",
+  "name": "asl-app",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "deploy:rules": "firebase deploy --only firestore:rules",
-    "deploy:functions": "firebase deploy --only functions --force",
-    "deploy:hosting": "npm run build && firebase deploy --only hosting"
+    "lint": "oxlint",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@capacitor-community/app-icon": "^7.0.0",
-    "@capacitor/app": "^8.1.0",
-    "@capacitor/core": "^8.3.4",
-    "@capacitor/device": "^8.0.2",
-    "@capacitor/geolocation": "^8.2.0",
-    "@capacitor/ios": "^8.3.4",
-    "@capacitor/privacy-screen": "^2.0.1",
-    "@capacitor/share": "^8.0.1",
-    "@capgo/native-purchases": "^8.4.0",
-    "98.css": "^0.1.21",
-    "firebase": "^12.13.0",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "@supabase/supabase-js": "^2.108.2",
+    "autoprefixer": "^10.5.2",
+    "canvas-confetti": "^1.9.4",
+    "lucide-react": "^1.22.0",
+    "pg": "^8.22.0",
+    "postcss": "^8.5.16",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-router-dom": "^7.18.0",
+    "tailwindcss": "^3.4.19"
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.3.4",
-    "@eslint/js": "^10.0.1",
-    "@types/react": "^19.2.14",
+    "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.1",
-    "eslint": "^10.3.0",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.2",
-    "firebase-admin": "^13.10.0",
-    "firebase-tools": "^15.19.0",
-    "globals": "^17.6.0",
-    "vite": "^8.0.12"
+    "@vitejs/plugin-react": "^6.0.2",
+    "oxlint": "^1.69.0",
+    "vite": "^8.1.0"
   }
 }
